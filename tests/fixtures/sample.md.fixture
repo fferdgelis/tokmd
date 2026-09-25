@@ -1,0 +1,24 @@
+---
+title: "Sample"
+version: 1.0.0
+---
+
+This is the preamble, before any heading.
+
+## Section One
+
+Own text of section one.
+
+#### Deep subsection (level skip)
+
+Text that belongs to the level-skip subsection.
+
+## Section Two
+
+Some text.
+
+```markdown
+# This looks like a heading but is inside a code fence
+```
+
+More text after the fenced block, still owned by Section Two.

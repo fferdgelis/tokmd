@@ -50,3 +50,13 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.coverage.run]
+# Sin esto, coverage.xml graba la ruta absoluta del host donde corrio
+# pytest (C:\...\scratch\tokmd-<stamp>\src\tokmd) en su elemento <source>.
+# El escaner de Sonar corre en un contenedor Docker distinto, donde esa
+# ruta de Windows no existe -> no puede resolver ningun archivo y el gate
+# de cobertura de codigo nuevo queda en OK sin medir nada (medido
+# 2026-09-25). Con rutas relativas, el escaner las resuelve contra su
+# propio sonar.sources sin importar donde corrio pytest.
+relative_files = true

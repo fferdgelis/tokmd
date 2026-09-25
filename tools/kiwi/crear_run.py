@@ -5,7 +5,11 @@ llamar a QA. Nunca marca PASSED/FAILED: eso lo hace registrar_resultados.py
 con el veredicto que trae QA (Kimi K3), nunca con un veredicto de Desarrollo.
 
 Uso: se le pasa por stdin un JSON con:
-  {"password": "...", "plan": "PBI-001 - Parser de secciones", "commit": "6be061d"}
+  {"password": "...", "plan": "PBI-001 - Parser de secciones", "commit": "6be061d",
+   "manager": "claude-code-sonnet", "qa": "opencode-kimi-k3"}
+"manager"/"qa" son opcionales (default abajo) - identidades reales de Kiwi,
+no el usuario de login (qa-bot). No las crea este script: User.create no
+existe en la API de Kiwi, se dan de alta a mano en /admin primero.
 """
 import json
 import os
@@ -16,6 +20,8 @@ from rpc_client import connect
 
 PRODUCTO = "tokmd"
 VERSION = "1.0.0"
+MANAGER_USERNAME_DEFAULT = "claude-code-sonnet"
+QA_USERNAME_DEFAULT = "opencode-kimi-k3"
 
 
 def obtener_o_crear(recurso, filtro, valores):
@@ -31,6 +37,8 @@ def main():
     password = entrada["password"]
     plan_nombre = entrada["plan"]
     commit = entrada["commit"]
+    manager_username = entrada.get("manager", MANAGER_USERNAME_DEFAULT)
+    qa_username = entrada.get("qa", QA_USERNAME_DEFAULT)
 
     rpc = connect(username=username, password=password)
     password = None
@@ -41,7 +49,13 @@ def main():
     if not plan:
         raise SystemExit(f"Plan '{plan_nombre}' no existe.")
     plan = plan[0]
-    usuario = rpc.User.filter({"username": username})[0]
+
+    manager = rpc.User.filter({"username": manager_username})
+    if not manager:
+        raise SystemExit(f"Usuario '{manager_username}' no existe en Kiwi. Crearlo primero en /admin.")
+    qa = rpc.User.filter({"username": qa_username})
+    if not qa:
+        raise SystemExit(f"Usuario '{qa_username}' no existe en Kiwi. Crearlo primero en /admin.")
 
     build, _ = obtener_o_crear(
         rpc.Build,
@@ -57,9 +71,9 @@ def main():
             "summary": resumen_run,
             "plan": plan["id"],
             "build": build["id"],
-            "manager": usuario["id"],
-            "default_tester": usuario["id"],
-            "notes": "QA: OpenCode + OpenRouter + Kimi K3, read-only sobre snapshot.",
+            "manager": manager[0]["id"],
+            "default_tester": qa[0]["id"],
+            "notes": f"QA: {qa_username}, read-only sobre snapshot. Manager: {manager_username}.",
         },
     )
     print(f"TestRun: {run['summary']} (id={run['id']}) {'CREADO' if run_nuevo else 'ya existia'}")

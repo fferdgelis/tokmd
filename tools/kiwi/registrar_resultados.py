@@ -11,11 +11,15 @@ Uso: por stdin, un JSON con:
 {
   "password": "...",
   "run_id": 123,
+  "tested_by": "opencode-kimi-k3",
   "veredictos": [
     {"caso": "TOK-001-C01 - ...", "status": "PASSED", "evidencia": "..."},
     ...
   ]
 }
+"tested_by" es opcional (default abajo) - identidad real de quien corrio el
+QA, no el usuario de login (qa-bot). No la crea este script: User.create no
+existe en la API de Kiwi, se da de alta a mano en /admin primero.
 """
 import json
 import os
@@ -24,6 +28,8 @@ import sys
 sys.path.insert(0, "/tmp/work")
 from rpc_client import connect
 
+TESTED_BY_USERNAME_DEFAULT = "opencode-kimi-k3"
+
 
 def main():
     username = os.environ.get("KIWI_USER", "qa-bot")
@@ -31,9 +37,15 @@ def main():
     password = entrada["password"]
     run_id = entrada["run_id"]
     veredictos = entrada["veredictos"]
+    tested_by_username = entrada.get("tested_by", TESTED_BY_USERNAME_DEFAULT)
 
     rpc = connect(username=username, password=password)
     password = None
+
+    tested_by = rpc.User.filter({"username": tested_by_username})
+    if not tested_by:
+        raise SystemExit(f"Usuario '{tested_by_username}' no existe en Kiwi. Crearlo primero en /admin.")
+    tested_by_id = tested_by[0]["id"]
 
     ejecuciones = rpc.TestExecution.filter({"run": run_id})
     por_summary = {}
@@ -51,7 +63,7 @@ def main():
         estado = rpc.TestExecutionStatus.filter({"name": v["status"]})
         if not estado:
             raise SystemExit(f"Estado '{v['status']}' no existe en Kiwi.")
-        rpc.TestExecution.update(ejecucion["id"], {"status": estado[0]["id"]})
+        rpc.TestExecution.update(ejecucion["id"], {"status": estado[0]["id"], "tested_by": tested_by_id})
         if v.get("evidencia"):
             rpc.TestExecution.add_comment(ejecucion["id"], v["evidencia"])
         aplicados += 1

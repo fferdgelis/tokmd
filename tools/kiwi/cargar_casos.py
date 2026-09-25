@@ -15,6 +15,11 @@ from rpc_client import connect
 
 PRODUCTO = "tokmd"
 CATEGORIA_DEFAULT = "Functional"
+# Quien realmente escribe los casos: Desarrollo (esta sesion), no el usuario
+# de login (qa-bot es solo la cuenta tecnica que habla con la API). Cuenta
+# ya existente en Kiwi (id=5, verificado 2026-09-25) - no la crea este
+# script, User.create no existe en la API de Kiwi.
+AUTOR_USERNAME = "claude-code-sonnet"
 
 # (id_caso, pbi, plan, categoria, componente, summary, texto, prioridad)
 # Prioridad Kiwi: 1=P1 ... por defecto usamos 2 (P2) salvo que se indique.
@@ -151,6 +156,11 @@ def main():
         raise SystemExit(f"Producto '{PRODUCTO}' no existe. Correr crear_catalogo.py primero.")
     producto = producto[0]
 
+    autor = rpc.User.filter({"username": AUTOR_USERNAME})
+    if not autor:
+        raise SystemExit(f"Usuario '{AUTOR_USERNAME}' no existe en Kiwi. Crearlo primero en /admin (User.create no existe en la API).")
+    autor_id = autor[0]["id"]
+
     planes_cache = {}
     categorias_cache = {}
 
@@ -195,6 +205,14 @@ def main():
             tc_id = creado["id"]
             creados += 1
             accion = "CREADO"
+
+        # Author aparte de `valores`: TestCase.create asigna author al
+        # usuario autenticado (qa-bot) sin importar lo que se le pase en el
+        # payload - update() si lo respeta (verificado 2026-09-25). Se hace
+        # en los dos casos (creado o ya existente) para que una recarga
+        # tambien corrija el author de casos viejos, mismo criterio que ya
+        # se uso con is_automated.
+        rpc.TestCase.update(tc_id, {"author": autor_id})
 
         ya_en_plan = rpc.TestCase.filter({"plan": plan["id"], "id": tc_id})
         if not ya_en_plan:

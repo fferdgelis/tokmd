@@ -159,6 +159,37 @@ CASOS = [
      "Dado README.md y README.es.md, cuando se leen, entonces incluyen un ejemplo de "
      "salida real (no inventada, corrida de verdad contra un archivo del repo) y "
      "creditos explicitos a ctok y ttok. (AC-04)"),
+
+    # PBI-008 - Medicion CLAUDE.md global: cableado de --verify en cli.py
+    # (precondicion tecnica de AC-01/AC-02 de PBI-008, que asumian que el
+    # flag ya existia -- no existia, ver docs/dev-log/2026-09-25.md).
+    ("TOK-008-C01", "PBI-008 - Medicion CLAUDE.md global", "Error", "CLI",
+     "TOK-008-C01 - --verify con plataforma OpenAI falla limpio",
+     "Dado --platform codex --verify (tokenizer resuelto: OpenAI), cuando se corre, "
+     "entonces falla con codigo de salida distinto de cero y sin traceback en la "
+     "salida -- --verify solo soporta el tokenizer de Claude. (AC-01)"),
+    ("TOK-008-C02", "PBI-008 - Medicion CLAUDE.md global", "Error", "CLI",
+     "TOK-008-C02 - --verify sin ANTHROPIC_API_KEY falla legible",
+     "Dado --platform claude-code --verify sin ANTHROPIC_API_KEY (o con get_client "
+     "levantando MissingApiKeyError), cuando se corre, entonces falla con codigo de "
+     "salida distinto de cero, sin traceback, y el mensaje menciona "
+     "ANTHROPIC_API_KEY por nombre. (AC-02)"),
+    ("TOK-008-C03", "PBI-008 - Medicion CLAUDE.md global", "Functional", "CLI",
+     "TOK-008-C03 - --verify con claude-code usa claude-sonnet-5 por default",
+     "Dado --platform claude-code --verify sin --model, cuando se corre con un "
+     "cliente real, entonces measure_frame se llama exactamente una vez con "
+     "model=claude-sonnet-5 y el comando termina en codigo 0. (AC-03)"),
+    ("TOK-008-C04", "PBI-008 - Medicion CLAUDE.md global", "Functional", "CLI",
+     "TOK-008-C04 - --verify respeta --model cuando se pasa",
+     "Dado --platform opencode --model claude-opus-5 --verify, cuando se corre con "
+     "un cliente real, entonces measure_frame se llama con model=claude-opus-5 (no "
+     "el default) y el comando termina en codigo 0. (AC-04)"),
+    ("TOK-008-C05", "PBI-008 - Medicion CLAUDE.md global", "Functional", "CLI",
+     "TOK-008-C05 - --verify usa el mismo modelo en todas las secciones",
+     "Dado un documento con mas de una seccion y --platform claude-code --verify sin "
+     "--model, cuando se corre, entonces count_verified se llama al menos una vez y "
+     "todas sus llamadas usan model=claude-sonnet-5 (no cambia de seccion a "
+     "seccion). (AC-05)"),
 ]
 
 

@@ -1,0 +1,65 @@
+You are the independent QA role (ADR-005/ADR-006). You did NOT write the code
+and did NOT write the tests. You are working read-only against a snapshot of
+git commit bfed82b — do not edit any file, do not write any new file anywhere.
+
+This snapshot is a plain export: it has NO `.git` directory and NO network
+access. Do not run `git` commands, and do not try to reach api.anthropic.com
+or any other host — every test in this scope uses a fake/mocked Anthropic
+client, never the real network, by design (ADR-006).
+
+## Your job
+
+For each Kiwi test case below, actually run the relevant pytest test(s) in
+this checkout and report a verdict. Do not guess or reason about whether the
+code "should" work — execute `uv run pytest -k <name> -v` (or the full
+suite) and read the real output. If a command fails to run at all, that is
+BLOCKED, not FAILED.
+
+Do not fix anything. Do not edit or create any file. If you find a real
+defect, report it as FAILED with the raw pytest output as evidence — do not
+patch it.
+
+Start by running, once, in this checkout:
+
+    uv sync
+    uv run pytest -v
+
+## Test cases (PBI-008 — cableado de --verify en cli.py)
+
+- TOK-008-C01 - --verify con plataforma OpenAI falla limpio
+  -> pytest test: test_codex_verify_fails_cleanly
+- TOK-008-C02 - --verify sin ANTHROPIC_API_KEY falla legible
+  -> pytest test: test_claude_code_verify_missing_api_key_fails_cleanly
+- TOK-008-C03 - --verify con claude-code usa claude-sonnet-5 por default
+  -> pytest test: test_claude_code_verify_default_model_measure_frame
+- TOK-008-C04 - --verify respeta --model cuando se pasa
+  -> pytest test: test_opencode_claude_model_verify_measure_frame
+- TOK-008-C05 - --verify usa el mismo modelo en todas las secciones
+  -> pytest test: test_claude_code_verify_count_verified_all_calls_default_model
+
+## Context you should know, but not re-verify (out of scope for this snapshot)
+
+`tests/test_verify.py` also changed in this commit — a fake's expected
+content literal moved from `" "` to `"."`, because the underlying
+`measure_frame` function now calls the (real, or here fake) API with `"."`
+instead of `" "`. This is `BUG-001`
+(`docs/bugs/BUG-001-espacio-en-blanco-rechazado-por-count-tokens.md` in this
+checkout, if you want to read it — you don't need to, it's just background):
+the real Anthropic API rejects whitespace-only content with a 400 error, and
+was only discovered by Development running a real smoke test outside this
+test suite (since this suite never touches the real network, by design).
+That real-API verification is NOT something you can or should repeat here —
+just confirm `tests/test_verify.py` still passes as part of the full suite
+run above; that's the only claim being made about it in this scope.
+
+## Output format
+
+Run `uv sync` then `uv run pytest -v` once for the whole suite, and report
+the raw output. Then, for each of the 5 cases above, output one line in
+exactly this format (no extra prose):
+
+VEREDICTO: <exact case name from the list above> | <PASSED|FAILED|BLOCKED> | <one-line evidence>
+
+Print the raw pytest output first, then the five VEREDICTO lines, then
+nothing else. Do not write your report to any file — this response IS the
+report.

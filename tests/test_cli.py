@@ -110,3 +110,13 @@ def test_opencode_platform_with_unrecognized_model_fails_cleanly(tmp_path):
     )
     assert result.exit_code != 0
     assert "Traceback" not in result.output
+
+
+def test_version_flag_succeeds():
+    # AC-03 (PBI-007)
+    runner = CliRunner()
+    result = runner.invoke(main, ["--version"])
+
+    assert result.exit_code == 0
+    assert result.output.strip() == "1.0.0"
+

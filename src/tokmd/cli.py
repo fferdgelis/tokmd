@@ -12,6 +12,7 @@ pass-throughs to `render.render`; this module's own job stops at resolving
 from __future__ import annotations
 
 from functools import partial
+import importlib.metadata
 from pathlib import Path
 
 import click
@@ -68,6 +69,7 @@ def resolve_tokenizer(
 
 
 @click.command()
+@click.version_option(version=importlib.metadata.version("tokmd"), message="%(version)s")
 @click.argument("file", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.option("--platform", type=click.Choice(PLATFORMS), required=True)
 @click.option("--model", default=None, help="Model name, required when --platform is opencode.")

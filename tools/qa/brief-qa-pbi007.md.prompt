@@ -1,0 +1,130 @@
+You are the independent QA role (ADR-005/ADR-006). You did NOT write the code
+and did NOT write the tests. You are working read-only against a snapshot of
+git commit d90fb73 — do not edit any file, do not write any new file anywhere.
+
+This snapshot is a plain export: it has NO `.git` directory and NO network
+access to GitHub. Do not run `git` commands and do not try to reach github.com
+or pypi.org — if a case seems to need that, read the note in the case itself.
+
+## Your job
+
+For each Kiwi test case below, gather the evidence the case asks for and
+report a verdict. Do not guess or reason about whether the code "should"
+work — execute the commands and read the real output. If a command cannot run
+at all, that is BLOCKED, not FAILED.
+
+Do not fix anything. Do not edit or create any file. If you find a real
+defect, report it as FAILED with the raw output as evidence — do not patch it.
+
+Start by running, once, in this checkout:
+
+    uv sync
+    uv run pytest -v
+
+## Test cases (PBI-007 — Empaquetado y publicación)
+
+### TOK-007-C01 - CI verde en ubuntu y windows, Python 3.12 y 3.13
+
+NOT something you can run from here: this snapshot has no network and no
+`.git`. Development verified the real GitHub Actions run and is handing you
+the raw output below as the evidence for this case. Your job is the two
+halves you CAN check:
+
+  1. Read `.github/workflows/ci.yml` in this checkout and confirm it really
+     declares the 4-job matrix (os: ubuntu-latest + windows-latest,
+     python-version: 3.12 + 3.13) and that the test step runs pytest.
+  2. Confirm the evidence below shows the most recent `CI` run on `main`
+     with `conclusion: success` in all four matrix jobs, on SHA
+     d90fb73c27f572d1d72f0c7706af08ad3114c2e0 — the same commit this
+     snapshot was exported from.
+
+Raw evidence, captured by Development on 2026-09-25:
+
+    $ gh run list --repo fferdgelis/tokmd --workflow CI --branch main --limit 5
+    completed  success  Handoff: PBI-006 cerrado, PBI-007 con codigo listo, QA de Kiwi pendiente  CI  main  push  36143105506  28s  2026-09-25T13:46:29Z
+    completed  success  PBI-006: QA independiente cerrado (Kimi K3, 4/4 PASSED)                   CI  main  push  36139076179  26s  2026-09-25T13:08:22Z
+    completed  success  PBI-007: empaquetado, workflows de CI/PyPI, documentacion y CHANGELOG     CI  main  push  36136759090  31s  2026-09-25T12:45:15Z
+
+    $ gh run view 36143105506 --repo fferdgelis/tokmd --json headSha,conclusion,displayTitle,jobs
+    {"conclusion":"success",
+     "displayTitle":"Handoff: PBI-006 cerrado, PBI-007 con codigo listo, QA de Kiwi pendiente",
+     "headSha":"d90fb73c27f572d1d72f0c7706af08ad3114c2e0",
+     "jobs":[{"conclusion":"success","name":"pytest (ubuntu-latest, py3.13)"},
+             {"conclusion":"success","name":"pytest (windows-latest, py3.12)"},
+             {"conclusion":"success","name":"pytest (windows-latest, py3.13)"},
+             {"conclusion":"success","name":"pytest (ubuntu-latest, py3.12)"}]}
+
+If the workflow file matches the matrix AND the evidence above is 4/4 success
+on that SHA, PASSED. If the workflow file does not declare that matrix, FAILED
+(and say so — that would mean the evidence and the code disagree).
+
+### TOK-007-C02 - publish.yml usa Trusted Publishing sin token en el repo
+
+Fully verifiable here.
+
+  1. Read `.github/workflows/publish.yml`. Confirm all of:
+     - it publishes with `pypa/gh-action-pypi-publish`,
+     - it has `permissions:` with `id-token: write` (OIDC),
+     - it declares `environment: pypi`,
+     - it passes NO `password:`, NO `with: user/password`, and no
+       `${{ secrets.* }}` of any kind to the publish step.
+  2. Grep the WHOLE checkout for any PyPI credential left behind — for
+     example: `grep -rniE "pypi.?token|PYPI_API_TOKEN|twine|password:|secrets\." .`
+     Report what you find. Occurrences that are clearly unrelated to PyPI
+     credentials (e.g. the word "password" in a doc about Kiwi TCMS) are not
+     a defect; a real PyPI token or a `secrets.PYPI_*` reference is.
+
+PASSED only if OIDC/Trusted Publishing is in place AND no PyPI token or
+secret reference exists anywhere in the repo.
+
+### TOK-007-C03 - tokmd --version responde 1.0.0
+
+Fully verifiable here. Do all three:
+
+  1. `uv run pytest -k test_version_flag_succeeds -v` — read the real result.
+  2. `uv run tokmd --version` — read the real stdout. It must contain 1.0.0.
+  3. Read `pyproject.toml` and confirm the declared version is exactly
+     `1.0.0`, i.e. the CLI is not reporting a number that disagrees with the
+     package metadata.
+
+PASSED only if the test passes AND the command prints 1.0.0 AND pyproject
+declares 1.0.0.
+
+### TOK-007-C04 - README con ejemplo real y creditos
+
+Fully verifiable here, and this is the interesting one: the acceptance
+criterion says the example output must be REAL, not invented. Prove it, do
+not take it on faith.
+
+  1. Open `README.md`. Find the example command near line 48:
+     `tokmd docs/ADR/ADR-004-empaquetado-y-publicacion.md --platform claude-code`
+     and the block of output printed under it.
+  2. Actually run that same command in this checkout:
+     `uv run tokmd docs/ADR/ADR-004-empaquetado-y-publicacion.md --platform claude-code`
+     and compare the real output against what the README shows. Token counts
+     and section names must match. If they do not match, that is FAILED and
+     the diff is your evidence.
+  3. Do the same comparison for `README.es.md`.
+  4. Confirm both READMEs credit `ctok` (Sander Land) and `ttok`
+     (Simon Willison) explicitly, with their licenses.
+
+PASSED only if the example output reproduces AND both credits are present in
+both files.
+
+## Output format
+
+Print the raw output of everything you ran first (the full pytest run, the
+version commands, the grep, and the README comparison). Then, for each of the
+4 cases above, output one line in exactly this format (no extra prose):
+
+VEREDICTO: <exact case name from the list above> | <PASSED|FAILED|BLOCKED> | <one-line evidence>
+
+The exact case names are:
+
+  TOK-007-C01 - CI verde en ubuntu y windows, Python 3.12 y 3.13
+  TOK-007-C02 - publish.yml usa Trusted Publishing sin token en el repo
+  TOK-007-C03 - tokmd --version responde 1.0.0
+  TOK-007-C04 - README con ejemplo real y creditos
+
+Print the raw output first, then the four VEREDICTO lines, then nothing else.
+Do not write your report to any file — this response IS the report.

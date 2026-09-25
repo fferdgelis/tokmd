@@ -5,7 +5,7 @@ aliases:
 project: tokmd
 document_type: pbi
 status: ready
-version: 0.2.0
+version: 0.3.0
 created: 2026-09-24
 updated: 2026-09-25
 language: es
@@ -13,15 +13,15 @@ owners:
   - project-founder
 author_human: "none"
 created_by: "llm"
-llm_provider: "Google"
-llm_model: "gemini-3.8-flash"
-llm_harness: "Antigravity CLI"
-llm_channel: "agent"
-reasoning_mode: "standard"
-last_modified_by: "Google / antigravity / gemini-3.8-flash"
-modified_by: "Google / antigravity / gemini-3.8-flash"
-reviewed_by: "pending"
-review_status: "pending"
+llm_provider: "Anthropic"
+llm_model: "claude-opus-5"
+llm_harness: "Claude Code"
+llm_channel: "subscription"
+reasoning_mode: "no expuesto"
+last_modified_by: "Anthropic / claude-opus-5 / Claude Code / subscription"
+modified_by: "Anthropic / claude-opus-5 / Claude Code / subscription"
+reviewed_by: "opencode-kimi-k3"
+review_status: "passed"
 tags:
   - project/tokmd
   - delivery/pbi
@@ -37,6 +37,7 @@ related_documents:
 |---|---|---|---|
 | 2026-09-24 | 0.1.0 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | Creación. |
 | 2026-09-25 | 0.2.0 | Google / antigravity / gemini-3.8-flash | Workflows CI y publish, READMEs, CHANGELOG, flag --version con test y cobertura 100%. |
+| 2026-09-25 | 0.3.0 | Anthropic / claude-opus-5 / Claude Code / subscription | Cierre de QA independiente: Kiwi Test Run 67, 4/4 PASSED (Kimi K3 sobre snapshot de `d90fb73`). Corregida la evidencia mínima del handoff a QA, que apuntaba a un archivo inexistente. |
 
 ## 1. Valor y contexto
 
@@ -93,11 +94,32 @@ related_documents:
 
 ### Handoff a QA
 
-- **Canal de QA:** OpenCode + OpenRouter + Kimi K3, sobre el repo ya público (read-only).
-- **Evidencia mínima:** `tools/kiwi/resultados/fase-5.json`.
+- **Canal de QA:** OpenCode + OpenRouter + Kimi K3, read-only sobre un snapshot de
+  `git archive` del commit gateado (no sobre el repo vivo).
+- **Evidencia mínima:** `docs/handoff/qa/fase-4-pbi007-kimi-k3.txt` (salida cruda de
+  QA) y `docs/handoff/qa/fase-4-pbi007-ci-github-actions.txt` (AC-01, verificado por
+  Desarrollo porque el snapshot no tiene red). El brief usado es
+  `tools/qa/brief-qa-pbi007.md.prompt`.
 
 ## 6. Cierre
 
-- **Resultado de QA independiente:** `pending`.
+- **Resultado de QA independiente:** `PASSED` (4/4). Kimi K3/OpenCode, snapshot
+  commit `d90fb73`, Kiwi Test Run [67] (ejecuciones 245-248). Evidencia cruda en
+  `docs/handoff/qa/fase-4-pbi007-kimi-k3.txt`.
+  - **AC-01 se verificó en dos mitades, a propósito.** El snapshot de QA es un
+    export de `git archive`: no tiene `.git` ni acceso a la API de GitHub, así
+    que no puede consultar el run real. Desarrollo verificó el run
+    (`36143105506`, SHA `d90fb73`, 4/4 jobs `success`) y se lo pasó a QA como
+    dato ya verificado, con el número de run y el SHA para que sea auditable —
+    evidencia en `docs/handoff/qa/fase-4-pbi007-ci-github-actions.txt`. QA
+    verificó por su cuenta que `ci.yml` declara realmente esa matriz. Es la
+    lección de PBI-006 aplicada al revés: ahí el brief le pidió a QA correr
+    `git status` dentro de un snapshot sin `.git` y salió un FAILED falso.
+  - AC-04 no se dio por bueno leyendo el README: QA re-corrió el comando del
+    ejemplo contra `docs/ADR/ADR-004-empaquetado-y-publicacion.md` y comparó la
+    salida real contra el bloque publicado. Diff vacío.
 - **Aceptación del owner:** `pending`.
-- **PBI o Bug siguiente:** PBI-008.
+- **Tag `v1.0.0` y publicación en PyPI:** deliberadamente NO hechos. Publicar es
+  irreversible; lo decide Fabián aparte, no este flujo.
+- **PBI o Bug siguiente:** PBI-008 (bloqueado: falta decisión sobre `--verify` y
+  una `ANTHROPIC_API_KEY` con facturación).

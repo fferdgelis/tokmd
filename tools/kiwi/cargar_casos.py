@@ -139,6 +139,26 @@ CASOS = [
      "exacta. Ejercicio ya ejecutado y revertido el 2026-09-25 (ver "
      "docs/PBI/PBI-006-verificacion-contra-api.md); QA verifica la evidencia "
      "registrada, no repite la mutacion (mantiene el rol de solo lectura). (AC-04)"),
+
+    # PBI-007 - Empaquetado y publicacion
+    ("TOK-007-C01", "PBI-007 - Empaquetado y publicacion", "Functional", "Packaging",
+     "TOK-007-C01 - CI verde en ubuntu y windows, Python 3.12 y 3.13",
+     "Dado el repo publico en GitHub, cuando se corre el CI (.github/workflows/ci.yml), "
+     "entonces pytest pasa en los 4 jobs de la matriz (ubuntu/windows x 3.12/3.13). (AC-01)"),
+    ("TOK-007-C02", "PBI-007 - Empaquetado y publicacion", "Security", "Packaging",
+     "TOK-007-C02 - publish.yml usa Trusted Publishing sin token en el repo",
+     "Dado .github/workflows/publish.yml, cuando se revisa, entonces sube a PyPI via "
+     "OIDC (pypa/gh-action-pypi-publish, permissions id-token: write, environment "
+     "pypi) sin ningun secreto ni token de PyPI en el repositorio. (AC-02)"),
+    ("TOK-007-C03", "PBI-007 - Empaquetado y publicacion", "Functional", "CLI",
+     "TOK-007-C03 - tokmd --version responde 1.0.0",
+     "Dado el paquete instalado, cuando se corre tokmd --version, entonces responde "
+     "exactamente 1.0.0, igual que pyproject.toml. (AC-03)"),
+    ("TOK-007-C04", "PBI-007 - Empaquetado y publicacion", "Functional", "Packaging",
+     "TOK-007-C04 - README con ejemplo real y creditos",
+     "Dado README.md y README.es.md, cuando se leen, entonces incluyen un ejemplo de "
+     "salida real (no inventada, corrida de verdad contra un archivo del repo) y "
+     "creditos explicitos a ctok y ttok. (AC-04)"),
 ]
 
 

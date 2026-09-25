@@ -1,0 +1,29 @@
+Evidencia de AC-01 de PBI-007 (CI verde en la matriz ubuntu/windows x 3.12/3.13).
+
+Verificado por Desarrollo, NO por QA, y a proposito: el QA independiente corre
+con --dir sobre un snapshot de `git archive` que no tiene .git ni acceso a la
+API de GitHub, asi que no puede repetir esta verificacion desde adentro. El
+brief de QA recibe este resultado como dato ya verificado, con el numero de run
+y el SHA para que sea auditable. (Misma leccion que el FAILED falso de PBI-006,
+donde el brief le pedia a QA correr `git status` dentro de un export sin .git.)
+
+Fecha de la verificacion: 2026-09-25
+Repo: fferdgelis/tokmd, rama main
+
+$ gh run list --repo fferdgelis/tokmd --workflow CI --branch main --limit 5
+completed  success  Handoff: PBI-006 cerrado, PBI-007 con codigo listo, QA de Kiwi pendiente  CI  main  push  36143105506  28s  2026-09-25T13:46:29Z
+completed  success  PBI-006: QA independiente cerrado (Kimi K3, 4/4 PASSED)                   CI  main  push  36139076179  26s  2026-09-25T13:08:22Z
+completed  success  PBI-007: empaquetado, workflows de CI/PyPI, documentacion y CHANGELOG     CI  main  push  36136759090  31s  2026-09-25T12:45:15Z
+
+$ gh run view 36143105506 --repo fferdgelis/tokmd --json headSha,conclusion,displayTitle,jobs --jq '{headSha,conclusion,displayTitle,jobs:[.jobs[]|{name,conclusion}]}'
+{"conclusion":"success",
+ "displayTitle":"Handoff: PBI-006 cerrado, PBI-007 con codigo listo, QA de Kiwi pendiente",
+ "headSha":"d90fb73c27f572d1d72f0c7706af08ad3114c2e0",
+ "jobs":[{"conclusion":"success","name":"pytest (ubuntu-latest, py3.13)"},
+         {"conclusion":"success","name":"pytest (windows-latest, py3.12)"},
+         {"conclusion":"success","name":"pytest (windows-latest, py3.13)"},
+         {"conclusion":"success","name":"pytest (ubuntu-latest, py3.12)"}]}
+
+Resultado: run mas reciente de CI en main = 36143105506, conclusion success,
+4 de 4 jobs de la matriz en success, sobre el SHA d90fb73 (que es el HEAD de
+main al momento de armar el Test Run de PBI-007).

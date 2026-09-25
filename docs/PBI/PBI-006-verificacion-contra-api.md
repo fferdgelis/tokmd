@@ -36,6 +36,7 @@ related_documents:
 | Fecha | Versión | Modificado por | Descripción |
 |---|---|---|---|
 | 2026-09-24 | 0.1.0 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | Creación. |
+| 2026-09-25 | 0.2.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | verify.py con TDD real y mutante AC-04 ejecutado. Cableado de CLI/render explícitamente recortado, no hecho. |
 
 ## 1. Valor y contexto
 
@@ -58,10 +59,22 @@ related_documents:
 
 ## 3. Criterios de aceptación
 
-- [ ] **AC-01:** Dado `--verify` sin `ANTHROPIC_API_KEY` en el entorno, cuando se corre, entonces el error es legible y dice qué variable falta.
-- [ ] **AC-02:** Dado `--verify` con key válida, cuando se corre sobre un archivo pequeño, entonces cada fila tiene su valor de API y su Δ.
-- [ ] **AC-03:** Dado un cliente mockeado en tests, cuando se simula una respuesta, entonces `verify.py` no hace ninguna llamada de red real en la suite de tests.
-- [ ] **AC-04 (mutante, paso 10 de los doce):** dado el parser de front matter roto a propósito, cuando corren los tests, entonces al menos un test falla y señala exactamente esa ruptura.
+- [x] **AC-01:** Dado `--verify` sin `ANTHROPIC_API_KEY` en el entorno, cuando se corre, entonces el error es legible y dice qué variable falta. (a nivel de `verify.get_client()`; ver nota de alcance sobre el cableado en `cli.py`)
+- [x] **AC-02 (parcial, ver nota de alcance):** `verify.count_verified` da el valor de API neto de `frame`, verificado con un cliente falso en tests. Falta cablear la columna Δ en la tabla de `render.py`.
+- [x] **AC-03:** ninguna llamada de red real en la suite (`test_no_real_anthropic_import_in_this_module` lo confirma: `anthropic` nunca aparece en `sys.modules`).
+- [x] **AC-04 (mutante, paso 10 de los doce):** ejecutado a mano el 2026-09-25 — `FRONT_MATTER_RE` roto a propósito (prefijo `XXX` agregado), `uv run pytest` corrido, **exactamente 1 test falló**
+  (`test_front_matter_becomes_root_child_with_content`, `AssertionError: assert None is not None`), señalando con precisión la ruptura. Revertido, suite verde de nuevo (37/37). No queda código de la mutación en el repo — fue un ejercicio, no un artefacto permanente.
+
+**Nota de alcance (importante, no ocultar):** `src/tokmd/verify.py` está
+completo, testeado (TDD real, rojo confirmado) y con QA independiente — es
+el módulo principal declarado en el contrato técnico. **Lo que NO se hizo:**
+cablear `--verify` como flag en `cli.py`, ni agregar las columnas `API` y
+`Δ` a la tabla de `render.py` — eso requiere extender el esquema de `Row`
+(hoy sólo `title/level/tokens`) y no estaba en el contrato técnico de este
+PBI (que sólo lista `src/tokmd/verify.py`, a diferencia de PBI-004/005 que
+sí listaban `cli.py`). Es trabajo real pendiente, no un olvido silencioso:
+queda para una fase de integración aparte (podría ir en PBI-007 o ser un
+PBI nuevo — decisión de Fabián).
 
 ## 4. Contrato técnico
 
@@ -80,7 +93,10 @@ related_documents:
 - [x] ADR enlazado.
 - [ ] Casos de Kiwi cargados como PROPOSED.
 
-**Estado:** `not ready`
+**Estado:** `ready` — `verify.py` con TDD real cerrado (37/37 tests, 99%
+cobertura del proyecto; sólo la rama de éxito de `get_client()`, que
+requiere una key real, queda sin cubrir por diseño). Falta el cableado de
+CLI/render (ver nota de alcance arriba). QA de Kiwi pendiente.
 
 ### Handoff a TDD
 

@@ -1,0 +1,79 @@
+You are writing an independent pytest test file for a Python module you have
+never seen the implementation of. Write tests strictly from the public
+contract and the acceptance criteria below. Do not guess internal helpers.
+
+**Critical constraint: this test suite must NEVER make a real network call.**
+Every test that needs a "client" must use a fake/mock object you build
+yourself (a small class, or `unittest.mock`), never the real `anthropic`
+package, and never a real `ANTHROPIC_API_KEY`.
+
+## Public contract (this is all you get — no implementation source)
+
+```python
+class MissingApiKeyError(Exception):
+    """ANTHROPIC_API_KEY isn't set in the environment."""
+
+
+def get_client():
+    """Build a real anthropic.Anthropic client.
+
+    Raises MissingApiKeyError with a readable message (never the key
+    itself) if ANTHROPIC_API_KEY isn't set in os.environ.
+    """
+
+
+def measure_frame(client, model: str) -> int:
+    """Raw API token count for a minimal-content message under `model` —
+    calls client.messages.count_tokens(model=model, messages=[{"role": "user", "content": " "}])
+    and returns the response object's .input_tokens attribute.
+    """
+
+
+def count_verified(client, text: str, model: str, frame: int) -> int:
+    """text's real API token count for `model`, net of `frame` — calls
+    client.messages.count_tokens(model=model, messages=[{"role": "user", "content": text}])
+    and returns (response.input_tokens - frame).
+    """
+```
+
+Behavior to test, one test (or more) per item:
+
+- AC-01: with `ANTHROPIC_API_KEY` NOT set in the environment (use
+  `monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)`), calling
+  `get_client()` raises `MissingApiKeyError`, and the exception's message
+  (str(exc)) mentions `"ANTHROPIC_API_KEY"` by name — a caller reading the
+  error should immediately know which variable is missing.
+- AC-02: build a fake client object (a small class or `unittest.mock.Mock`)
+  whose `.messages.count_tokens(model=..., messages=...)` returns an object
+  with an `.input_tokens` attribute set to a fixed number you choose (e.g.
+  100 for a "real content" call, 5 for the "minimal content" call used by
+  `measure_frame`). Call `measure_frame(fake_client, "claude-opus-5")` and
+  assert it returns exactly the minimal-content number (5). Then call
+  `count_verified(fake_client, "some real text", "claude-opus-5", frame=5)`
+  and assert it returns exactly `100 - 5 = 95` (the real-content number
+  minus the frame you passed in).
+- AC-03: this is a suite-wide property, not a single test — confirm no test
+  in this file imports the real `anthropic` package or sets a real
+  `ANTHROPIC_API_KEY`. Write one test,
+  `test_no_real_anthropic_import_in_this_module`, that inspects
+  `sys.modules` and asserts `"anthropic"` is not a key in it after running
+  the other tests in this file (import `sys` for this) — this is a
+  sanity check that nothing in this test file triggered a real import of
+  the SDK.
+- AC-04 is NOT testable from this contract (it's a mutation-testing
+  exercise against `tokmd.sections`, a different module) — do not write a
+  test for it.
+
+## Output format
+
+Return exactly one fenced Python code block, nothing else: no prose before
+or after it. The file must be self-contained pytest. Start with:
+
+```python
+import sys
+
+from tokmd.verify import MissingApiKeyError, count_verified, get_client, measure_frame
+```
+
+Test function names must start with `test_` and should reference the AC id
+they check in a comment, e.g. `# AC-01`.

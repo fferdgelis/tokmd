@@ -44,13 +44,10 @@ try {
             -Body @{ project = $ProjectKey; name = $ProjectKey } -TimeoutSec 30 | Out-Null
         Write-Host "    Proyecto creado."
     } catch {
-        $resp = $_.Exception.Response
-        $detalle = $null
-        if ($resp) {
-            $stream = $resp.GetResponseStream()
-            $reader = New-Object IO.StreamReader($stream)
-            $detalle = $reader.ReadToEnd()
-        }
+        # PowerShell 7: Invoke-RestMethod expone el cuerpo del error en
+        # ErrorDetails.Message (HttpResponseMessage no tiene GetResponseStream,
+        # eso es .NET Framework / Windows PowerShell 5.1).
+        $detalle = $_.ErrorDetails.Message
         if ($detalle -and $detalle -match 'already exists') {
             Write-Host "    Ya existia."
         } else {

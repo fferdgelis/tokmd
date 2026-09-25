@@ -1,0 +1,65 @@
+You are writing an independent pytest test file for a Python module you have
+never seen the implementation of. Write tests strictly from the public
+contract and the acceptance criteria below. Do not guess internal helpers.
+
+## Public contract (this is all you get — no implementation source)
+
+```python
+OPENAI_ENCODINGS: dict[str, str] = {
+    "gpt-5": "o200k_base",
+    "gpt-4o": "o200k_base",
+    "gpt-4": "cl100k_base",
+}
+
+
+def count_openai(text: str, encoding: str) -> int:
+    """Count `text`'s OpenAI tokens for `encoding`.
+
+    `encoding` is a `tiktoken` encoding name ("o200k_base", "cl100k_base",
+    ...), not a model name. It calls `tiktoken.get_encoding(encoding).encode(text)`
+    internally and returns the length. No frame to subtract: this is an
+    exact partition, additive across sections with zero drift.
+    """
+```
+
+`tiktoken` is a real, installed dependency (`tiktoken>=0.14`) — you may call
+`tiktoken.get_encoding(...)` directly in your tests to compute expected
+values, since it is deterministic and exact (unlike ctok's Claude frame,
+there is nothing to approximate here).
+
+Behavior to test, one test (or more) per item:
+
+- AC-01: for a non-trivial piece of text (a few sentences), calling
+  `count_openai(text, "o200k_base")` returns exactly
+  `len(tiktoken.get_encoding("o200k_base").encode(text))` — deterministic
+  and exact, not just "some positive number".
+- AC-02: additivity with zero drift. Split a non-trivial text into at least
+  three parts (e.g. by sentence or paragraph) and verify that
+  `sum(count_openai(part, "o200k_base") for part in parts)` equals
+  `count_openai("".join(parts), "o200k_base")` EXACTLY — unlike Claude,
+  there must be no discrepancy at all.
+- AC-03: `count_openai(text, "cl100k_base")` must reproduce exactly what
+  `tiktoken.encoding_for_model("gpt-4")` would give for that same text (both
+  route to the same `cl100k_base` encoding) — assert the two counts are
+  equal for a non-trivial text.
+- AC-04: calling `count_openai(text, encoding)` with an `encoding` string
+  that `tiktoken.get_encoding` does not recognize (e.g. `"not-a-real-encoding"`)
+  raises an exception (any exception type — do not assert on a specific one).
+- AC-05: `count_openai("", "o200k_base")` returns exactly `0` — unlike
+  Claude's `count_claude`, there is no frame overhead to net out for OpenAI.
+
+## Output format
+
+Return exactly one fenced Python code block, nothing else: no prose before
+or after it. The file must be self-contained pytest, using only inline
+strings (do not reference any external fixture file — you cannot see what
+fixtures exist). Start with:
+
+```python
+import tiktoken
+
+from tokmd.tokenizers import OPENAI_ENCODINGS, count_openai
+```
+
+Test function names must start with `test_` and should reference the AC id
+they check in a comment, e.g. `# AC-01`.

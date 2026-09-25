@@ -1,0 +1,52 @@
+You previously wrote a pytest file against this contract:
+
+```python
+OPENAI_ENCODINGS: dict[str, str] = {
+    "gpt-5": "o200k_base",
+    "gpt-4o": "o200k_base",
+    "gpt-4": "cl100k_base",
+}
+
+
+def count_openai(text: str, encoding: str) -> int:
+    """Count `text`'s OpenAI tokens for `encoding`."""
+```
+
+One of your tests, `test_count_openai_additivity_zero_drift`, asserted that
+splitting text into parts and summing `count_openai` per part equals
+`count_openai` on the joined text. That assertion is WRONG and has been
+measured failing: `tiktoken`'s BPE merges tokens across a split boundary
+(a trailing space token from one part can fuse with the next part's first
+word once the text is joined), so per-part counts do not sum to the whole
+count in general. This is not a bug in `count_openai` — it is a real
+property of BPE tokenization, confirmed by direct measurement:
+
+```python
+import tiktoken
+enc = tiktoken.get_encoding("o200k_base")
+parts = [
+    "The quick brown fox jumps over the lazy dog. ",
+    "Pack my box with five dozen liquor jugs. ",
+    "How vexingly quick daft zebras jump! ",
+    "Sphinx of black quartz, judge my vow.",
+]
+joined = "".join(parts)
+sum(len(enc.encode(p)) for p in parts)  # == 43
+len(enc.encode(joined))                  # == 40
+```
+
+Replace `test_count_openai_additivity_zero_drift` with a corrected test,
+`test_count_openai_additivity_is_not_guaranteed`, that:
+
+- Uses the exact `parts` list and `joined` string above.
+- Asserts `sum(count_openai(p, "o200k_base") for p in parts) == 43` (the
+  measured, golden per-part sum).
+- Asserts `count_openai(joined, "o200k_base") == 40` (the measured, golden
+  whole-text count).
+- Asserts these two values are NOT equal to each other (documenting, not
+  hiding, the drift — this is the point of the test).
+
+Return exactly one fenced Python code block, nothing else — no prose before
+or after it, no import line (the test will replace the old one inside an
+existing file that already imports `tiktoken`, `OPENAI_ENCODINGS`, and
+`count_openai`).

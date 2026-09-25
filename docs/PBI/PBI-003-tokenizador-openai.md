@@ -27,6 +27,7 @@ tags:
   - delivery/pbi
 related_documents:
   - "[[ADR-001-eleccion-de-motores-de-tokenizacion]]"
+  - "[[20260925-tiktoken-deriva]]"
 ---
 
 # PBI-003 — Tokenizador OpenAI (tiktoken)
@@ -36,6 +37,7 @@ related_documents:
 | Fecha | Versión | Modificado por | Descripción |
 |---|---|---|---|
 | 2026-09-24 | 0.1.0 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | Creación. |
+| 2026-09-25 | 0.2.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | Desarrollo y TDD cerrados. Hallazgo: la hipótesis de aditividad exacta era falsa (deriva de borde por fusión de BPE, medida y documentada); AC-02 corregido con confirmación de Fabián. |
 
 ## 1. Valor y contexto
 
@@ -43,7 +45,11 @@ related_documents:
 - **Stakeholder:** Fabián Ferdgelis.
 - **Resultado esperado:** función `count_openai(text, encoding)` aditiva y exacta.
 - **Prioridad:** media (más simple que Claude, sirve de control).
-- **Hipótesis:** `tiktoken` es exacto y aditivo sin marco que restar.
+- **Hipótesis:** `tiktoken` es exacto y sin marco que restar. **Corregido
+  2026-09-25:** exacto sí, aditivo entre secciones NO — tiene su propia deriva de
+  borde por fusión de BPE, medida en
+  `docs/investigation/20260925-tiktoken-deriva.md`. La hipótesis original de
+  aditividad perfecta era falsa.
 
 ### Historia de usuario
 
@@ -58,9 +64,14 @@ related_documents:
 
 ## 3. Criterios de aceptación
 
-- [ ] **AC-01:** Dado un texto, cuando se cuenta con `o200k_base`, entonces el resultado es exacto y determinista.
-- [ ] **AC-02:** Dado el mismo texto partido en secciones, cuando se suman los conteos, entonces la suma es exactamente igual al conteo del texto completo (sin deriva, a diferencia de Claude).
-- [ ] **AC-03:** Dado `--encoding cl100k_base`, cuando se cuenta, entonces el resultado reproduce lo que hubiera dado `ttok -m gpt-4` el 20/09.
+- [x] **AC-01:** Dado un texto, cuando se cuenta con `o200k_base`, entonces el resultado es exacto y determinista.
+- [x] **AC-02 (corregido 2026-09-25, ver `docs/investigation/20260925-tiktoken-deriva.md`):**
+  Dado el mismo texto partido en secciones, cuando se suman los conteos, entonces
+  la deriva contra el conteo del texto completo (si existe) se mide y se puede
+  reportar — no se asume aditividad exacta. Medido: `tiktoken` también tiene
+  deriva de borde (fusión de BPE), no es "sin deriva, a diferencia de Claude"
+  como decía la hipótesis original.
+- [x] **AC-03:** Dado `--encoding cl100k_base`, cuando se cuenta, entonces el resultado reproduce lo que hubiera dado `ttok -m gpt-4` el 20/09 (verificado: ambos rutean al mismo encoding `cl100k_base`).
 
 ## 4. Contrato técnico
 
@@ -79,7 +90,9 @@ related_documents:
 - [x] ADR enlazado.
 - [ ] Casos de Kiwi cargados como PROPOSED.
 
-**Estado:** `not ready`
+**Estado:** `ready` — desarrollo y TDD cerrados (incluido el gap de AC-02). QA de
+Kiwi pendiente de cargar los casos y de que Fabián los confirme (mismo bloqueo de
+PBI-001/002).
 
 ### Handoff a TDD
 

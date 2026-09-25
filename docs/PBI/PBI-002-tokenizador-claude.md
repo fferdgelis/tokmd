@@ -103,9 +103,11 @@ a CONFIRMED todavía.
 - **Resultado de QA independiente:** `pending` — bloqueado hasta que los casos de Kiwi
   340-359 pasen a CONFIRMED (mismo bloqueo que PBI-001, ver dev-log 2026-09-25).
 - **Aceptación del owner:** `pending`.
-- **Canario de Sonar (punto 2 de las correcciones del traspaso):** construido
-  (`tools/sonarqube/Test-QualityGateFailure.ps1`) pero no pudo correr de punta a
-  punta — bloqueado por permisos de la instancia de Sonar, no por el script.
-  Detalle completo en `docs/dev-log/2026-09-24.md`, sección "Canario de Sonar:
-  bloqueado por permisos, no por el script".
+- **Canario de Sonar (punto 2 de las correcciones del traspaso):** construido y
+  **verde** (`tools/sonarqube/Test-QualityGateFailure.ps1`,
+  `baseline=0, scanner=3, gate=ERROR`, evidencia en
+  `C:\IA\Data\sonarqube\reports\tokmd-negative-gate\negative-20260925T072245Z.json`).
+  Bloqueado primero por permisos de la instancia (el `automation-token` no tenía
+  `admin` sobre proyectos nuevos); Fabián se lo otorgó el 2026-09-25 y quedó resuelto.
+  Detalle en `docs/dev-log/2026-09-24.md`.
 - **PBI o Bug siguiente:** PBI-003.

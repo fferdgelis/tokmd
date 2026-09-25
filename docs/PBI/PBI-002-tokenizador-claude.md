@@ -100,8 +100,9 @@ a CONFIRMED todavía.
 
 ## 6. Cierre
 
-- **Resultado de QA independiente:** `pending` — bloqueado hasta que los casos de Kiwi
-  340-359 pasen a CONFIRMED (mismo bloqueo que PBI-001, ver dev-log 2026-09-25).
+- **Resultado de QA independiente:** `PASSED` (3/3). Kimi K3/OpenCode, snapshot
+  commit `a6a7974`, Kiwi Test Run [62]. Evidencia cruda en
+  `docs/handoff/qa/fase-2-pbi002-kimi-k3.txt`.
 - **Aceptación del owner:** `pending`.
 - **Canario de Sonar (punto 2 de las correcciones del traspaso):** construido y
   **verde** (`tools/sonarqube/Test-QualityGateFailure.ps1`,

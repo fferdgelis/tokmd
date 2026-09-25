@@ -1,0 +1,92 @@
+[0m
+> build · moonshotai/kimi-k3
+[0m
+[0m→ [0mRead C:/IA/Projects/Claude-Tokenizer/tools/qa/brief-qa-pbi002.md.prompt
+[0m
+[0m$ [0muv sync
+Using CPython 3.12.13
+Creating virtual environment at: .venv
+Resolved 35 packages in 4ms
+   Building tokmd @ file:///C:/IA/Projects/Claude-Tokenizer/qa/snapshot-pbi002
+warning: Found license classifier `License :: OSI Approved :: Apache Software License`. License classifiers are ambiguous and deprecated per PEP 639; projects should use `project.license` and `project.license-files` instead.
+      Built tokmd @ file:///C:/IA/Projects/Claude-Tokenizer/qa/snapshot-pbi002
+Prepared 1 package in 54ms
+Installed 20 packages in 537ms
+ + certifi==2026.7.22
+ + charset-normalizer==3.5.1
+ + click==8.5.0
+ + colorama==0.4.6
+ + coverage==7.16.1
+ + ctok==1.3.0
+ + idna==3.20
+ + iniconfig==2.3.0
+ + markdown-it-py==4.2.0
+ + mdurl==0.1.2
+ + packaging==26.3
+ + pluggy==1.6.0
+ + pygments==2.21.0
+ + pytest==9.1.1
+ + pytest-cov==7.1.0
+ + regex==2026.9.10
+ + requests==2.34.2
+ + tiktoken==0.14.0
+ + tokmd==1.0.0 (from file:///C:/IA/Projects/Claude-Tokenizer/qa/snapshot-pbi002)
+ + urllib3==2.8.0
+[0m
+[0m$ [0muv run pytest -v
+============================= test session starts =============================
+platform win32 -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- C:\IA\Projects\Claude-Tokenizer\qa\snapshot-pbi002\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\IA\Projects\Claude-Tokenizer\qa\snapshot-pbi002
+configfile: pyproject.toml
+testpaths: tests
+plugins: cov-7.1.0
+collecting ... collected 13 items
+
+tests/test_package.py::test_version_is_exposed PASSED                    [  7%]
+tests/test_sections.py::test_front_matter_becomes_root_child_with_content PASSED [ 15%]
+tests/test_sections.py::test_preamble_text_does_not_leak_into_first_heading PASSED [ 23%]
+tests/test_sections.py::test_heading_level_skip_attaches_to_nearest_ancestor PASSED [ 30%]
+tests/test_sections.py::test_hash_inside_fenced_code_block_is_not_heading PASSED [ 38%]
+tests/test_sections.py::test_empty_string_does_not_raise PASSED          [ 46%]
+tests/test_sections.py::test_no_headings_but_text_creates_preamble PASSED [ 53%]
+tests/test_sections.py::test_two_headings_at_the_same_level_are_siblings PASSED [ 61%]
+tests/test_tokenizers.py::test_empty_string_returns_zero_for_each_family PASSED [ 69%]
+tests/test_tokenizers.py::test_deterministic_same_text_and_family PASSED [ 76%]
+tests/test_tokenizers.py::test_4_7_greater_than_3_0_for_same_text PASSED [ 84%]
+tests/test_tokenizers.py::test_invalid_family_raises_exception PASSED    [ 92%]
+tests/test_tokenizers.py::test_token_count_grows_with_text_length PASSED [100%]
+
+============================= 13 passed in 0.96s ==============================
+[0m
+[0m→ [0mRead docs/investigation/20260924-ctok-marco-y-deriva.md
+```
+============================= test session starts =============================
+platform win32 -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- C:\IA\Projects\Claude-Tokenizer\qa\snapshot-pbi002\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\IA\Projects\Claude-Tokenizer\qa\snapshot-pbi002
+configfile: pyproject.toml
+testpaths: tests
+plugins: cov-7.1.0
+collecting ... collected 13 items
+
+tests/test_package.py::test_version_is_exposed PASSED                    [  7%]
+tests/test_sections.py::test_front_matter_becomes_root_child_with_content PASSED [ 15%]
+tests/test_sections.py::test_preamble_text_does_not_leak_into_first_heading PASSED [ 23%]
+tests/test_sections.py::test_heading_level_skip_attaches_to_nearest_ancestor PASSED [ 30%]
+tests/test_sections.py::test_hash_inside_fenced_code_block_is_not_heading PASSED [ 38%]
+tests/test_sections.py::test_empty_string_does_not_raise PASSED          [ 46%]
+tests/test_sections.py::test_no_headings_but_text_creates_preamble PASSED [ 53%]
+tests/test_sections.py::test_two_headings_at_the_same_level_are_siblings PASSED [ 61%]
+tests/test_tokenizers.py::test_empty_string_returns_zero_for_each_family PASSED [ 69%]
+tests/test_tokenizers.py::test_deterministic_same_text_and_family PASSED [ 76%]
+tests/test_tokenizers.py::test_4_7_greater_than_3_0_for_same_text PASSED [ 84%]
+tests/test_tokenizers.py::test_invalid_family_raises_exception PASSED    [ 92%]
+tests/test_tokenizers.py::test_token_count_grows_with_text_length PASSED [100%]
+
+============================= 13 passed in 0.96s ==============================
+```
+
+VEREDICTO: TOK-002-C01 - Marco medido y documentado por familia | PASSED | pytest test_empty_string_returns_zero_for_each_family PASSED (suite completa: 13 passed in 0.96s)
+VEREDICTO: TOK-002-C02 - Deriva de borde reportada, no oculta | PASSED | docs/investigation/20260924-ctok-marco-y-deriva.md contiene tabla «Deriva de borde» con valores medidos por fixture y familia (17/25/25 en sample.md.fixture) más tabla FRAME por familia (3.0=8, 4.7=12, 4.8=6)
+VEREDICTO: TOK-002-C03 - Las tres familias dan valores distintos y consistentes | PASSED | pytest test_4_7_greater_than_3_0_for_same_text PASSED (suite completa: 13 passed in 0.96s)

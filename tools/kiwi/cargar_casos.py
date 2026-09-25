@@ -60,10 +60,13 @@ CASOS = [
      "TOK-003-C01 - Conteo exacto y determinista con o200k_base",
      "Dado un texto, cuando se cuenta con o200k_base, entonces el resultado es "
      "exacto y determinista entre corridas. (AC-01)"),
-    ("TOK-003-C02", "PBI-003 - Tokenizador OpenAI", "Functional", "Tokenizers",
-     "TOK-003-C02 - Suma de secciones igual al total, sin deriva",
+    ("TOK-003-C02", "PBI-003 - Tokenizador OpenAI", "Edge case", "Tokenizers",
+     "TOK-003-C02 - Deriva de borde medida y reportada, no oculta",
      "Dado el mismo texto partido en secciones, cuando se suman los conteos, "
-     "entonces la suma es exactamente igual al conteo del texto completo. (AC-02)"),
+     "entonces la deriva contra el conteo del texto completo (si existe) se mide "
+     "y se puede reportar - no se asume aditividad exacta. (AC-02, corregido "
+     "2026-09-25: la hipotesis original de aditividad exacta era falsa, ver "
+     "docs/investigation/20260925-tiktoken-deriva.md)"),
     ("TOK-003-C03", "PBI-003 - Tokenizador OpenAI", "Functional", "Tokenizers",
      "TOK-003-C03 - cl100k_base reproduce la medicion del 20/09",
      "Dado --encoding cl100k_base, cuando se cuenta, entonces el resultado "
@@ -107,6 +110,30 @@ CASOS = [
      "TOK-005-C04 - sort tokens ordena de mayor a menor",
      "Dado --sort tokens, cuando se corre, entonces las filas del mismo nivel "
      "se ordenan de mayor a menor cantidad de tokens. (AC-04)"),
+
+    # PBI-006 - Verificacion contra la API
+    ("TOK-006-C01", "PBI-006 - Verificacion contra la API", "Error", "Verify",
+     "TOK-006-C01 - Sin ANTHROPIC_API_KEY, error legible",
+     "Dado ANTHROPIC_API_KEY ausente del entorno, cuando se llama get_client(), "
+     "entonces se levanta MissingApiKeyError y el mensaje nombra la variable "
+     "faltante. (AC-01)"),
+    ("TOK-006-C02", "PBI-006 - Verificacion contra la API", "Functional", "Verify",
+     "TOK-006-C02 - count_verified resta el marco medido",
+     "Dado un cliente falso con conteos fijos, cuando se llama measure_frame y "
+     "count_verified, entonces el resultado es el conteo crudo menos el marco. "
+     "(AC-02, parcial: no incluye el cableado de columnas API/Delta en cli.py, "
+     "ver nota de alcance del PBI)"),
+    ("TOK-006-C03", "PBI-006 - Verificacion contra la API", "Security", "Verify",
+     "TOK-006-C03 - Ninguna llamada de red real en la suite de tests",
+     "Dado que corren todos los tests de verify.py, cuando se inspecciona "
+     "sys.modules, entonces 'anthropic' nunca aparece importado. (AC-03)"),
+    ("TOK-006-C04", "PBI-006 - Verificacion contra la API", "Edge case", "Verify",
+     "TOK-006-C04 - Mutante del parser de front matter, cazado por el test suite",
+     "Dado FRONT_MATTER_RE roto a proposito (paso 10 de los doce), cuando corre "
+     "la suite completa, entonces exactamente un test falla y senala la ruptura "
+     "exacta. Ejercicio ya ejecutado y revertido el 2026-09-25 (ver "
+     "docs/PBI/PBI-006-verificacion-contra-api.md); QA verifica la evidencia "
+     "registrada, no repite la mutacion (mantiene el rol de solo lectura). (AC-04)"),
 ]
 
 

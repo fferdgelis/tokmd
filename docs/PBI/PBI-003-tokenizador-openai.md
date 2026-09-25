@@ -109,6 +109,9 @@ PBI-001/002).
 
 ## 6. Cierre
 
-- **Resultado de QA independiente:** `pending`.
+- **Resultado de QA independiente:** `PASSED` (3/3). Kimi K3/OpenCode, snapshot
+  commit `185b269`, Kiwi Test Run [63]. Evidencia cruda en
+  `docs/handoff/qa/fase-2-pbi003-kimi-k3.txt`. Caso `TOK-003-C02` corregido en
+  Kiwi antes de correr QA (tenía la redacción vieja "sin deriva").
 - **Aceptación del owner:** `pending`.
 - **PBI o Bug siguiente:** PBI-004.

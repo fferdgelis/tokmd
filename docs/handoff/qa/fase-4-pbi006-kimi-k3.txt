@@ -1,0 +1,115 @@
+[0m
+> build · moonshotai/kimi-k3
+[0m
+[0m→ [0mRead C:/IA/Projects/Claude-Tokenizer/tools/qa/brief-qa-pbi006.md.prompt
+[0m
+[0m$ [0muv sync
+Resolved 35 packages in 1ms
+Checked 20 packages in 6ms
+[0m
+[0m$ [0muv run pytest -v
+============================= test session starts =============================
+platform win32 -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- C:\IA\Projects\Claude-Tokenizer\qa\snapshot-pbi006\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\IA\Projects\Claude-Tokenizer\qa\snapshot-pbi006
+configfile: pyproject.toml
+testpaths: tests
+plugins: cov-7.1.0
+collecting ... collected 37 items
+
+tests/test_cli.py::test_claude_code_platform_succeeds PASSED             [  2%]
+tests/test_cli.py::test_codex_platform_succeeds PASSED                   [  5%]
+tests/test_cli.py::test_opencode_platform_without_model_fails_cleanly PASSED [  8%]
+tests/test_cli.py::test_opencode_platform_with_claude_model_succeeds PASSED [ 10%]
+tests/test_cli.py::test_antigravity_platform_fails_with_planned_message PASSED [ 13%]
+tests/test_cli.py::test_tokenizer_override_wins_over_antigravity PASSED  [ 16%]
+tests/test_cli.py::test_tokenizer_override_openai_succeeds PASSED        [ 18%]
+tests/test_cli.py::test_opencode_platform_with_gpt_model_succeeds PASSED [ 21%]
+tests/test_cli.py::test_opencode_platform_with_unrecognized_model_fails_cleanly PASSED [ 24%]
+tests/test_package.py::test_version_is_exposed PASSED                    [ 27%]
+tests/test_render.py::test_json_output_parses_and_has_accumulated_tokens PASSED [ 29%]
+tests/test_render.py::test_table_is_default_and_indents_deeper_levels_more PASSED [ 32%]
+tests/test_render.py::test_depth_cutoff_rolls_up_tokens_into_visible_parent PASSED [ 35%]
+tests/test_render.py::test_sort_tokens_reorders_siblings_descending PASSED [ 37%]
+tests/test_render.py::test_csv_output_has_header_and_rows PASSED         [ 40%]
+tests/test_render.py::test_md_output_is_indented_bullet_list PASSED      [ 43%]
+tests/test_sections.py::test_front_matter_becomes_root_child_with_content PASSED [ 45%]
+tests/test_sections.py::test_preamble_text_does_not_leak_into_first_heading PASSED [ 48%]
+tests/test_sections.py::test_heading_level_skip_attaches_to_nearest_ancestor PASSED [ 51%]
+tests/test_sections.py::test_hash_inside_fenced_code_block_is_not_heading PASSED [ 54%]
+tests/test_sections.py::test_empty_string_does_not_raise PASSED          [ 56%]
+tests/test_sections.py::test_no_headings_but_text_creates_preamble PASSED [ 59%]
+tests/test_sections.py::test_two_headings_at_the_same_level_are_siblings PASSED [ 62%]
+tests/test_tokenizers.py::test_empty_string_returns_zero_for_each_family PASSED [ 64%]
+tests/test_tokenizers.py::test_deterministic_same_text_and_family PASSED [ 67%]
+tests/test_tokenizers.py::test_4_7_greater_than_3_0_for_same_text PASSED [ 70%]
+tests/test_tokenizers.py::test_invalid_family_raises_exception PASSED    [ 72%]
+tests/test_tokenizers.py::test_token_count_grows_with_text_length PASSED [ 75%]
+tests/test_tokenizers_openai.py::test_count_openai_o200k_matches_tiktoken_exactly PASSED [ 78%]
+tests/test_tokenizers_openai.py::test_count_openai_additivity_is_not_guaranteed PASSED [ 81%]
+tests/test_tokenizers_openai.py::test_count_openai_cl100k_matches_encoding_for_model_gpt4 PASSED [ 83%]
+tests/test_tokenizers_openai.py::test_count_openai_invalid_encoding_raises PASSED [ 86%]
+tests/test_tokenizers_openai.py::test_count_openai_empty_text_returns_zero PASSED [ 89%]
+tests/test_verify.py::test_get_client_raises_missing_api_key_error PASSED [ 91%]
+tests/test_verify.py::test_measure_frame_returns_minimal_content_tokens PASSED [ 94%]
+tests/test_verify.py::test_count_verified_returns_real_tokens_minus_frame PASSED [ 97%]
+tests/test_verify.py::test_no_real_anthropic_import_in_this_module PASSED [100%]
+
+============================= 37 passed in 1.71s ==============================
+[0m
+[0m→ [0mRead docs/PBI/PBI-006-verificacion-contra-api.md
+```
+============================= test session starts =============================
+platform win32 -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- C:\IA\Projects\Claude-Tokenizer\qa\snapshot-pbi006\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\IA\Projects\Claude-Tokenizer\qa\snapshot-pbi006
+configfile: pyproject.toml
+testpaths: tests
+plugins: cov-7.1.0
+collecting ... collected 37 items
+
+tests/test_cli.py::test_claude_code_platform_succeeds PASSED             [  2%]
+tests/test_cli.py::test_codex_platform_succeeds PASSED                   [  5%]
+tests/test_cli.py::test_opencode_platform_without_model_fails_cleanly PASSED [  8%]
+tests/test_cli.py::test_opencode_platform_with_claude_model_succeeds PASSED [ 10%]
+tests/test_cli.py::test_antigravity_platform_fails_with_planned_message PASSED [ 13%]
+tests/test_cli.py::test_tokenizer_override_wins_over_antigravity PASSED  [ 16%]
+tests/test_cli.py::test_tokenizer_override_openai_succeeds PASSED        [ 18%]
+tests/test_cli.py::test_opencode_platform_with_gpt_model_succeeds PASSED [ 21%]
+tests/test_cli.py::test_opencode_platform_with_unrecognized_model_fails_cleanly PASSED [ 24%]
+tests/test_package.py::test_version_is_exposed PASSED                    [ 27%]
+tests/test_render.py::test_json_output_parses_and_has_accumulated_tokens PASSED [ 29%]
+tests/test_render.py::test_table_is_default_and_indents_deeper_levels_more PASSED [ 32%]
+tests/test_render.py::test_depth_cutoff_rolls_up_tokens_into_visible_parent PASSED [ 35%]
+tests/test_render.py::test_sort_tokens_reorders_siblings_descending PASSED [ 37%]
+tests/test_render.py::test_csv_output_has_header_and_rows PASSED         [ 40%]
+tests/test_render.py::test_md_output_is_indented_bullet_list PASSED      [ 43%]
+tests/test_sections.py::test_front_matter_becomes_root_child_with_content PASSED [ 45%]
+tests/test_sections.py::test_preamble_text_does_not_leak_into_first_heading PASSED [ 48%]
+tests/test_sections.py::test_heading_level_skip_attaches_to_nearest_ancestor PASSED [ 51%]
+tests/test_sections.py::test_hash_inside_fenced_code_block_is_not_heading PASSED [ 54%]
+tests/test_sections.py::test_empty_string_does_not_raise PASSED          [ 56%]
+tests/test_sections.py::test_no_headings_but_text_creates_preamble PASSED [ 59%]
+tests/test_sections.py::test_two_headings_at_the_same_level_are_siblings PASSED [ 62%]
+tests/test_tokenizers.py::test_empty_string_returns_zero_for_each_family PASSED [ 64%]
+tests/test_tokenizers.py::test_deterministic_same_text_and_family PASSED [ 67%]
+tests/test_tokenizers.py::test_4_7_greater_than_3_0_for_same_text PASSED [ 70%]
+tests/test_tokenizers.py::test_invalid_family_raises_exception PASSED    [ 72%]
+tests/test_tokenizers.py::test_token_count_grows_with_text_length PASSED [ 75%]
+tests/test_tokenizers_openai.py::test_count_openai_o200k_matches_tiktoken_exactly PASSED [ 78%]
+tests/test_tokenizers_openai.py::test_count_openai_additivity_is_not_guaranteed PASSED [ 81%]
+tests/test_tokenizers_openai.py::test_count_openai_cl100k_matches_encoding_for_model_gpt4 PASSED [ 83%]
+tests/test_tokenizers_openai.py::test_count_openai_invalid_encoding_raises PASSED [ 86%]
+tests/test_tokenizers_openai.py::test_count_openai_empty_text_returns_zero PASSED [ 89%]
+tests/test_verify.py::test_get_client_raises_missing_api_key_error PASSED [ 91%]
+tests/test_verify.py::test_measure_frame_returns_minimal_content_tokens PASSED [ 94%]
+tests/test_verify.py::test_count_verified_returns_real_tokens_minus_frame PASSED [ 97%]
+tests/test_verify.py::test_no_real_anthropic_import_in_this_module PASSED [100%]
+
+============================= 37 passed in 1.71s ==============================
+```
+
+VEREDICTO: TOK-006-C01 - Sin ANTHROPIC_API_KEY, error legible | PASSED | tests/test_verify.py::test_get_client_raises_missing_api_key_error PASSED [91%]
+VEREDICTO: TOK-006-C02 - count_verified resta el marco medido | PASSED | tests/test_verify.py::test_measure_frame_returns_minimal_content_tokens PASSED [94%] y test_count_verified_returns_real_tokens_minus_frame PASSED [97%]
+VEREDICTO: TOK-006-C03 - Ninguna llamada de red real en la suite de tests | PASSED | tests/test_verify.py::test_no_real_anthropic_import_in_this_module PASSED [100%]
+VEREDICTO: TOK-006-C04 - Mutante del parser de front matter, cazado por el test suite | PASSED | test_front_matter_becomes_root_child_with_content PASSED [45%] en la corrida completa (37/37), y docs/PBI/PBI-006-verificacion-contra-api.md AC-04 documenta el mutante: FRONT_MATTER_RE roto con prefijo XXX, exactamente 1 test falló (AssertionError: assert None is not None), revertido y suite verde

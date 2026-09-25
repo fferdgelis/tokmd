@@ -113,6 +113,11 @@ CLI/render (ver nota de alcance arriba). QA de Kiwi pendiente.
 
 ## 6. Cierre
 
-- **Resultado de QA independiente:** `pending`.
+- **Resultado de QA independiente:** `PASSED` (4/4). Kimi K3/OpenCode, snapshot
+  commit `65c6844`, Kiwi Test Run [66]. Evidencia cruda en
+  `docs/handoff/qa/fase-4-pbi006-kimi-k3.txt`. Primera vuelta dio un FAILED
+  falso en AC-04 por un chequeo mal diseñado en el brief (`git status`
+  dentro de un snapshot sin `.git`) — corregido y re-corrido, no era un
+  defecto del código.
 - **Aceptación del owner:** `pending`.
 - **PBI o Bug siguiente:** PBI-007.

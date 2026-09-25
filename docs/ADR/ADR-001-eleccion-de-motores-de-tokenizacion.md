@@ -5,7 +5,7 @@ aliases:
 project: tokmd
 document_type: architecture-decision-record
 adr_id: ADR-001
-status: proposed
+status: accepted
 decision_date: 2026-09-24
 created: 2026-09-24
 updated: 2026-09-24
@@ -39,10 +39,11 @@ related_documents:
 | Fecha | Versión | Modificado por | Descripción |
 |---|---|---|---|
 | 2026-09-24 | 0.1.0 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | Propuesta inicial, pendiente de aceptación de Fabián. |
+| 2026-09-25 | 0.2.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | Aceptado por Fabián tal cual estaba escrito. |
 
 ## Estado
 
-`proposed`. Pendiente de aceptación de Fabián Ferdgelis.
+`accepted`. Aceptado por Fabián Ferdgelis el 2026-09-25, tal cual estaba escrito.
 
 ## Contexto
 

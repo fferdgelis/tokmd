@@ -1,0 +1,61 @@
+You are writing an independent pytest test file for a Python module you have
+never seen the implementation of. Write tests strictly from the public
+contract and the acceptance criteria below. Do not guess internal helpers.
+
+## Public contract (this is all you get — no implementation source)
+
+```python
+FRAME: dict[str, int] = {
+    "3.0": 8,
+    "4.7": 12,
+    "4.8": 6,
+}
+
+
+def count_claude(text: str, family: str) -> int:
+    """Count `text`'s Claude tokens for `family`, net of that family's FRAME.
+
+    `family` must be one of `FRAME`'s keys ("3.0", "4.7", "4.8"), matching
+    `ctok.token_count`'s `version` parameter directly. It calls
+    `ctok.token_count(text, family)` internally and subtracts `FRAME[family]`
+    from the result.
+    """
+```
+
+These golden `FRAME` values were measured directly with
+`ctok.token_count("", version)` on ctok 1.3.0 and are frozen — do not
+recompute them, use them as expected values.
+
+Behavior to test, one test (or more) per item:
+
+- AC-01: for each of the three families ("3.0", "4.7", "4.8"), calling
+  `count_claude("", family)` returns exactly `0` (an empty string's raw
+  token count equals that family's FRAME by construction).
+- AC-02: `count_claude` is deterministic — calling it twice with the same
+  text and family returns the same value both times.
+- AC-03: for the same non-empty text, `count_claude(text, "4.7")` must be
+  strictly greater than `count_claude(text, "3.0")` — Claude 4.7+ tokenizes
+  more finely, so it produces more tokens for the same content (~30% more,
+  per Anthropic's own documentation). Use a text of at least a few sentences
+  so the difference is not lost to rounding.
+- AC-04: calling `count_claude(text, family)` with a `family` string that is
+  not a key of `FRAME` (e.g. `"5.0"`, `"claude-3"`, `""`) raises an
+  exception (any exception type — do not assert on a specific one).
+- AC-05: for a short non-empty text, `count_claude(text, "3.0")` returns a
+  positive integer strictly less than `count_claude(text, "3.0")` computed
+  on that same text repeated 5 times back to back (i.e. token count grows
+  with text length, sanity-checking that the function is not a constant).
+
+## Output format
+
+Return exactly one fenced Python code block, nothing else: no prose before
+or after it. The file must be self-contained pytest, using only inline
+strings (do not reference any external fixture file — you cannot see what
+fixtures exist). Start with:
+
+```python
+from tokmd.tokenizers import FRAME, count_claude
+```
+
+Test function names must start with `test_` and should reference the AC id
+they check in a comment, e.g. `# AC-01`.

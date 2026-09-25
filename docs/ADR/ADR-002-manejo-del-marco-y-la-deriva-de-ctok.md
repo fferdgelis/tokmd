@@ -5,7 +5,7 @@ aliases:
 project: tokmd
 document_type: architecture-decision-record
 adr_id: ADR-002
-status: proposed
+status: accepted
 decision_date: 2026-09-24
 created: 2026-09-24
 updated: 2026-09-24
@@ -38,10 +38,15 @@ related_documents:
 | Fecha | Versión | Modificado por | Descripción |
 |---|---|---|---|
 | 2026-09-24 | 0.1.0 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | Propuesta inicial, pendiente de medición en PBI-002. |
+| 2026-09-25 | 0.2.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | Aceptado por Fabián. Medición real de PBI-002 cerrada. |
 
 ## Estado
 
-`proposed`. Se cierra con la medición real del PBI-002 (`docs/investigation/20260924-ctok-marco-y-deriva.md`, a completar en esa fase).
+`accepted`. Aceptado por Fabián Ferdgelis el 2026-09-25. Cerrado con la medición real
+de PBI-002 en `docs/investigation/20260924-ctok-marco-y-deriva.md`: la deriva medida
+es mayor a la esperada por bordes de palabra (confirmada estructural, escala con
+`(N-1) × FRAME` para un documento de N filas), pero la opción 2 sigue siendo la
+decisión — se reporta, como ya preveía este ADR, no se oculta.
 
 ## Contexto
 

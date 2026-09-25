@@ -37,6 +37,7 @@ related_documents:
 | Fecha | Versión | Modificado por | Descripción |
 |---|---|---|---|
 | 2026-09-24 | 0.1.0 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | Creación. |
+| 2026-09-25 | 0.2.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | Desarrollo y TDD real cerrados (ADR-006 aplicado de punta a punta). Canario de Sonar bloqueado por permisos de la instancia. QA de Kiwi pendiente. |
 
 ## 1. Valor y contexto
 
@@ -59,9 +60,9 @@ related_documents:
 
 ## 3. Criterios de aceptación
 
-- [ ] **AC-01:** Dado un texto vacío, cuando se mide `FRAME` por familia, entonces el valor queda documentado en `docs/investigation/20260924-ctok-marco-y-deriva.md`.
-- [ ] **AC-02:** Dado el archivo completo y la suma de sus secciones, cuando se comparan, entonces la deriva (si existe) se reporta explícitamente, no se oculta.
-- [ ] **AC-03:** Dado `--claude-family 3|4.7|4.8`, cuando se cuenta el mismo texto, entonces los tres valores son distintos y consistentes con lo documentado por Anthropic (~30 % más desde 4.7).
+- [x] **AC-01:** Dado un texto vacío, cuando se mide `FRAME` por familia, entonces el valor queda documentado en `docs/investigation/20260924-ctok-marco-y-deriva.md`.
+- [x] **AC-02:** Dado el archivo completo y la suma de sus secciones, cuando se comparan, entonces la deriva (si existe) se reporta explícitamente, no se oculta.
+- [x] **AC-03:** Dado `--claude-family 3|4.7|4.8`, cuando se cuenta el mismo texto, entonces los tres valores son distintos y consistentes con lo documentado por Anthropic (~30 % más desde 4.7).
 
 ## 4. Contrato técnico
 
@@ -78,9 +79,11 @@ related_documents:
 - [x] Valor, alcance y fuera de alcance claros.
 - [x] Criterios observables y testeables.
 - [x] ADR enlazado.
-- [ ] Casos de Kiwi cargados como PROPOSED.
+- [x] Casos de Kiwi cargados como PROPOSED (ids 340-359, junto con PBI-001 a 005).
 
-**Estado:** `not ready`
+**Estado:** `ready` — desarrollo y TDD cerrados; QA de Kiwi bloqueada por el mismo
+pendiente ya anotado en PBI-001: los casos siguen PROPOSED, Fabián no los promovió
+a CONFIRMED todavía.
 
 ### Handoff a TDD
 
@@ -97,6 +100,12 @@ related_documents:
 
 ## 6. Cierre
 
-- **Resultado de QA independiente:** `pending`.
+- **Resultado de QA independiente:** `pending` — bloqueado hasta que los casos de Kiwi
+  340-359 pasen a CONFIRMED (mismo bloqueo que PBI-001, ver dev-log 2026-09-25).
 - **Aceptación del owner:** `pending`.
+- **Canario de Sonar (punto 2 de las correcciones del traspaso):** construido
+  (`tools/sonarqube/Test-QualityGateFailure.ps1`) pero no pudo correr de punta a
+  punta — bloqueado por permisos de la instancia de Sonar, no por el script.
+  Detalle completo en `docs/dev-log/2026-09-24.md`, sección "Canario de Sonar:
+  bloqueado por permisos, no por el script".
 - **PBI o Bug siguiente:** PBI-003.

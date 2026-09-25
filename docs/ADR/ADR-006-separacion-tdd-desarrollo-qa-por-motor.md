@@ -5,7 +5,7 @@ aliases:
 project: tokmd
 document_type: architecture-decision-record
 adr_id: ADR-006
-status: proposed
+status: accepted
 decision_date: 2026-09-25
 created: 2026-09-25
 updated: 2026-09-25
@@ -40,10 +40,11 @@ related_documents:
 | Fecha | Versión | Modificado por | Descripción |
 |---|---|---|---|
 | 2026-09-25 | 0.1.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | Creación, a pedido de Fabián: los tests de PBI-001 los escribió la misma sesión que el código, sin control cruzado. |
+| 2026-09-25 | 0.2.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | Aceptado por Fabián. Aplicado por primera vez de punta a punta en PBI-002 (rojo real confirmado antes de implementar). |
 
 ## Estado
 
-`proposed`.
+`accepted`. Aceptado por Fabián Ferdgelis el 2026-09-25, tal cual estaba escrito.
 
 ## Contexto
 

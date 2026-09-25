@@ -27,7 +27,10 @@ class FakeMessages:
     def count_tokens(self, model=None, messages=None):
         self.calls.append((model, messages))
         content = messages[0]["content"]
-        if content == " ":
+        # BUG-001: measure_frame's minimal content changed from " " to "."
+        # (a lone space is rejected by the real API; this fake never
+        # validated it, which is exactly how the bug went undetected here).
+        if content == ".":
             return FakeCountTokensResponse(5)
         return FakeCountTokensResponse(100)
 

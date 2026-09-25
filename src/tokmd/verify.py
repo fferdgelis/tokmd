@@ -51,8 +51,17 @@ def get_client() -> CountTokensClient:
 def measure_frame(client: CountTokensClient, model: str) -> int:
     """Raw API token count for a minimal-content message under `model` —
     the frame to subtract from every section so `count_verified`'s numbers
-    line up with `count_claude`'s netted-out ones."""
-    return _raw_count(client, " ", model)
+    line up with `count_claude`'s netted-out ones.
+
+    BUG-001: the original minimal content was a single space (" "), which
+    passed every test (all of them use a fake client that never validates
+    content) but was never exercised against the real API until PBI-008's
+    smoke test — the real `count_tokens` endpoint rejects it with
+    `400 invalid_request_error: text content blocks must contain
+    non-whitespace text`. "." is the smallest content that both endpoints
+    (real and fake) accept.
+    """
+    return _raw_count(client, ".", model)
 
 
 def count_verified(client: CountTokensClient, text: str, model: str, frame: int) -> int:

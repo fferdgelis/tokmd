@@ -121,3 +121,10 @@ CLI/render (ver nota de alcance arriba). QA de Kiwi pendiente.
   defecto del código.
 - **Aceptación del owner:** `pending`.
 - **PBI o Bug siguiente:** PBI-007.
+- **Post-cierre (2026-09-25, durante PBI-008):** [[BUG-001-espacio-en-blanco-rechazado-por-count-tokens]] —
+  `measure_frame` usaba `" "` como contenido mínimo, y la API real de
+  Anthropic lo rechaza (`400 invalid_request_error`). El veredicto PASSED de
+  arriba sigue siendo correcto para lo que probó (la aritmética de
+  `count_verified`, con un cliente falso, por diseño de ADR-006), pero
+  `--verify` nunca se había ejecutado contra la API real hasta PBI-008 —
+  ahí apareció. Corregido a `"."` y verificado con una llamada real.

@@ -1,0 +1,137 @@
+You are writing an independent pytest test file for a CLI you have never seen
+the implementation of. Write tests strictly from the public contract and the
+behavior described below. Do not guess internal helpers.
+
+**Critical constraint: this test suite must NEVER make a real network call
+and must NEVER require a real `ANTHROPIC_API_KEY`.** Every test that exercises
+`--verify` must monkeypatch `tokmd.cli.get_client` (and, if it needs the frame
+or the per-call count, `tokmd.cli.measure_frame` / `tokmd.cli.count_verified`)
+with a fake — never the real `anthropic` package.
+
+## Public contract (this is all you get — no implementation source)
+
+The CLI is invoked with `click.testing.CliRunner` against `tokmd.cli.main`,
+exactly like this existing test (already in the suite, already passing —
+shown so you know the invocation style, do not repeat it):
+
+```python
+from click.testing import CliRunner
+from tokmd.cli import main
+
+def test_claude_code_platform_succeeds(tmp_path):
+    file = tmp_path / "sample.txt"
+    file.write_text("Hello world, this is a test file with some text content.")
+    runner = CliRunner()
+    result = runner.invoke(main, [str(file), "--platform", "claude-code"])
+    assert result.exit_code == 0
+    assert result.output.strip() != ""
+```
+
+A new flag, `--verify` (boolean, no value), is being added. Its documented
+behavior:
+
+- `--verify` only works when the resolved tokenizer is Claude — i.e.
+  `--platform claude-code` (the default resolution), or `--tokenizer claude`
+  explicitly, or `--platform opencode` with a `--model` starting with
+  `"claude"`. If the resolved tokenizer is OpenAI (e.g. `--platform codex`,
+  or `--tokenizer openai`, or opencode with a `gpt*` model) and `--verify` is
+  also passed, the command fails cleanly: non-zero exit code, no Python
+  traceback in the output (`"Traceback" not in result.output`).
+- When `--verify` is valid (Claude tokenizer) and there IS a real
+  `ANTHROPIC_API_KEY` and a working client, the module-level function
+  `tokmd.cli.get_client()` is called to build a client, then
+  `tokmd.cli.measure_frame(client, model)` is called once to get a "frame"
+  int, then for each section's text, `tokmd.cli.count_verified(client, text,
+  model, frame)` is called to get that section's real token count — `model`
+  defaults to `"claude-sonnet-5"` if `--model` was not passed, or to
+  `--model`'s value if it was passed. The command still exits 0 and prints a
+  non-empty table (same as the non-verify path), because it goes through the
+  same rendering as always — you cannot inspect the exact numbers in the
+  table, but you CAN spy on how many times your fake `count_verified` /
+  `measure_frame` were called, and with what `model` argument.
+- If `tokmd.cli.get_client()` raises `tokmd.cli.MissingApiKeyError` (this
+  exception class is real and importable from `tokmd.cli` — it's re-exported
+  there from `tokmd.verify`), the command fails cleanly: non-zero exit code,
+  no Python traceback in the output, and the printed error message contains
+  the string `"ANTHROPIC_API_KEY"`.
+- `--verify` combined with `--platform claude-code` and no `--model` must
+  call `measure_frame`/`count_verified` with `model="claude-sonnet-5"`
+  (the default).
+- `--verify` combined with `--platform opencode --model claude-opus-5` must
+  call `measure_frame`/`count_verified` with `model="claude-opus-5"` (the
+  `--model` value, not the default).
+- Without `--verify` at all, behavior is completely unchanged from before
+  (existing tests already cover this — you do not need to re-test it, but
+  your new tests must not break it: don't monkeypatch anything globally
+  without undoing it, `monkeypatch` fixture already handles that for you).
+
+## Test cases to write, one test (or more) per item
+
+- **AC-01**: `--platform codex --verify` fails cleanly (non-zero exit, no
+  Traceback in output). Do NOT monkeypatch `get_client` for this one — it
+  must fail before ever trying to build a client.
+- **AC-02**: `--platform claude-code --verify`, with `tokmd.cli.get_client`
+  monkeypatched to raise `tokmd.cli.MissingApiKeyError("ANTHROPIC_API_KEY is
+  not set. ...")`, fails cleanly (non-zero exit, no Traceback), and
+  `"ANTHROPIC_API_KEY"` appears in `result.output`.
+- **AC-03**: `--platform claude-code --verify`, with `tokmd.cli.get_client`
+  monkeypatched to return a sentinel fake client object (any object, e.g.
+  `object()` or a simple dummy class instance — it's never actually used by
+  the fakes below, just passed through), `tokmd.cli.measure_frame`
+  monkeypatched to a fake that records its call args and returns a fixed
+  int (e.g. 5), and `tokmd.cli.count_verified` monkeypatched to a fake that
+  records its call args and returns a fixed int (e.g. 50): the command
+  exits 0, `measure_frame` was called exactly once, and its `model` argument
+  was `"claude-sonnet-5"` (the default, since no `--model` was passed).
+- **AC-04**: same monkeypatching as AC-03, but invoke with
+  `--platform opencode --model claude-opus-5 --verify` instead: the command
+  exits 0, and `measure_frame` was called with `model="claude-opus-5"`.
+- **AC-05**: same monkeypatching as AC-03 (`--platform claude-code
+  --verify`, no `--model`): assert that `count_verified` was called at
+  least once, and every recorded call's `model` argument equals
+  `"claude-sonnet-5"` (not just the first call — a multi-section input
+  should use the same model for every section).
+
+For the fakes in AC-03/04/05, a simple pattern like this is enough — feel
+free to write it your own way as long as it records call arguments:
+
+```python
+class _Recorder:
+    def __init__(self, return_value):
+        self.calls = []
+        self.return_value = return_value
+
+    def __call__(self, *args, **kwargs):
+        self.calls.append((args, kwargs))
+        return self.return_value
+```
+
+Use `monkeypatch.setattr("tokmd.cli.get_client", lambda: object())`,
+`monkeypatch.setattr("tokmd.cli.measure_frame", recorder_instance)`,
+`monkeypatch.setattr("tokmd.cli.count_verified", other_recorder_instance)`
+as needed per test. Remember `measure_frame`'s call signature is
+`measure_frame(client, model)` (positional or keyword, your choice when
+asserting — inspect whichever `Recorder.calls` actually recorded) and
+`count_verified`'s is `count_verified(client, text, model, frame)`.
+
+Use a `tmp_path` file with a couple of Markdown headings and some real text
+under each (not empty), so a document with more than one section actually
+exists for AC-05 to check "every call", e.g.:
+
+```python
+file.write_text("# Title\n\nSome text.\n\n## Sub\n\nMore text here.\n")
+```
+
+## Output format
+
+Return exactly one fenced Python code block, nothing else: no prose before
+or after it. The file must be self-contained pytest. Start with:
+
+```python
+from click.testing import CliRunner
+
+from tokmd.cli import main
+```
+
+Test function names must start with `test_` and should reference the AC id
+they check in a comment, e.g. `# AC-01`.

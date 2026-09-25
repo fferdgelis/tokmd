@@ -177,7 +177,7 @@ def main():
             "summary": summary,
             "priority": 2,
             "text": texto,
-            "is_automated": False,
+            "is_automated": True,
         }
 
         existentes = rpc.TestCase.filter({"summary": summary, "category": categoria["id"]})

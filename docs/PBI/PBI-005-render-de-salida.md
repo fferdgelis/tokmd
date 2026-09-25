@@ -100,6 +100,8 @@ QA de Kiwi pendiente.
 
 ## 6. Cierre
 
-- **Resultado de QA independiente:** `pending`.
+- **Resultado de QA independiente:** `PASSED` (4/4). Kimi K3/OpenCode, snapshot
+  commit `e80afc1`, Kiwi Test Run [65]. Evidencia cruda en
+  `docs/handoff/qa/fase-3-pbi005-kimi-k3.txt`.
 - **Aceptación del owner:** `pending`.
 - **PBI o Bug siguiente:** PBI-006.

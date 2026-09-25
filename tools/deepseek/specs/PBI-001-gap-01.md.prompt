@@ -1,0 +1,35 @@
+You previously wrote a pytest file against this contract:
+
+```python
+from dataclasses import dataclass, field
+
+@dataclass
+class Section:
+    title: str
+    level: int
+    own_text: str
+    children: list["Section"] = field(default_factory=list)
+
+def parse_sections(text: str) -> Section:
+    """Parse a full Markdown document string into a Section tree."""
+```
+
+Coverage analysis on the (hidden to you) implementation shows one branch your
+tests never exercise: the case where a heading closes one or more previously
+open headings of the same or deeper level, i.e. two headings at the SAME
+level must become siblings under the document root (or under the same
+parent), not nested one under the other.
+
+Write exactly one additional pytest test, self-contained (inline Markdown
+string, no fixtures), named `test_two_headings_at_the_same_level_are_siblings`,
+that:
+
+- Parses a document with two top-level `#` headings, "One" then "Two", each
+  with distinct body text.
+- Asserts both end up as direct children of the document root (both appear
+  in `root.children`, and neither is a child of the other).
+- Asserts "One"'s own_text does NOT contain "Two"'s body text and vice versa.
+
+Return exactly one fenced Python code block, nothing else — no prose before
+or after it, no import line (the test will be appended to an existing file
+that already imports `parse_sections`).

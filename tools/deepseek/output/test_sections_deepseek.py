@@ -1,13 +1,3 @@
-"""Tests for tokmd.sections — the section tree parser (PBI-001).
-
-Autoría (ADR-006): escrito por DeepSeek (deepseek-v4-pro), rol TDD, a partir
-de tools/deepseek/specs/PBI-001.md.prompt — el contrato público de
-Section/parse_sections y los AC-01..05 del PBI, SIN ver sections.py. Corrida
-real: 25/09/2026, costo USD 0,0008, thinking deshabilitado (ver dev-log:
-con thinking habilitado el razonamiento agotaba el presupuesto de tokens
-antes de terminar el archivo). Desarrollo (Claude) verificó que corre en
-verde contra la implementación y no lo editó.
-"""
 from tokmd.sections import Section, parse_sections
 
 
@@ -133,25 +123,3 @@ def test_no_headings_but_text_creates_preamble():
     assert "Just some text." in preamble.own_text
     assert "No headings here." in preamble.own_text
     assert preamble in root.children
-
-
-# Hueco de cobertura encontrado por Desarrollo (98% tras la primera tanda:
-# "stack.pop()" nunca se ejercitaba), pedido a DeepSeek como incremento
-# puntual — no lo escribió Desarrollo (ADR-006).
-def test_two_headings_at_the_same_level_are_siblings():
-    text = "# One\n\nBody of one.\n\n# Two\n\nBody of two.\n"
-    root = parse_sections(text)
-
-    assert len(root.children) == 2
-    one, two = root.children
-
-    assert one.title == "One"
-    assert two.title == "Two"
-
-    assert one in root.children
-    assert two in root.children
-    assert one not in two.children
-    assert two not in one.children
-
-    assert "Body of two." not in one.own_text
-    assert "Body of one." not in two.own_text

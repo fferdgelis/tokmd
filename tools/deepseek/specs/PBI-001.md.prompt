@@ -1,0 +1,59 @@
+You are writing an independent pytest test file for a Python module you have
+never seen the implementation of. Write tests strictly from the public
+contract and the acceptance criteria below. Do not guess internal helpers.
+
+## Public contract (this is all you get — no implementation source)
+
+```python
+from dataclasses import dataclass, field
+
+@dataclass
+class Section:
+    title: str
+    level: int          # 0 for the document root and for the special
+                         # "(front matter)" / "(preamble)" rows; 1-6 for a
+                         # real Markdown heading (H1-H6).
+    own_text: str        # this section's own content, excluding children's text
+    children: list["Section"] = field(default_factory=list)
+
+def parse_sections(text: str) -> Section:
+    """Parse a full Markdown document string into a Section tree.
+    Returns a root Section titled "(document)", level 0.
+    """
+```
+
+Behavior to test, one test (or more) per item:
+
+- AC-01: given a document whose text starts with a YAML front matter block
+  delimited by `---` lines, parsing it produces a root child titled exactly
+  `"(front matter)"`, level 0, whose `own_text` contains the front matter
+  content.
+- AC-02: given text before the first heading, parsing produces a root child
+  titled exactly `"(preamble)"` containing that text, and that text must not
+  leak into the first heading's `own_text`.
+- AC-03: given a heading level skip (an `##` heading immediately followed by
+  a `####` heading, with no `###` heading in between), the `####` section
+  must appear as a child of the `##` section (not the document root), with
+  `level == 4`.
+- AC-04: given a line starting with `#` that is inside a fenced code block
+  (delimited by triple backticks), it must NOT be parsed as a heading — it
+  must not appear as a section title anywhere in the tree, and the fenced
+  block's text must appear inside the *enclosing* section's `own_text`.
+- AC-05: given an empty string, or a document with no headings at all,
+  `parse_sections` must not raise any exception. For a document with no
+  headings but some non-blank text, that text ends up in a `"(preamble)"`
+  child. For a fully empty string, `root.children` may be empty.
+
+## Output format
+
+Return exactly one fenced Python code block, nothing else: no prose before
+or after it. The file must be self-contained pytest, using only inline
+Markdown strings (do not reference any external fixture file — you cannot
+see what fixtures exist). Start with:
+
+```python
+from tokmd.sections import Section, parse_sections
+```
+
+Test function names must start with `test_` and should reference the AC id
+they check in a comment, e.g. `# AC-01`.

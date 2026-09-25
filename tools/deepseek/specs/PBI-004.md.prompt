@@ -1,0 +1,73 @@
+You are writing an independent pytest file for a Click CLI command you have
+never seen the implementation of. Write tests strictly from the public
+contract and the acceptance criteria below, using `click.testing.CliRunner`
+to invoke it end-to-end (black box — do not call internal functions, only
+the `main` command). Do not guess internal helpers.
+
+## Public contract (this is all you get — no implementation source)
+
+```python
+from tokmd.cli import main
+# main is a click.Command, invoked as: tokmd FILE --platform <p> [options]
+
+# Options:
+#   --platform {claude-code, codex, opencode, antigravity}   (required)
+#   --model TEXT           (required when --platform is opencode)
+#   --tokenizer {claude, openai}   (explicit override — ALWAYS wins over
+#                                    whatever --platform would have picked,
+#                                    for any platform including antigravity)
+#   --claude-family TEXT    (override, e.g. "3.0", "4.7", "4.8"; default "4.8")
+#   --encoding TEXT         (override, e.g. "o200k_base", "cl100k_base"; default "o200k_base")
+#
+# FILE is a required positional argument: path to an existing file to read.
+```
+
+Platform-to-tokenizer mapping (when `--tokenizer` is not given):
+- `claude-code` -> Claude tokenizer, family "4.8".
+- `codex` -> OpenAI tokenizer, encoding "o200k_base".
+- `opencode` -> requires `--model`. If `--model` starts with "claude", uses
+  the Claude tokenizer. If missing, the command fails with a clear usage
+  error (not a raw Python exception/traceback) and a non-zero exit code —
+  do not assert a specific exit code number for this one, `click.UsageError`
+  conventionally uses 2 but just check it's non-zero and the output does
+  NOT look like a raw Python traceback (e.g. does not contain "Traceback").
+- `antigravity` -> fails with exit code exactly 2 and the output contains
+  the exact string "Gemini tokenizer: planned for 1.1".
+
+Behavior to test, one test (or more) per item — use `tmp_path` (a pytest
+built-in fixture) to create a small real text file for each test, do not
+rely on any project fixture file:
+
+- AC-01: `tokmd FILE --platform claude-code` (a file with some real text
+  content) exits with code 0, and the output is non-empty (do not assert
+  the exact token count — just that the command succeeds and prints
+  something, since the underlying tokenizer's exact count is not this
+  module's contract to test).
+- AC-02: `tokmd FILE --platform codex` exits with code 0 and produces
+  non-empty output, same as above.
+- AC-03: `tokmd FILE --platform opencode` (no `--model`) exits with a
+  non-zero code, and the output does NOT contain the string "Traceback"
+  (i.e. it's a clean usage error message, not a crash).
+- AC-04: `tokmd FILE --platform opencode --model claude-opus-5` exits with
+  code 0 and produces non-empty output.
+- AC-05: `tokmd FILE --platform antigravity` exits with code exactly 2, and
+  the output contains the exact string "Gemini tokenizer: planned for 1.1".
+
+Also test the override rule explicitly, since it's part of the contract:
+- AC-06 (override): `tokmd FILE --platform antigravity --tokenizer claude`
+  exits with code 0 (NOT 2) — `--tokenizer` overrides even the
+  not-yet-supported `antigravity` platform.
+
+## Output format
+
+Return exactly one fenced Python code block, nothing else: no prose before
+or after it. The file must be self-contained pytest. Start with:
+
+```python
+from click.testing import CliRunner
+
+from tokmd.cli import main
+```
+
+Test function names must start with `test_` and should reference the AC id
+they check in a comment, e.g. `# AC-01`.

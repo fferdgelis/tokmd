@@ -36,6 +36,7 @@ related_documents:
 | Fecha | Versión | Modificado por | Descripción |
 |---|---|---|---|
 | 2026-09-24 | 0.1.0 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | Creación. |
+| 2026-09-25 | 0.2.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | Desarrollo y TDD cerrados. AC-06 (override de --tokenizer) agregado. --depth/--sort recortados de este PBI, quedan para PBI-005. |
 
 ## 1. Valor y contexto
 
@@ -58,11 +59,18 @@ related_documents:
 
 ## 3. Criterios de aceptación
 
-- [ ] **AC-01:** Dado `--platform claude-code` sin más flags, cuando se corre, entonces usa Claude familia 4.8.
-- [ ] **AC-02:** Dado `--platform codex`, cuando se corre, entonces usa OpenAI `o200k_base`.
-- [ ] **AC-03:** Dado `--platform opencode` sin `--model`, cuando se corre, entonces falla con un mensaje de error claro (no una excepción cruda).
-- [ ] **AC-04:** Dado `--platform opencode --model claude-opus-5`, cuando se corre, entonces usa el tokenizador de Claude.
-- [ ] **AC-05:** Dado `--platform antigravity`, cuando se corre, entonces sale con código 2 y el mensaje «Gemini tokenizer: planned for 1.1».
+- [x] **AC-01:** Dado `--platform claude-code` sin más flags, cuando se corre, entonces usa Claude familia 4.8.
+- [x] **AC-02:** Dado `--platform codex`, cuando se corre, entonces usa OpenAI `o200k_base`.
+- [x] **AC-03:** Dado `--platform opencode` sin `--model`, cuando se corre, entonces falla con un mensaje de error claro (no una excepción cruda).
+- [x] **AC-04:** Dado `--platform opencode --model claude-opus-5`, cuando se corre, entonces usa el tokenizador de Claude.
+- [x] **AC-05:** Dado `--platform antigravity`, cuando se corre, entonces sale con código 2 y el mensaje «Gemini tokenizer: planned for 1.1».
+- [x] **AC-06 (agregado, no estaba en la versión original):** `--tokenizer` gana siempre sobre `--platform`, verificado incluso contra `antigravity`.
+
+**Nota de alcance:** `--depth` y `--sort`, listados en el corte de entrega
+original, no se implementaron acá — son responsabilidad de `render.py`
+(PBI-005), que todavía no existe. `cli.py` sólo resuelve tokenizador y
+plataforma; el render por secciones (donde esos flags tienen efecto) es
+PBI-005.
 
 ## 4. Contrato técnico
 
@@ -81,7 +89,8 @@ related_documents:
 - [x] ADR enlazado.
 - [ ] Casos de Kiwi cargados como PROPOSED.
 
-**Estado:** `not ready`
+**Estado:** `ready` — desarrollo y TDD cerrados (27/27 tests, 100% cobertura).
+QA de Kiwi pendiente de cargar los casos.
 
 ### Handoff a TDD
 

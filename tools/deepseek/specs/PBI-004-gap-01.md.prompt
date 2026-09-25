@@ -1,0 +1,32 @@
+You previously wrote a pytest file against this contract (Click CLI,
+tested via `click.testing.CliRunner`):
+
+```python
+from tokmd.cli import main
+# tokmd FILE --platform {claude-code, codex, opencode, antigravity} [options]
+#   --model TEXT
+#   --tokenizer {claude, openai}   (explicit override, always wins)
+#   --claude-family TEXT
+#   --encoding TEXT
+```
+
+Coverage analysis on the (hidden to you) implementation shows three branches
+your tests never exercise. Write exactly three additional pytest tests,
+self-contained (use `tmp_path` to create a small real text file, same as
+before), named exactly as below:
+
+- `test_tokenizer_override_openai_succeeds`: invoke with
+  `[str(file), "--platform", "claude-code", "--tokenizer", "openai"]` (a
+  platform that would normally pick Claude, but `--tokenizer openai`
+  overrides it). Assert `result.exit_code == 0` and `result.output.strip() != ""`.
+- `test_opencode_platform_with_gpt_model_succeeds`: invoke with
+  `[str(file), "--platform", "opencode", "--model", "gpt-5"]`. Assert
+  `result.exit_code == 0` and `result.output.strip() != ""`.
+- `test_opencode_platform_with_unrecognized_model_fails_cleanly`: invoke
+  with `[str(file), "--platform", "opencode", "--model", "some-random-model"]`.
+  Assert `result.exit_code != 0` and `"Traceback" not in result.output`.
+
+Return exactly one fenced Python code block containing all three test
+functions, nothing else — no prose before or after it, no import line (the
+tests will be appended to an existing file that already imports
+`CliRunner` and `main`).

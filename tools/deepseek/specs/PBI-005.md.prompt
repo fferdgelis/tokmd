@@ -1,0 +1,113 @@
+You are writing an independent pytest test file for a Python module you have
+never seen the implementation of. Write tests strictly from the public
+contract and the acceptance criteria below. Do not guess internal helpers.
+
+## Public contract (this is all you get — no implementation source)
+
+```python
+from dataclasses import dataclass, field
+from typing import Callable
+
+@dataclass
+class Section:
+    title: str
+    level: int          # 0 for the document root and special rows; 1-6 for
+                         # a real Markdown heading (H1-H6).
+    own_text: str        # this section's own content, excluding children's
+    children: list["Section"] = field(default_factory=list)
+
+
+def render(
+    root: Section,
+    count_fn: Callable[[str], int],
+    fmt: str = "table",
+    depth: int | None = None,
+    sort: str = "document",
+) -> str:
+    """Render root's children (not root itself) as fmt.
+
+    count_fn(text) -> int counts one section's own text.
+    fmt: "table" (default, indented plain text), "md" (indented Markdown
+    bullet list), "json" (a JSON array of objects, parseable), or "csv"
+    (header row "level,title,tokens" plus one data row per section).
+    Each row's "tokens" is the ACCUMULATED count: its own text's count PLUS
+    every descendant's, computed via count_fn on each own_text and summed
+    bottom-up.
+    depth: if given, only rows with level <= depth are shown — their tokens
+    still include everything below the cutoff (rollup, never lost).
+    sort: "document" (default, original order) or "tokens" (siblings
+    reordered by their accumulated tokens, descending — NOT a flat sort of
+    the whole list, only reordering children within their own parent).
+    """
+```
+
+## Fixed test tree (build this exact tree in every test that needs one)
+
+Build it directly with the `Section` dataclass (do not parse Markdown —
+`parse_sections` is a different module, not part of this contract):
+
+```python
+def make_tree():
+    return Section(
+        title="(document)",
+        level=0,
+        own_text="",
+        children=[
+            Section(title="Intro", level=1, own_text="intro text", children=[
+                Section(title="Background", level=2, own_text="background text", children=[]),
+            ]),
+            Section(title="Conclusion", level=1, own_text="conclusion text", children=[]),
+        ],
+    )
+```
+
+Use this `count_fn` in every test (deterministic, easy to reason about —
+counts words, splitting on whitespace):
+
+```python
+def word_count(text: str) -> int:
+    return len(text.split())
+```
+
+With this tree and `word_count`: "Background" has 2 words (own, no
+children) -> accumulated 2. "Intro" has 2 own words + "Background"'s 2 =
+accumulated 4. "Conclusion" has 2 own words, no children -> accumulated 2.
+
+Behavior to test, one test (or more) per item:
+
+- AC-01: `render(tree, word_count, fmt="json")` returns a string that
+  `json.loads(...)` parses without error into a list, and that list
+  contains an entry for "Intro" with `tokens == 4` (its own 2 words plus
+  "Background"'s 2) and an entry for "Background" with `tokens == 2`.
+- AC-02: `render(tree, word_count, fmt="table")` (also check that "table"
+  is genuinely the default — call `render(tree, word_count)` with no `fmt`
+  and assert the two calls produce identical output) — assert the line for
+  "Background" (level 2) has strictly more leading whitespace than the line
+  for "Intro" (level 1), i.e. deeper nesting is visually indented further.
+- AC-03: `render(tree, word_count, depth=1)` — assert the output does NOT
+  contain "Background" anywhere (it's level 2, cut off by depth=1), but
+  DOES contain "Intro" together with its accumulated count "4" — the total
+  is not reduced just because the child row is hidden.
+- AC-04: `render(tree, word_count, sort="tokens")` — "Intro" (accumulated 4)
+  must appear before "Conclusion" (accumulated 2) in the output. Then add a
+  third top-level sibling "Appendix" (level 1, own_text with 6 words, no
+  children -> accumulated 6) to a modified tree, and assert the order
+  becomes "Appendix" (6), "Intro" (4), "Conclusion" (2) — descending by
+  accumulated tokens among top-level siblings.
+
+## Output format
+
+Return exactly one fenced Python code block, nothing else: no prose before
+or after it. The file must be self-contained pytest — define `make_tree`
+and `word_count` as helpers inside the file (or inline per test), and
+import `json` if needed for AC-01. Start with:
+
+```python
+import json
+
+from tokmd.render import render
+from tokmd.sections import Section
+```
+
+Test function names must start with `test_` and should reference the AC id
+they check in a comment, e.g. `# AC-01`.

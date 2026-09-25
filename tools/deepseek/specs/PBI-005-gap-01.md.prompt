@@ -1,0 +1,30 @@
+You previously wrote a pytest file against this contract:
+
+```python
+def render(root, count_fn, fmt="table", depth=None, sort="document") -> str:
+    """fmt: "table" (default), "md", "json", "csv" (header row
+    "level,title,tokens" plus one data row per section)."""
+```
+
+Coverage analysis on the (hidden to you) implementation shows two formats
+your tests never exercise: `fmt="csv"` and `fmt="md"`. Use the same
+`make_tree()` and `word_count` helpers you defined before (do not redefine
+them, they already exist in the file this will be appended to). Write
+exactly two additional pytest tests:
+
+- `test_csv_output_has_header_and_rows`: call `render(make_tree(), word_count, fmt="csv")`.
+  Parse it with `csv.reader` (import `csv` and `io` at the top of your
+  answer). Assert the first row is exactly `["level", "title", "tokens"]`.
+  Assert there is a data row `["1", "Intro", "4"]` and a data row
+  `["2", "Background", "2"]` among the parsed rows.
+- `test_md_output_is_indented_bullet_list`: call
+  `render(make_tree(), word_count, fmt="md")`. Assert every non-empty line
+  contains a `"- "` bullet marker. Assert the line for "Background" (level
+  2) has strictly more leading whitespace before its `-` than the line for
+  "Intro" (level 1) — same nesting check as the table format, applied to md.
+
+Return exactly one fenced Python code block containing both test functions
+plus the two needed imports (`import csv` and `import io`) at its top,
+nothing else — no prose before or after it. The test functions will be
+appended to an existing file that already imports `json`, `render`,
+`Section`, and defines `make_tree()` and `word_count()`.

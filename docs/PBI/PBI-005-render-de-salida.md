@@ -36,6 +36,7 @@ related_documents:
 | Fecha | Versión | Modificado por | Descripción |
 |---|---|---|---|
 | 2026-09-24 | 0.1.0 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | Creación. |
+| 2026-09-25 | 0.2.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | Desarrollo y TDD cerrados, cableado en cli.py. |
 
 ## 1. Valor y contexto
 
@@ -58,10 +59,10 @@ related_documents:
 
 ## 3. Criterios de aceptación
 
-- [ ] **AC-01:** Dado `--format json`, cuando se corre, entonces la salida es JSON válido y parseable.
-- [ ] **AC-02:** Dado `--format table` (default), cuando se corre, entonces la indentación refleja el nivel de anidamiento.
-- [ ] **AC-03:** Dado `--depth 2`, cuando se corre, entonces sólo se muestran secciones hasta nivel 2, con sus totales acumulados intactos.
-- [ ] **AC-04:** Dado `--sort tokens`, cuando se corre, entonces las filas del mismo nivel se ordenan de mayor a menor token count.
+- [x] **AC-01:** Dado `--format json`, cuando se corre, entonces la salida es JSON válido y parseable.
+- [x] **AC-02:** Dado `--format table` (default), cuando se corre, entonces la indentación refleja el nivel de anidamiento.
+- [x] **AC-03:** Dado `--depth 2`, cuando se corre, entonces sólo se muestran secciones hasta nivel 2, con sus totales acumulados intactos.
+- [x] **AC-04:** Dado `--sort tokens`, cuando se corre, entonces las filas del mismo nivel se ordenan de mayor a menor token count.
 
 ## 4. Contrato técnico
 
@@ -80,7 +81,9 @@ related_documents:
 - [x] ADR enlazado.
 - [ ] Casos de Kiwi cargados como PROPOSED.
 
-**Estado:** `not ready`
+**Estado:** `ready` — desarrollo y TDD cerrados (33/33 tests, 100% cobertura).
+Cableado en `cli.py`: `--format/--depth/--sort` ya funcionan de punta a punta.
+QA de Kiwi pendiente.
 
 ### Handoff a TDD
 

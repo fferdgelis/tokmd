@@ -1,20 +1,23 @@
-"""`tokmd FILE --platform <p>`: resolve the right tokenizer, print a total.
+"""`tokmd FILE --platform <p>`: resolve the tokenizer, render the section tree.
 
 ADR-001: platforms map to a tokenizer + parameter without the user having to
 know which one. `--tokenizer` (an explicit "claude"/"openai" choice) always
 wins over whatever `--platform` would have picked — stated in PBI-004's risk
 section, so a caller who knows better than the platform mapping is never
 blocked by it, including on `antigravity` (not implemented as a platform,
-but still overridable). Per-section rendering (`--depth`, `--sort`, output
-formats) is PBI-005's `render.py`, not this module — this one only resolves
-"which tokenizer" and prints a whole-file total.
+but still overridable). `--format`/`--depth`/`--sort` (PBI-005) are thin
+pass-throughs to `render.render`; this module's own job stops at resolving
+"which tokenizer" and building the `count_fn` closure it's called with.
 """
 from __future__ import annotations
 
+from functools import partial
 from pathlib import Path
 
 import click
 
+from .render import render
+from .sections import parse_sections
 from .tokenizers import count_claude, count_openai
 
 PLATFORMS = ["claude-code", "codex", "opencode", "antigravity"]
@@ -76,6 +79,20 @@ def resolve_tokenizer(
 )
 @click.option("--claude-family", default=None, help='Claude family override ("3.0", "4.7", "4.8").')
 @click.option("--encoding", default=None, help='tiktoken encoding override ("o200k_base", "cl100k_base").')
+@click.option(
+    "--format",
+    "fmt",
+    type=click.Choice(["table", "md", "json", "csv"]),
+    default="table",
+    help="Output format.",
+)
+@click.option("--depth", type=int, default=None, help="Only show sections up to this heading level.")
+@click.option(
+    "--sort",
+    type=click.Choice(["document", "tokens"]),
+    default="document",
+    help="Row order: original document order, or siblings by tokens descending.",
+)
 def main(
     file: Path,
     platform: str,
@@ -83,8 +100,12 @@ def main(
     tokenizer: str | None,
     claude_family: str | None,
     encoding: str | None,
+    fmt: str,
+    depth: int | None,
+    sort: str,
 ) -> None:
     kind, param = resolve_tokenizer(platform, model, tokenizer, claude_family, encoding)
+    count_fn = partial(count_claude, family=param) if kind == "claude" else partial(count_openai, encoding=param)
     text = file.read_text(encoding="utf-8")
-    count = count_claude(text, param) if kind == "claude" else count_openai(text, param)
-    click.echo(f"{count} tokens ({kind} {param})")
+    root = parse_sections(text)
+    click.echo(render(root, count_fn, fmt=fmt, depth=depth, sort=sort))

@@ -1,0 +1,35 @@
+You previously wrote a pytest file against this contract:
+
+```python
+def count_openai(text: str, encoding: str) -> int:
+    """Count `text`'s Claude tokens... calls tiktoken.get_encoding(encoding).encode(text)."""
+```
+
+One of your tests, `test_count_openai_invalid_encoding_raises`, used
+`pytest.raises(Exception)` — a bare, unspecific exception type. SonarQube's
+static analysis flagged this as a real code quality violation ("This
+assertion is too broad; use a more specific exception type or check the
+exception message"), and it is now blocking the project's Quality Gate on
+new code. It has been measured that `tiktoken.get_encoding` raises
+`ValueError` (not a custom exception) for an unrecognized encoding name:
+
+```python
+>>> import tiktoken
+>>> tiktoken.get_encoding("not-a-real-encoding")
+ValueError: Unknown encoding not-a-real-encoding.
+```
+
+Replace `test_count_openai_invalid_encoding_raises` with a corrected test of
+the same name that asserts the specific exception type instead of a bare
+`Exception`:
+
+```python
+def test_count_openai_invalid_encoding_raises():
+    with pytest.raises(ValueError):
+        count_openai("some text", "not-a-real-encoding")
+```
+
+Return exactly this test function as one fenced Python code block, nothing
+else — no prose before or after it, no import line (the test will replace
+the old one inside an existing file that already imports `pytest`,
+`tiktoken`, `OPENAI_ENCODINGS`, and `count_openai`).

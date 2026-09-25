@@ -45,9 +45,10 @@ def test_count_openai_cl100k_matches_encoding_for_model_gpt4():
     assert count_openai(text, "cl100k_base") == expected
 
 
-# AC-04
+# AC-04 (corregido: SonarQube marco pytest.raises(Exception) como demasiado
+# amplio, tools/deepseek/specs/PBI-003-gap-02.md.prompt)
 def test_count_openai_invalid_encoding_raises():
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         count_openai("some text", "not-a-real-encoding")
 
 

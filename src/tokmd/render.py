@@ -68,20 +68,10 @@ def render(
 
 
 def _build_rows(section: Section, count_fn: Callable[[str], int], sort: str) -> list[Row]:
-    """Post-order accumulation, pre-order emission: each child's total is
-    known before its row is built, but rows still come out parent-first."""
-    total = count_fn(section.own_text) if section.own_text else 0
-    computed_children: list[tuple[int, list[Row]]] = []
-    for child in section.children:
-        child_total, child_rows = _accumulate_and_flatten(child, count_fn, sort)
-        computed_children.append((child_total, child_rows))
-        total += child_total
-    if sort == "tokens":
-        computed_children.sort(key=lambda item: item[0], reverse=True)
-    rows: list[Row] = []
-    for _, child_rows in computed_children:
-        rows.extend(child_rows)
-    return rows
+    """`section`'s children, flattened — never a row for `section` itself
+    (it's the tree root, real or a subtree root passed in for testing)."""
+    _, rows = _accumulate_and_flatten(section, count_fn, sort)
+    return rows[1:]
 
 
 def _accumulate_and_flatten(

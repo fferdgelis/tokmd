@@ -26,6 +26,16 @@ class PlatformNotSupportedError(click.ClickException):
     exit_code = 2
 
 
+def _resolve_opencode(model: str | None, claude_family: str | None, encoding: str | None) -> tuple[str, str]:
+    if not model:
+        raise click.UsageError("--model is required when --platform is opencode")
+    if model.startswith("claude"):
+        return "claude", claude_family or "4.8"
+    if model.startswith("gpt"):
+        return "openai", encoding or "o200k_base"
+    raise click.UsageError(f"Unrecognized --model for --platform opencode: {model!r}")
+
+
 def resolve_tokenizer(
     platform: str,
     model: str | None,
@@ -50,13 +60,7 @@ def resolve_tokenizer(
     if platform == "codex":
         return "openai", encoding or "o200k_base"
     if platform == "opencode":
-        if not model:
-            raise click.UsageError("--model is required when --platform is opencode")
-        if model.startswith("claude"):
-            return "claude", claude_family or "4.8"
-        if model.startswith("gpt"):
-            return "openai", encoding or "o200k_base"
-        raise click.UsageError(f"Unrecognized --model for --platform opencode: {model!r}")
+        return _resolve_opencode(model, claude_family, encoding)
     raise PlatformNotSupportedError("Gemini tokenizer: planned for 1.1")
 
 

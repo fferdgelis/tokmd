@@ -11,3 +11,7 @@ build/
 coverage.xml
 node_modules/
 .DS_Store
+
+# Worktrees y estado local de Claude Code (.claude/worktrees/, settings.local.json).
+# No es del proyecto: es de la maquina donde se trabaja.
+.claude/

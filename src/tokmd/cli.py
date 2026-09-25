@@ -144,7 +144,18 @@ def main(
             raise click.ClickException(str(exc)) from exc
         verify_model = model or DEFAULT_VERIFY_MODEL
         frame = measure_frame(client, verify_model)
-        count_fn = lambda section_text: count_verified(client, section_text, verify_model, frame)  # noqa: E731
+        # BUG-001 (same root cause, second call site): the real API rejects
+        # ANY whitespace-only text content block, not just measure_frame's
+        # internal probe — a section whose own_text is blank lines (a
+        # heading directly followed by another heading) hits the same 400.
+        # render.py already treats a falsy own_text as 0 tokens without
+        # calling count_fn; this extends "empty" to "no non-whitespace
+        # content" for the real-API path specifically, without touching
+        # render.py's contract for the offline (ctok/tiktoken) paths, which
+        # never had this problem.
+        count_fn = lambda section_text: (  # noqa: E731
+            count_verified(client, section_text, verify_model, frame) if section_text.strip() else 0
+        )
     else:
         count_fn = partial(count_claude, family=param) if kind == "claude" else partial(count_openai, encoding=param)
     text = file.read_text(encoding="utf-8")

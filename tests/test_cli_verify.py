@@ -106,3 +106,35 @@ def test_claude_code_verify_count_verified_all_calls_default_model(tmp_path, mon
     assert len(count_recorder.calls) >= 1
     for args, kwargs in count_recorder.calls:
         assert args[2] == "claude-sonnet-5"
+
+
+# Regression test for BUG-001's second call site (docs/bugs/BUG-001-...):
+# the real Anthropic API rejects whitespace-only text content with a 400
+# error. measure_frame's own probe was fixed to send "." instead of " ",
+# but count_verified is also called with each section's real own_text, and
+# a heading immediately followed by another heading (no body text between
+# them) produces an own_text that is empty-or-whitespace, not falsy — which
+# render.py's own `if section.own_text else 0` guard does not catch. This
+# test was added by Development after finding the bug with a real API call
+# (never in a mocked test, by ADR-006) — it does not touch the network.
+def test_claude_code_verify_skips_count_verified_for_whitespace_only_section(tmp_path, monkeypatch):
+    # A heading directly followed by another heading: the outer section's
+    # own_text is just the blank line between them, not falsy.
+    file = tmp_path / "sample.txt"
+    file.write_text("# Outer\n## Inner\n\nReal text under Inner.\n")
+
+    count_recorder = _Recorder(50)
+
+    monkeypatch.setattr("tokmd.cli.get_client", lambda: object())
+    monkeypatch.setattr("tokmd.cli.measure_frame", _Recorder(5))
+    monkeypatch.setattr("tokmd.cli.count_verified", count_recorder)
+
+    runner = CliRunner()
+    result = runner.invoke(main, [str(file), "--platform", "claude-code", "--verify"])
+    assert result.exit_code == 0
+
+    for args, kwargs in count_recorder.calls:
+        assert args[1].strip() != "", (
+            f"count_verified was called with whitespace-only content {args[1]!r} — "
+            "the real API rejects this with a 400 error (BUG-001)."
+        )

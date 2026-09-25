@@ -117,6 +117,29 @@ que el defecto pasó los 4/4 de QA sin que nadie lo notara.
   válido), así que el fake que lo simula tiene que cambiar con él. Ambos
   cambios están comentados en el código citando este bug.
 
+### Segunda ocurrencia, mismo día: `count_verified` con texto de sección en blanco
+
+Corriendo `--verify` contra el `CLAUDE.md` global de verdad (PBI-008, no un
+archivo de prueba pequeño), el mismo `400` volvió a aparecer — esta vez desde
+`count_verified`, no `measure_frame`. Causa: una sección cuyo encabezado está
+seguido inmediatamente por otro encabezado (sin texto entre medio) tiene
+`own_text` igual a la línea en blanco que los separa — una cadena no vacía
+pero sólo espacio en blanco, que `render.py`'s guardia `if section.own_text
+else 0` no atrapa (mira si es *falsy*, no si es *sólo blanco*).
+
+**Corrección, en `cli.py`** (no en `render.py`, para no tocar el contrato de
+un módulo ya cerrado en PBI-005 que nunca tuvo este problema con los
+tokenizadores offline): el `count_fn` que arma `--verify` ahora devuelve `0`
+directamente para cualquier texto de sección que sea sólo espacio en blanco,
+sin llamar a la API. Test de regresión mockeado agregado por Desarrollo:
+`test_claude_code_verify_skips_count_verified_for_whitespace_only_section`
+en `tests/test_cli_verify.py`.
+
+**Re-verificado con la API real** contra el `CLAUDE.md` global completo
+(677 líneas, sección con encabezados consecutivos incluida): corre de punta a
+punta, total real 15877 tokens. Ver `docs/dev-log/2026-09-25.md` para la
+medición completa (PBI-008).
+
 ## 8. Verificación independiente
 
 - **Verificado por:** Desarrollo mismo, con una llamada real a la API (no

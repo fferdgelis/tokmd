@@ -4,24 +4,24 @@ aliases:
   - "tokmd PBI-008"
 project: tokmd
 document_type: pbi
-status: proposed
-version: 0.1.0
+status: done
+version: 0.2.0
 created: 2026-09-24
-updated: 2026-09-24
+updated: 2026-09-25
 language: es
 owners:
   - project-founder
 author_human: "none"
 created_by: "llm"
 llm_provider: "Anthropic"
-llm_model: "claude-fable-5-1"
-llm_harness: "Claude Code Desktop"
+llm_model: "claude-sonnet-5"
+llm_harness: "Claude Code"
 llm_channel: "subscription"
 reasoning_mode: "no expuesto"
-last_modified_by: "Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription"
-modified_by: "Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription"
-reviewed_by: "pending"
-review_status: "pending"
+last_modified_by: "Anthropic / claude-sonnet-5 / Claude Code / subscription"
+modified_by: "Anthropic / claude-sonnet-5 / Claude Code / subscription"
+reviewed_by: "opencode-kimi-k3"
+review_status: "passed"
 tags:
   - project/tokmd
   - delivery/pbi
@@ -36,6 +36,7 @@ related_documents:
 | Fecha | Versión | Modificado por | Descripción |
 |---|---|---|---|
 | 2026-09-24 | 0.1.0 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | Creación. |
+| 2026-09-25 | 0.2.0 | Anthropic / claude-sonnet-5 / Claude Code / subscription | Cierre: `--verify` cableado en `cli.py` (no existía, ver sección 4), BUG-001 encontrado y corregido en el camino, medición real corrida y `MEDICION-CLAUDE-MD-GLOBAL.md` actualizado a v0.2.0. |
 
 ## 1. Valor y contexto
 
@@ -58,13 +59,17 @@ related_documents:
 
 ## 3. Criterios de aceptación
 
-- [ ] **AC-01:** Dado el CLAUDE.md global, cuando se mide con `--platform claude-code --verify`, entonces la tabla resultante reemplaza la de `MEDICION-CLAUDE-MD-GLOBAL.md` con nota explícita de que la anterior (9.359) era `cl100k_base`, no Claude.
-- [ ] **AC-02:** Dado el mismo archivo, cuando se mide con `--platform codex`, entonces el número queda registrado como referencia de comparación, no como el dato principal.
+- [x] **AC-01:** Dado el CLAUDE.md global, cuando se mide con `--platform claude-code --verify`, entonces la tabla resultante reemplaza la de `MEDICION-CLAUDE-MD-GLOBAL.md` con nota explícita de que la anterior (9.359) era `cl100k_base`, no Claude. **Resultado: 15877 tokens de Claude** (`claude-sonnet-5`), contra 677 líneas actuales del archivo (creció de 547 desde la medición vieja).
+- [x] **AC-02:** Dado el mismo archivo, cuando se mide con `--platform codex`, entonces el número queda registrado como referencia de comparación, no como el dato principal. **Resultado: 9852 tokens** (`o200k_base`), anotado como referencia, no como dato principal.
 
 ## 4. Contrato técnico
 
-- **Workspace:** `C:\IA\Projects\Claude-Tokenizer` (ejecuta) y `C:\IA\Projects\framework-multi-ai` (actualiza el doc de destino).
-- **Módulo/archivo principal:** ninguno nuevo; uso de la CLI ya publicada.
+- **Workspace:** `C:\IA\Projects\Claude-Tokenizer` (ejecuta) y `C:\IA\Projects\framework-multi-ai` (actualiza el doc de destino,
+  ruta real `docs/mejoras Claude-MD-General/MEDICION-CLAUDE-MD-GLOBAL.md` —
+  la ruta de esta sección, `docs/reference/...`, estaba mal desde la creación
+  de este PBI).
+- **Módulo/archivo principal:** `src/tokmd/cli.py` — a diferencia de lo que decía esta sección, **`--verify` no existía todavía** en la CLI publicada (PBI-006 escribió `verify.py` pero nunca lo cableó, PBI-007 lo dejó pendiente). Cableado en esta sesión, con TDD real (ADR-006): firma vacía → spec para DeepSeek → `tests/test_cli_verify.py` (rojo confirmado) → implementado → verde. Detalle en `docs/dev-log/2026-09-25.md`.
+- **BUG-001** ([[BUG-001-espacio-en-blanco-rechazado-por-count-tokens]]): encontrado corriendo `--verify` contra la API real por primera vez — `measure_frame` y `count_verified` podían mandar contenido de puro espacio en blanco, que la API rechaza con `400`. Corregido en dos puntos (el marco interno, y las secciones con texto en blanco de un documento real). Los tests con cliente falso de PBI-006 nunca lo hubieran detectado, por diseño (ADR-006 prohíbe red real en tests).
 - **ADR requerido:** `none`.
 
 ## 5. Handoffs
@@ -72,24 +77,39 @@ related_documents:
 ### Definition of Ready
 
 - [x] Valor, alcance y fuera de alcance claros.
-- [ ] tokmd publicado y verificado (depende de PBI-007).
+- [x] tokmd publicado y verificado (PBI-007, `v1.0.0` en PyPI).
 
-**Estado:** `blocked` (depende de PBI-007)
+**Estado:** `done`.
 
 ### Handoff a TDD
 
-- No aplica: es medición, no desarrollo de tokmd.
+- Sí aplica, a diferencia de lo que decía esta sección: el cableado de
+  `--verify` sí necesitó desarrollo nuevo (ver sección 4). TDD por DeepSeek,
+  spec en `tools/deepseek/specs/PBI-008-verify.md.prompt`.
 
 ### Handoff a Desarrollo
 
-- No aplica.
+- Cableado de `--verify` en `cli.py`, corrección de BUG-001, medición real.
 
 ### Handoff a QA
 
-- **Canal de QA:** revisión manual de Fabián sobre el documento actualizado.
+- **Canal de QA:** Kimi K3 / OpenCode, sobre un snapshot sin red (5 casos
+  nuevos del cableado de `--verify`, TOK-008-C01..C05). La medición real
+  contra el `CLAUDE.md` global en sí — el objetivo del PBI — la corrió
+  Desarrollo con la API real (no es algo que QA pueda repetir sin red, mismo
+  criterio que AC-01 de PBI-007); revisión manual de Fabián sobre el
+  documento actualizado sigue siendo el paso final.
 
 ## 6. Cierre
 
-- **Resultado de QA independiente:** `pending`.
+- **Resultado de QA independiente:** `PASSED` (5/5). Kimi K3/OpenCode,
+  snapshot commit `bfed82b`, Kiwi Test Run [68] (ejecuciones 249-253).
+  Evidencia cruda en `docs/handoff/qa/fase-5-pbi008-verify-kimi-k3.txt`.
+- **Medición real, corrida por Desarrollo:** `docs/dev-log/2026-09-25.md` y
+  `framework-multi-ai/docs/mejoras Claude-MD-General/MEDICION-CLAUDE-MD-GLOBAL.md`
+  v0.2.0 (**sin commitear** — esa rama de `framework-multi-ai` tiene otra
+  sesión trabajando en vivo, ver el dev-log).
 - **Aceptación del owner:** `pending`.
-- **PBI o Bug siguiente:** ninguno; cierra el alcance de hoy.
+- **PBI o Bug siguiente:** ninguno formal; PBI-008 sigue como el último de la
+  lista original. [[BUG-001-espacio-en-blanco-rechazado-por-count-tokens]] es
+  el único hallazgo abierto que quedó de este cierre, y ya está corregido.

@@ -1,0 +1,11 @@
+tokmd
+Copyright 2026 Fabián Ferdgelis
+
+This product includes software developed by Fabián Ferdgelis.
+
+tokmd depends on ctok (https://github.com/sanderland/ctok), by Sander Land,
+licensed under the MIT License, for offline reconstruction of Claude's
+tokenizer. tokmd is not affiliated with Anthropic or with the ctok project.
+
+tokmd's command-line shape was inspired by ttok (https://github.com/simonw/ttok),
+by Simon Willison, licensed under the Apache License, Version 2.0.

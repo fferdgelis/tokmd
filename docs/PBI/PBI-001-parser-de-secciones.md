@@ -5,9 +5,9 @@ aliases:
 project: tokmd
 document_type: pbi
 status: proposed
-version: 0.1.0
+version: 0.2.0
 created: 2026-09-24
-updated: 2026-09-24
+updated: 2026-09-25
 language: es
 owners:
   - project-founder
@@ -37,6 +37,7 @@ related_documents:
 | Fecha | Versión | Modificado por | Descripción |
 |---|---|---|---|
 | 2026-09-24 | 0.1.0 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | Creación. |
+| 2026-09-25 | 0.2.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | Cerrado: código+tests (ADR-006)+gate Sonar+QA en Kiwi, los cinco casos PASSED. |
 
 ## 1. Valor y contexto
 
@@ -100,6 +101,7 @@ related_documents:
 
 ## 6. Cierre
 
-- **Resultado de QA independiente:** `pending`.
+- **Artefactos y enlaces:** `src/tokmd/sections.py`, `tests/test_sections.py` (autoría DeepSeek, ADR-006), Test Run Kiwi id=61, gate Sonar OK (`C:\IA\Data\sonarqube\reports\tokmd\20260925-024139\`), respuesta cruda de QA en `docs/handoff/qa/fase-1-kimi-k3.txt`.
+- **Resultado de QA independiente:** `accepted` — 5/5 casos PASSED (Kimi K3/OpenCode, read-only sobre snapshot del commit `6be061d`, 25/09/2026).
 - **Aceptación del owner:** `pending`.
 - **PBI o Bug siguiente:** PBI-002.

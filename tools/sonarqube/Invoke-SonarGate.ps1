@@ -65,14 +65,22 @@ try {
     $reportsDir = Join-Path $DataRoot "reports\tokmd\$stamp"
     New-Item -ItemType Directory -Force -Path $snapshotDir | Out-Null
     New-Item -ItemType Directory -Force -Path $reportsDir | Out-Null
+    # Se extrae por zip, no por `git archive HEAD | tar -x -C <dir>`: cuando el
+    # `tar` que gana en el PATH es el de Git (MSYS, C:\Program Files\Git\usr\bin)
+    # y no el de Windows (System32), MSYS traduce la ruta absoluta con `\` y el
+    # comando muere con "Cannot open: No such file or directory". Que funcione o
+    # no dependia del orden del PATH de la consola: el zip no depende de nada.
+    $zipPath = Join-Path $DataRoot "scratch\tokmd-$stamp.zip"
     Push-Location $RepoRoot
     try {
         $commit = (git rev-parse --short HEAD).Trim()
-        git archive HEAD | & tar -x -C $snapshotDir
+        git archive --format=zip -o $zipPath HEAD
         if ($LASTEXITCODE -ne 0) { throw "git archive HEAD fallo (codigo $LASTEXITCODE)." }
     } finally {
         Pop-Location
     }
+    Expand-Archive -LiteralPath $zipPath -DestinationPath $snapshotDir -Force
+    Remove-Item -LiteralPath $zipPath -Force
     Write-Host "    Snapshot de commit $commit en $snapshotDir"
 
     Write-Host "[5/$totalSteps] Corriendo pytest con cobertura dentro del snapshot..."

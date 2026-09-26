@@ -114,4 +114,8 @@ PBI-001/002).
   `docs/handoff/qa/fase-2-pbi003-kimi-k3.txt`. Caso `TOK-003-C02` corregido en
   Kiwi antes de correr QA (tenía la redacción vieja "sin deriva").
 - **Aceptación del owner:** `pending`.
+- **Bug de datos, encontrado durante la carga de casos de PBI-006 (registrado
+  formalmente el 2026-09-26):** [[BUG-006-cargar-casos-duplicado-por-edicion-directa]] —
+  la corrección de `TOK-003-C02` de arriba, hecha directo en Kiwi, generó un
+  caso duplicado más tarde al no reflejarse en `cargar_casos.py`.
 - **PBI o Bug siguiente:** PBI-004.

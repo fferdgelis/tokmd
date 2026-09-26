@@ -104,4 +104,9 @@ related_documents:
 - **Artefactos y enlaces:** `src/tokmd/sections.py`, `tests/test_sections.py` (autoría DeepSeek, ADR-006), Test Run Kiwi id=61, gate Sonar OK (`C:\IA\Data\sonarqube\reports\tokmd\20260925-024139\`), respuesta cruda de QA en `docs/handoff/qa/fase-1-kimi-k3.txt`.
 - **Resultado de QA independiente:** `accepted` — 5/5 casos PASSED (Kimi K3/OpenCode, read-only sobre snapshot del commit `6be061d`, 25/09/2026).
 - **Aceptación del owner:** `pending`.
+- **Bugs de instrumento encontrados durante el retrofit de TDD/Sonar, sin
+  registro formal hasta el 2026-09-26:** [[BUG-003-deepseek-thinking-trunca-respuesta-tdd]],
+  [[BUG-004-get-codefrommarkdown-corta-primer-fence]],
+  [[BUG-005-sonargate-ps7-getresponsestream]] — ninguno era un defecto de
+  `tokmd`, los tres eran de tooling (DeepSeek, Sonar), corregidos el mismo día.
 - **PBI o Bug siguiente:** PBI-002.

@@ -119,7 +119,10 @@ related_documents:
     ejemplo contra `docs/ADR/ADR-004-empaquetado-y-publicacion.md` y comparó la
     salida real contra el bloque publicado. Diff vacío.
 - **Aceptación del owner:** `pending`.
-- **Tag `v1.0.0` y publicación en PyPI:** deliberadamente NO hechos. Publicar es
-  irreversible; lo decide Fabián aparte, no este flujo.
+- **Tag `v1.0.0` y publicación en PyPI:** al cierre de este PBI, deliberadamente
+  NO hechos (publicar es irreversible). Se hicieron después, a pedido explícito
+  de Fabián — ver `docs/dev-log/2026-09-25.md`.
+- **Bug de herramienta, encontrado cerrando el gate de Sonar de este PBI
+  (registrado formalmente el 2026-09-26):** [[BUG-007-sonargate-git-archive-tar-path]].
 - **PBI o Bug siguiente:** PBI-008 (bloqueado: falta decisión sobre `--verify` y
   una `ANTHROPIC_API_KEY` con facturación).

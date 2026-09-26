@@ -118,7 +118,8 @@ CLI/render (ver nota de alcance arriba). QA de Kiwi pendiente.
   `docs/handoff/qa/fase-4-pbi006-kimi-k3.txt`. Primera vuelta dio un FAILED
   falso en AC-04 por un chequeo mal diseñado en el brief (`git status`
   dentro de un snapshot sin `.git`) — corregido y re-corrido, no era un
-  defecto del código.
+  defecto del código. Registrado formalmente el 2026-09-26:
+  [[BUG-002-qa-pbi006-failed-falso-git-status-en-snapshot]].
 - **Aceptación del owner:** `pending`.
 - **PBI o Bug siguiente:** PBI-007.
 - **Post-cierre (2026-09-25, durante PBI-008):** [[BUG-001-espacio-en-blanco-rechazado-por-count-tokens]] —

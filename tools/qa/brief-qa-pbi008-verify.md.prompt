@@ -1,6 +1,6 @@
 You are the independent QA role (ADR-005/ADR-006). You did NOT write the code
 and did NOT write the tests. You are working read-only against a snapshot of
-git commit bfed82b — do not edit any file, do not write any new file anywhere.
+git commit 59553dd — do not edit any file, do not write any new file anywhere.
 
 This snapshot is a plain export: it has NO `.git` directory and NO network
 access. Do not run `git` commands, and do not try to reach api.anthropic.com
@@ -36,6 +36,9 @@ Start by running, once, in this checkout:
   -> pytest test: test_opencode_claude_model_verify_measure_frame
 - TOK-008-C05 - --verify usa el mismo modelo en todas las secciones
   -> pytest test: test_claude_code_verify_count_verified_all_calls_default_model
+- TOK-008-C06 - --verify no llama count_verified con texto de seccion en blanco
+  -> pytest test: test_claude_code_verify_skips_count_verified_for_whitespace_only_section
+     (in tests/test_cli_verify_gap01.py — a separate file, same test suite)
 
 ## Context you should know, but not re-verify (out of scope for this snapshot)
 
@@ -55,11 +58,11 @@ run above; that's the only claim being made about it in this scope.
 ## Output format
 
 Run `uv sync` then `uv run pytest -v` once for the whole suite, and report
-the raw output. Then, for each of the 5 cases above, output one line in
+the raw output. Then, for each of the 6 cases above, output one line in
 exactly this format (no extra prose):
 
 VEREDICTO: <exact case name from the list above> | <PASSED|FAILED|BLOCKED> | <one-line evidence>
 
-Print the raw pytest output first, then the five VEREDICTO lines, then
+Print the raw pytest output first, then the six VEREDICTO lines, then
 nothing else. Do not write your report to any file — this response IS the
 report.

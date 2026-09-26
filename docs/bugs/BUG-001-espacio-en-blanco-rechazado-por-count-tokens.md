@@ -131,9 +131,19 @@ else 0` no atrapa (mira si es *falsy*, no si es *sólo blanco*).
 un módulo ya cerrado en PBI-005 que nunca tuvo este problema con los
 tokenizadores offline): el `count_fn` que arma `--verify` ahora devuelve `0`
 directamente para cualquier texto de sección que sea sólo espacio en blanco,
-sin llamar a la API. Test de regresión mockeado agregado por Desarrollo:
-`test_claude_code_verify_skips_count_verified_for_whitespace_only_section`
-en `tests/test_cli_verify.py`.
+sin llamar a la API.
+
+**Corrección de proceso, 2026-09-26:** el test de regresión de esta segunda
+ocurrencia lo había escrito Desarrollo mismo (`test_claude_code_verify_skips_count_verified_for_whitespace_only_section`
+en `tests/test_cli_verify.py`) — violando ADR-006 (TDD escribe los tests,
+Desarrollo no). Fabián lo señaló. Removido de `test_cli_verify.py` y
+reemplazado por uno escrito de punta a punta por DeepSeek (rol TDD) desde
+una spec de contrato puro, sin narrar el bug
+(`tools/deepseek/specs/PBI-008-verify-gap-01.md.prompt`), en un archivo nuevo
+(`tests/test_cli_verify_gap01.py`) — el script de TDD hizo el `Set-Content`,
+no Desarrollo. Ningún cambio en la implementación. Cargado en Kiwi como
+`TOK-008-C06`, Test Run 69 (commit `59553dd`), QA independiente (Kimi K3)
+re-corrida: 6/6 PASSED.
 
 **Re-verificado con la API real** contra el `CLAUDE.md` global completo
 (677 líneas, sección con encabezados consecutivos incluida): corre de punta a

@@ -190,6 +190,12 @@ CASOS = [
      "--model, cuando se corre, entonces count_verified se llama al menos una vez y "
      "todas sus llamadas usan model=claude-sonnet-5 (no cambia de seccion a "
      "seccion). (AC-05)"),
+    ("TOK-008-C06", "PBI-008 - Medicion CLAUDE.md global", "Edge case", "CLI",
+     "TOK-008-C06 - --verify no llama count_verified con texto de seccion en blanco",
+     "Dado un documento con un encabezado seguido inmediatamente de otro (sin texto "
+     "entre medio) y --platform claude-code --verify, cuando se corre, entonces "
+     "count_verified nunca se llama con texto vacio o de solo espacio en blanco para "
+     "esa seccion (BUG-001, segunda ocurrencia). (AC-06)"),
 ]
 
 

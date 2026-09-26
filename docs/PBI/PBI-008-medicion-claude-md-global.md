@@ -102,14 +102,24 @@ related_documents:
 
 ## 6. Cierre
 
-- **Resultado de QA independiente:** `PASSED` (5/5). Kimi K3/OpenCode,
-  snapshot commit `bfed82b`, Kiwi Test Run [68] (ejecuciones 249-253).
-  Evidencia cruda en `docs/handoff/qa/fase-5-pbi008-verify-kimi-k3.txt`.
+- **Resultado de QA independiente (primera vuelta, 2026-09-25):** `PASSED`
+  (5/5). Kimi K3/OpenCode, snapshot commit `bfed82b`, Kiwi Test Run [68]
+  (ejecuciones 249-253). Evidencia cruda en
+  `docs/handoff/qa/fase-5-pbi008-verify-kimi-k3.txt`.
+- **Rehecho el 2026-09-26 por violación de separación de roles:** el test de
+  regresión del segundo hallazgo de BUG-001 lo había escrito Desarrollo
+  mismo (no TDD). Corregido — ver
+  [[BUG-001-espacio-en-blanco-rechazado-por-count-tokens]], sección 7. Nuevo
+  caso `TOK-008-C06`, nuevo Test Run [69] (commit `59553dd`), QA independiente
+  re-corrida: `PASSED` (6/6). Evidencia cruda en
+  `docs/handoff/qa/fase-5b-pbi008-verify-redo-kimi-k3.txt`.
 - **Medición real, corrida por Desarrollo:** `docs/dev-log/2026-09-25.md` y
   `framework-multi-ai/docs/mejoras Claude-MD-General/MEDICION-CLAUDE-MD-GLOBAL.md`
-  v0.2.0 (**sin commitear** — esa rama de `framework-multi-ai` tiene otra
-  sesión trabajando en vivo, ver el dev-log).
+  v0.2.0 (commiteada y pusheada el 2026-09-26, `codex/dpapi-central-v2`
+  commit `5a3d94e`). Los números en sí (15877 tokens de Claude) no cambian
+  con el redo: la implementación no se tocó, sólo la procedencia del test.
 - **Aceptación del owner:** `pending`.
 - **PBI o Bug siguiente:** ninguno formal; PBI-008 sigue como el último de la
   lista original. [[BUG-001-espacio-en-blanco-rechazado-por-count-tokens]] es
-  el único hallazgo abierto que quedó de este cierre, y ya está corregido.
+  el único hallazgo abierto que quedó de este cierre, y ya está corregido —
+  con separación de roles real, en el redo.

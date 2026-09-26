@@ -1,0 +1,57 @@
+You previously wrote a pytest file against this contract (Click CLI, tested
+via `click.testing.CliRunner`, `--verify` flag on `tokmd.cli.main`):
+
+```python
+from tokmd.cli import main
+# tokmd FILE --platform {claude-code, codex, opencode, antigravity} [options] --verify
+#   --verify only valid when the resolved tokenizer is Claude.
+#   When valid: tokmd.cli.get_client() builds a client, tokmd.cli.measure_frame(client, model)
+#   is called once, and for each section's text tokmd.cli.count_verified(client, text, model, frame)
+#   is called — model defaults to "claude-sonnet-5" unless --model was given.
+```
+
+Coverage analysis on the (hidden to you) implementation shows one behavior your
+tests never exercise, related to how sections with no real content are
+handled:
+
+**Contract detail you did not know about:** a Markdown section whose own text
+is empty is skipped entirely — `count_verified` is never called for it, and it
+contributes `0` to that section's token count. This applies not only when the
+section's own text is the empty string, but also when it is non-empty but
+consists **only of whitespace** (for example, a heading immediately followed by
+another heading, with nothing but a blank line between them — the parser
+assigns that blank line as the first heading's own text, which is `"\n"`, not
+`""`).
+
+Write exactly one additional pytest test, self-contained, named exactly:
+
+- `test_claude_code_verify_skips_count_verified_for_whitespace_only_section`
+
+It must:
+
+1. Build a `tmp_path` file whose content has a heading immediately followed by
+   another heading with nothing between them but a blank line, and some real
+   text under the second heading — for example:
+   `"# Outer\n## Inner\n\nReal text under Inner.\n"`.
+2. Invoke `main` with `[str(file), "--platform", "claude-code", "--verify"]`,
+   using `monkeypatch` to fake `tokmd.cli.get_client` (return any object),
+   `tokmd.cli.measure_frame` (return a fixed int), and `tokmd.cli.count_verified`
+   (return a fixed int, and record every call's arguments — a small recorder
+   class or `unittest.mock.Mock` is fine).
+3. Assert the command exits `0`.
+4. Assert that across every recorded call to `count_verified`, the `text`
+   argument (the second positional argument, after `client`) is never empty
+   and never only whitespace — i.e. `text.strip() != ""` for every call.
+
+## Output format
+
+Return exactly one fenced Python code block, nothing else: no prose before or
+after it. The file must be self-contained pytest, importable on its own (do
+not assume any prior test file's helper classes are in scope — define
+anything you need locally). Start with:
+
+```python
+from click.testing import CliRunner
+
+from tokmd.cli import main
+```

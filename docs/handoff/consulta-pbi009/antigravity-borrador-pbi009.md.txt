@@ -1,0 +1,180 @@
+---
+title: "PBI-009 — Configuración interactiva y gestión de API Key opcional (--config)"
+aliases:
+  - "tokmd PBI-009"
+project: tokmd
+document_type: pbi
+status: proposed
+version: 0.1.0
+created: 2026-09-26
+updated: 2026-09-26
+language: es
+owners:
+  - project-founder
+author_human: "none"
+created_by: "llm"
+llm_provider: "Google"
+llm_model: "gemini-3.8-flash"
+llm_harness: "Antigravity CLI"
+llm_channel: "cli"
+reasoning_mode: "pensamiento profundo"
+last_modified_by: "Google / gemini-3.8-flash / Antigravity CLI"
+modified_by: "Google / gemini-3.8-flash / Antigravity CLI"
+reviewed_by: "pending"
+review_status: "pending"
+tags:
+  - project/tokmd
+  - delivery/pbi
+related_documents:
+  - "[[ADR-001-eleccion-de-motores-de-tokenizacion]]"
+  - "[[PBI-006-verificacion-contra-api]]"
+  - "[[PBI-008-medicion-claude-md-global]]"
+---
+
+# PBI-009 — Configuración interactiva y gestión de API Key opcional (--config)
+
+## Historial de modificaciones
+
+| Fecha | Versión | Modificado por | Descripción |
+|---|---|---|---|
+| 2026-09-26 | 0.1.0 | Google / gemini-3.8-flash / Antigravity CLI | Creación del PBI: experiencia de usuario, opcionalidad de la API, almacenamiento multiplataforma sin DPAPI y comando `tokmd --config`. |
+
+## 1. Valor y contexto
+
+- **Problema:** En PBI-006 y PBI-008 se implementó y cableó la verificación contra la API oficial de Anthropic (`--verify`), pero asume que el usuario ya tiene exportada `ANTHROPIC_API_KEY` en su entorno de shell. Para usuarios comunes que no son desarrolladores acostumbrados a editar archivos `.bashrc`, PowerShell `$PROFILE` o variables de entorno del sistema, no existe un mecanismo accesible para configurarla. Además, falta comunicar con total claridad que la conexión a la API es **100% optativa**: no se debe obligar ni asustar al usuario común (el conteo offline con `ctok` es rápido, seguro y suficiente para el 95% de los casos), pero debe ofrecerse a los "nerds puristas" o auditores de tokens una vía trivial para activar la exactitud oficial.
+- **Stakeholder:** Fabián Ferdgelis, owner del proyecto.
+- **Resultado esperado:** 
+  1. Un comando `tokmd --config` (y opciones auxiliares como `--show` o `--unset`) que solicite la clave de manera interactiva y con entrada oculta (`hide_input=True`).
+  2. Persistencia multiplataforma transparente y segura según el sistema operativo (Windows, Linux, macOS) sin requerir esquemas complejos como DPAPI o almacenes criptográficos pesados con dependencias compiladas.
+  3. Jerarquía de resolución clara en `verify.py`: 1) Variable de entorno en sesión actual (`ANTHROPIC_API_KEY`), 2) Archivo de configuración local persistente, 3) Modo offline predeterminado con mensaje amigable y educativo si se pide `--verify` sin clave.
+  4. Documentación clara y honesta en `README` y en la ayuda del CLI sobre el carácter optativo y las ventajas reales frente al modo offline.
+- **Prioridad:** Alta (es el puente de adopción entre el motor técnico y el usuario real).
+- **Hipótesis:** Si los usuarios pueden configurar su API Key con un simple `tokmd --config` sin pelear con variables de entorno del sistema operativo ni reiniciar terminales, la adopción de `--verify` aumentará entre quienes buscan precisión estricta, mientras que el resto seguirá usando la herramienta sin fricción alguna.
+
+### Historia de usuario
+
+> Como usuario de `tokmd`, quiero poder guardar mi `ANTHROPIC_API_KEY` mediante un comando simple (`tokmd --config`) y entender con claridad por qué es opcional y qué beneficios me da, para que pueda auditar mis archivos `.md` con la API oficial si lo deseo, sin complicaciones de configuración ni riesgos en mi terminal.
+
+---
+
+## 2. Comunicación y Filosofía: ¿Por qué es opcional y qué ventajas reales tiene?
+
+Es crítico no confundir ni intimidar al usuario. La interfaz, los mensajes de error y la documentación deben transmitir:
+
+### A. La funcionalidad es 100% Optativa
+- El núcleo de `tokmd` es y seguirá siendo **completamente offline, gratuito, privado y de ejecución instantánea**.
+- **No se requiere** cuenta de Anthropic, ni tarjeta de crédito, ni API Key para el 99% de las tareas de conteo, análisis y poda de archivos Markdown.
+
+### B. Ventajas reales de conectar con la API (`--verify`)
+1. **Verdad canónica absoluta (Ground Truth):** Anthropic no publica una librería local oficial para Claude 3/3.5/4.x. Aunque `ctok` es una excelente reconstrucción comunitaria de BPE, el endpoint `POST /v1/messages/count_tokens` de Anthropic es el único árbitro oficial para facturación y ventanas de contexto.
+2. **Deriva cero en documentos críticos:** Para archivos extensos de instrucciones de agentes (como `CLAUDE.md`), system prompts o textos con caracteres especiales/Unicode complejos, `--verify` garantiza precisión al token exacto.
+3. **Cero costo de inferencia:** El endpoint `count_tokens` sólo cuenta; no genera texto ni gasta tokens de completado.
+
+### C. ¿Qué ocurre si NO se utiliza? (Sin amedrentar a nadie)
+- **Nada malo.** El usuario sigue contando con `ctok` offline.
+- En pruebas reales, la divergencia entre `ctok` y la API oficial en texto común en español o inglés ronda entre el **0% y el 1%**.
+- Para decidir qué sección pesa más, reordenar encabezados o podar documentación sobredimensionada, el conteo offline es más que suficiente. El modo API es un valor agregado para quienes necesitan precisión de auditoría o sufren de curiosidad purista.
+
+---
+
+## 3. Corte de entrega
+
+- **Incluye:**
+  - Nuevo módulo `src/tokmd/config.py` responsable de determinar las rutas de usuario según el SO, leer y escribir el archivo `config.json` con permisos restringidos (`0600` en POSIX).
+  - Opción eager `--config` en `src/tokmd/cli.py` que permita ejecutar `tokmd --config` sin requerir el argumento posicional `FILE`.
+  - Sub-opciones de gestión de configuración: `--show` (muestra estado y máscara de la clave actual, ej. `sk-ant-api03-...****`, sin exponerla) y `--unset` (elimina la clave guardada).
+  - Refactor de `src/tokmd/verify.py` para resolver la clave respetando la jerarquía:
+    1. Variable de entorno `ANTHROPIC_API_KEY` en memoria/sesión.
+    2. Clave persistida en el archivo de configuración del SO.
+    3. Si ambas faltan y se invoca `--verify`, emitir un mensaje de error pedagógico (no un traceback) que invite a usar `tokmd --config` o exportar la variable.
+  - Actualización de `README.md` y `README.es.md` explicando la naturaleza optativa y el uso de `--config`.
+  - Pruebas automatizadas completas en `tests/test_config.py` y `tests/test_cli_config.py` (sin llamadas de red ni alteraciones destructivas del entorno del host).
+- **No incluye:**
+  - Cifrado complejo vía DPAPI (Windows CryptProtectData), SecretService/DBus (Linux) ni Keychain/Security Framework (macOS). Se descarta explícitamente para evitar dependencias nativas en C/Rust (`keyring`, `cryptography`) que rompan instalaciones en WSL, contenedores o entornos mínimos.
+  - Modificación de archivos de perfil de shell (`.bashrc`, `.zshrc`, PowerShell `$PROFILE`).
+- **Dependencias:** Ninguna librería externa adicional (usa únicamente `pathlib`, `json`, `os`, `sys`, `stat` de la biblioteca estándar de Python y `click` ya instalado).
+- **Riesgos:** Asegurar que `--config` funcione de manera "eager" en Click para que no falle por falta del argumento posicional obligatorio `FILE`.
+
+---
+
+## 4. Criterios de aceptación
+
+- [ ] **AC-01 (Invocación sin archivo):** Dado que el usuario corre `tokmd --config`, cuando no pasa ningún archivo `.md`, entonces el comando inicia el asistente interactivo sin arrojar error de argumento faltante (`Missing argument 'FILE'`).
+- [ ] **AC-02 (Carga interactiva con entrada oculta):** Dado `tokmd --config`, cuando el usuario introduce una clave, la terminal oculta los caracteres (`hide_input=True`) y almacena la clave en el archivo de configuración del sistema operativo.
+- [ ] **AC-03 (Almacenamiento por sistema operativo):** Dado el guardado de configuración:
+  - En **Windows**, se guarda en `%APPDATA%\tokmd\config.json` (o `%USERPROFILE%\.tokmd\config.json` como fallback).
+  - En **Linux**, se guarda en `$XDG_CONFIG_HOME/tokmd/config.json` (por defecto `~/.config/tokmd/config.json`) con permisos `0600` (lectura/escritura exclusiva del usuario).
+  - En **macOS**, se guarda en `~/Library/Application Support/tokmd/config.json` con permisos `0600`.
+- [ ] **AC-04 (Jerarquía de resolución):** 
+  - Si `ANTHROPIC_API_KEY` está seteada en el entorno, `verify.get_client()` la usa prioritariamente (permitiendo overrides en CI/CD y scripts).
+  - Si no está en el entorno pero sí en `config.json`, `verify.get_client()` lee la del archivo.
+  - Si no existe en ningún lugar y se corre `tokmd file.md --platform claude-code --verify`, el comando falla limpiamente con un mensaje guiado que explica que la función es optativa y cómo configurarla con `tokmd --config`.
+- [ ] **AC-05 (Inspección y eliminación segura):**
+  - Dado `tokmd --config --show`, si hay una clave guardada, muestra si proviene de ENV o de config, mostrando solo los primeros caracteres y el resto enmascarado (ej. `sk-ant-...a1b2`), sin revelar la clave completa.
+  - Dado `tokmd --config --unset`, se elimina la clave del archivo de configuración informando al usuario.
+- [ ] **AC-06 (Pruebas unitarias aisladas):** Todas las pruebas de configuración corren con directorios temporales aislados (`tmp_path` / `monkeypatch`), garantizando que no lean ni sobreescriban la configuración real del usuario ni hagan peticiones web.
+
+---
+
+## 5. Contrato técnico
+
+- **Workspace:** `C:\IA\Projects\Claude-Tokenizer`.
+- **Módulos principales:**
+  - `src/tokmd/config.py`: Gestión de rutas multiplataforma, lectura/escritura JSON, enmascaramiento y permisos de archivo.
+  - `src/tokmd/cli.py`: Cableado de `--config`, `--show`, `--unset` como opción eager de Click con callback.
+  - `src/tokmd/verify.py`: Integración de `get_api_key()` respetando la precedencia (ENV > Config).
+- **Esquema de configuración (`config.json`):**
+  ```json
+  {
+    "anthropic_api_key": "sk-ant-..."
+  }
+  ```
+- **Métricas:** Cobertura de tests ≥ 90% en el nuevo módulo `config.py` y suite general manteniéndose en verde.
+- **ADR requerido:** `none` (consolida la Opción 3 de `[[ADR-001-eleccion-de-motores-de-tokenizacion]]`).
+
+---
+
+## 6. Handoffs
+
+### Definition of Ready
+
+- [x] Valor, alcance y fuera de alcance claramente definidos.
+- [x] Criterios de aceptación testeables y sin dependencias externas pesadas.
+- [x] Decisión de almacenamiento multiplataforma acordada (archivo JSON en perfil de usuario con permisos restrictivos en lugar de DPAPI/Keyring).
+- [ ] Aprobación de Fabián Ferdgelis para iniciar TDD.
+
+**Estado:** `ready`
+
+### Handoff a TDD
+
+- **AC a convertir en pruebas:**
+  - `tests/test_config.py`:
+    - `test_resolve_config_path_windows`, `test_resolve_config_path_linux`, `test_resolve_config_path_macos`.
+    - `test_save_and_load_api_key_isolated(tmp_path)`.
+    - `test_unset_api_key(tmp_path)`.
+    - `test_mask_api_key()`.
+  - `tests/test_cli_config.py`:
+    - Invocación de `tokmd --config` sin archivo `FILE` mediante `CliRunner`.
+    - Invocación de `tokmd --config --show` y `tokmd --config --unset`.
+    - Verificación de que `tokmd file.md --platform claude-code --verify` utiliza la clave del archivo cuando el entorno está vacío.
+
+### Handoff a Desarrollo
+
+- Implementar `src/tokmd/config.py`.
+- Integrar la llamada en `src/tokmd/verify.py` (`get_api_key()` fallback).
+- Integrar opción eager en `src/tokmd/cli.py`.
+- Actualizar `README.md` y `README.es.md`.
+
+### Handoff a QA
+
+- **Canal de QA:** OpenCode / Kimi K3 en entorno de pruebas aislado.
+- **Evidencia mínima:** Cobertura pytest, verificación de permisos de archivo (`0600` en Linux/Mac) y salida de CLI limpia sin tracebacks.
+
+---
+
+## 7. Cierre
+
+- **Artefactos y enlaces:** `docs/PBI/PBI-009-configuracion-api-key-optativa.md`.
+- **Resultado de QA independiente:** `pending`
+- **Aceptación del owner:** `pending`
+- **PBI siguiente:** Roadmap v1.1 (Soporte Gemini / Antigravity).

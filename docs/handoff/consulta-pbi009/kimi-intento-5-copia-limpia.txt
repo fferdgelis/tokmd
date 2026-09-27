@@ -1,0 +1,99 @@
+
+> build · moonshotai/kimi-k3
+
+$ Get-ChildItem -Force | Select-Object Mode, Name
+Mode  Name
+----  ----
+d---- .github
+d---- docs
+d---- src
+d---- tests
+d---- tools
+-a--- .gitignore
+-a--- .python-version
+-a--- BUG_TEMPLATE.md
+-a--- CHANGELOG.md
+-a--- LICENSE
+-a--- NOTICE
+-a--- pyproject.toml
+-a--- README.es.md
+-a--- README.md
+-a--- uv.lock
+
+✱ Grep "PBI-009" 0 matches
+✱ Grep "ANTHROPIC|ANTROPHIC" 41 matches
+
+$ Get-ChildItem -Recurse docs\PBI, docs\ADR | Select-Object FullName
+FullName
+--------
+C:\Users\fferdgelis\AppData\Local\Temp\claude\C--IA-Projects-Claude-Tokenizer\f1c8a31f-9a46-4bc7-a104-628f5560d139\scr.
+C:\Users\fferdgelis\AppData\Local\Temp\claude\C--IA-Projects-Claude-Tokenizer\f1c8a31f-9a46-4bc7-a104-628f5560d139\scr.
+C:\Users\fferdgelis\AppData\Local\Temp\claude\C--IA-Projects-Claude-Tokenizer\f1c8a31f-9a46-4bc7-a104-628f5560d139\scr.
+C:\Users\fferdgelis\AppData\Local\Temp\claude\C--IA-Projects-Claude-Tokenizer\f1c8a31f-9a46-4bc7-a104-628f5560d139\scr.
+C:\Users\fferdgelis\AppData\Local\Temp\claude\C--IA-Projects-Claude-Tokenizer\f1c8a31f-9a46-4bc7-a104-628f5560d139\scr.
+C:\Users\fferdgelis\AppData\Local\Temp\claude\C--IA-Projects-Claude-Tokenizer\f1c8a31f-9a46-4bc7-a104-628f5560d139\scr.
+C:\Users\fferdgelis\AppData\Local\Temp\claude\C--IA-Projects-Claude-Tokenizer\f1c8a31f-9a46-4bc7-a104-628f5560d139\scr.
+C:\Users\fferdgelis\AppData\Local\Temp\claude\C--IA-Projects-Claude-Tokenizer\f1c8a31f-9a46-4bc7-a104-628f5560d139\scr.
+C:\Users\fferdgelis\AppData\Local\Temp\claude\C--IA-Projects-Claude-Tokenizer\f1c8a31f-9a46-4bc7-a104-628f5560d139\scr.
+C:\Users\fferdgelis\AppData\Local\Temp\claude\C--IA-Projects-Claude-Tokenizer\f1c8a31f-9a46-4bc7-a104-628f5560d139\scr.
+C:\Users\fferdgelis\AppData\Local\Temp\claude\C--IA-Projects-Claude-Tokenizer\f1c8a31f-9a46-4bc7-a104-628f5560d139\scr.
+C:\Users\fferdgelis\AppData\Local\Temp\claude\C--IA-Projects-Claude-Tokenizer\f1c8a31f-9a46-4bc7-a104-628f5560d139\scr.
+C:\Users\fferdgelis\AppData\Local\Temp\claude\C--IA-Projects-Claude-Tokenizer\f1c8a31f-9a46-4bc7-a104-628f5560d139\scr.
+C:\Users\fferdgelis\AppData\Local\Temp\claude\C--IA-Projects-Claude-Tokenizer\f1c8a31f-9a46-4bc7-a104-628f5560d139\scr.
+C:\Users\fferdgelis\AppData\Local\Temp\claude\C--IA-Projects-Claude-Tokenizer\f1c8a31f-9a46-4bc7-a104-628f5560d139\scr.
+
+→ Read C:/Users/fferdgelis/AppData/Local/Temp/claude/C--IA-Projects-Claude-Tokenizer/f1c8a31f-9a46-4bc7-a104-628f5560d139/scratchpad/snap-limpia-kimi-limpia/src/tokmd/verify.py
+✱ Glob "docs/PBI/*.md" 9 matches
+✱ Glob "docs/ADR/*.md" 6 matches
+→ Read C:/Users/fferdgelis/AppData/Local/Temp/claude/C--IA-Projects-Claude-Tokenizer/f1c8a31f-9a46-4bc7-a104-628f5560d139/scratchpad/snap-limpia-kimi-limpia/src/tokmd/cli.py
+→ Read C:/Users/fferdgelis/AppData/Local/Temp/claude/C--IA-Projects-Claude-Tokenizer/f1c8a31f-9a46-4bc7-a104-628f5560d139/scratchpad/snap-limpia-kimi-limpia/README.md
+→ Read C:/Users/fferdgelis/AppData/Local/Temp/claude/C--IA-Projects-Claude-Tokenizer/f1c8a31f-9a46-4bc7-a104-628f5560d139/scratchpad/snap-limpia-kimi-limpia/docs/PBI/PBI-007-empaquetado-y-publicacion.md
+→ Read C:/Users/fferdgelis/AppData/Local/Temp/claude/C--IA-Projects-Claude-Tokenizer/f1c8a31f-9a46-4bc7-a104-628f5560d139/scratchpad/snap-limpia-kimi-limpia/docs/ADR/ADR-001-eleccion-de-motores-de-tokenizacion.md
+→ Read C:/Users/fferdgelis/AppData/Local/Temp/claude/C--IA-Projects-Claude-Tokenizer/f1c8a31f-9a46-4bc7-a104-628f5560d139/scratchpad/snap-limpia-kimi-limpia/docs/ADR/ADR-002-manejo-del-marco-y-la-deriva-de-ctok.md
+Fabi, mi opinión, dividida en lo que comparto y lo que cambiaría del planteo.
+
+## 1. El diagnóstico es correcto, y es peor de lo que decís
+
+Hoy `--verify` existe en el código (`src\tokmd\cli.py`, `src\tokmd\verify.py`) pero **el README ni lo menciona**: la lista de opciones de `README.md` (líneas 84-97) no incluye el flag. O sea que PBI-009 no es sólo el mecanismo de configuración: es darle existencia pública a la funcionalidad. Bien visto.
+
+## 2. La parte de comunicación: sí, y el material honesto ya está escrito
+
+No hay que inventar el discurso, ya está en los ADR:
+
+- **Ventaja real:** conteo exacto certificado por la API de Anthropic. El endpoint `count_tokens` no cobra por llamada, pero exige una key de una cuenta con facturación habilitada (eso hay que decirlo, es la barrera real).
+- **Qué pasa si no se usa:** nada se rompe. El motor offline (`ctok`) tiene una deriva de borde estructural, medida en PBI-002, que escala con la cantidad de secciones y **ya se reporta en pantalla** como `boundary drift: ±N` (ADR-002: «se reporta, no se oculta»). Ese es el tono sin amedrentar: "sin `--verify` obtenés una aproximación aditiva; cuando tokmd detecta deriva, te la muestra".
+
+Tu lectura del público también la comparto: el default tiene que seguir siendo cero fricción. El 80% del esfuerzo de este PBI es documentación/UX, 20% código.
+
+## 3. El mecanismo: acá disiento. Variables de entorno persistentes, no
+
+Lo que proponés (`--config` que escribe una variable de entorno del sistema según el OS) es **la más frágil de las opciones en los tres sistemas**, y la primera trampa está verificada en tu propia máquina:
+
+| OS | Problema real |
+|---|---|
+| Windows | Una variable User seteada por programa **no la ve la consola actual, sólo procesos nuevos** (está en tu `C:\Users\fferdgelis\.claude\CLAUDE.md` como trampa verificada). Resultado: "lo configuré y sigue diciendo que falta la key". |
+| Linux | **No existe** la "variable de entorno del sistema" persistente que un programa pueda setear. Hay que editar `~/.bashrc`/`~/.zshrc`/etc., que depende del shell del usuario y es intrusivo. |
+| macOS | `launchctl setenv` no sobrevive un reinicio sin un LaunchAgent. Toca el rc del shell igual que Linux. |
+
+**Lo que recomiendo, y es el patrón de `aws`, `gh`, `npm`, `docker`:** `tokmd config` (subcomando) que pide la key con prompt oculto y la guarda en un archivo de configuración en el home del usuario:
+
+- Windows: `%APPDATA%\tokmd\config.json` (el perfil ya viene con ACL por usuario).
+- Linux/macOS: `~/.config/tokmd/config.json` con permisos `0600`.
+- **Precedencia: la variable de entorno manda sobre el archivo** (así CI y usuarios avanzados, incluido vos con DPAPI, siguen usando el env; el archivo es para el usuario común).
+- Funciona **en la consola actual, enseguida**, sin abrir otra terminal ni tocar rc files ni el registry. Una sola ruta de código para los tres OS.
+- Nivel de protección: el mismo que `~/.aws/credentials` o `~/.npmrc`. No es DPAPI, es cierto, pero es el estándar aceptado de la industria para CLI. Si algún día se quiere subir un escalón, la librería `keyring` (Credential Manager / Keychain / Secret Service con una sola API) es la vía, sin exponerle DPAPI al usuario. Para v1, yo no la metería.
+
+Dos reglas que el PBI tiene que fijar sí o sí:
+
+1. **La key nunca entra como argumento** (`tokmd config sk-ant-...` quedaría en el historial del shell; el propio `verify.py` ya lo dice). Sólo prompt oculto.
+2. **Nunca se imprime**: ni en logs, ni en un `config --show` (como mucho "configurada: sí, origen: env|archivo").
+
+## 4. Detalles de diseño que el PBI-009 tiene que resolver
+
+1. **Subcomando, no flag.** Hoy `main` exige `FILE` y `--platform` siempre (`cli.py` líneas 87-88): un `--config` no puede ser "una opción más" sin romper ese contrato y sus tests. `tokmd config` como subcomando (grupo click) es lo que el usuario espera (`gh auth login`, `aws configure`).
+2. **Nombre correcto de la variable:** es `ANTHROPIC_API_KEY` (en tu mensaje quedó escrito `API_KEY_ANTROPHIC`; que el PBI use el nombre del código).
+3. **Alcance documental:** sección nueva en `README.md` y `README.es.md` ("Opcional: verificación exacta contra la API"), CHANGELOG, y el help del CLI.
+4. **Tests sin red y sin key real** (ADR-006): el archivo de config se testea con `tmp_path`/`monkeypatch`, y un test que verifique que la key no aparece en ninguna salida.
+5. `tokmd config --clear` (o borrar el archivo) como marcha atrás documentada.
+
+**Resumen:** la comunicación tal como la planteás, sí. El mecanismo, cambiaría "variable de entorno persistente por OS" por "archivo de config en home con env como override": más simple de implementar, igual de seguro que el estándar de la industria, y sin las tres trampas por sistema operativo. Si te cierra, el siguiente paso es redactar PBI-009 en `C:\IA\Projects\Claude-Tokenizer\docs\PBI\` con esta decisión.

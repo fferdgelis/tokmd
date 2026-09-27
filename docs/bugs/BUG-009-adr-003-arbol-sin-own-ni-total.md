@@ -48,7 +48,11 @@ related_documents:
 - **Tipo:** `product-defect`
 - **Severidad:** `2-high` — es una decisión arquitectónica aceptada por el owner que nunca llegó al código, y su ausencia es la que dejó pasar `[[BUG-008-texto-de-los-encabezados-no-se-cuenta]]`.
 - **PBI relacionado:** `[[PBI-001-parser-de-secciones]]` y `[[PBI-005-render-de-salida]]` (ninguno lo pidió) · se corrige en `[[PBI-009-defaults-del-cli-y-total]]`
-- **Caso de Kiwi relacionado:** **pendiente de registrar**
+- **Registro en Kiwi:** **Bug `pk=10`**, severidad `High`, estado abierto, build
+  `d9c42ff` (registrado 2026-09-27).
+- **Casos de Kiwi relacionados:** `TOK-009-C10` (id 385), `TOK-009-C11` (id 386) y
+  `TOK-009-C12` (id 387), `PROPOSED`, en el plan **30** «PBI-009 - Defaults del
+  CLI y total».
 - **Reportado por:** Fabián Ferdgelis, owner
 - **Fecha de detección:** 2026-09-27
 
@@ -207,7 +211,9 @@ tokens de deriva de borde real, 1,24 %. Esa decisión es del owner y necesita AD
 - **Verificado por:** pendiente.
 - **Evidencia:** las citas de la sección 5 son literales del código en `97b71ea`,
   y las de la sección 4 literales de `[[ADR-003-parseo-de-secciones]]`.
-- **Pendiente:** registrar en Kiwi y cargar los casos como `PROPOSED` **antes**
-  de arreglar, con los tests escritos por TDD y no por Desarrollo
-  (`[[ADR-006-separacion-tdd-desarrollo-qa-por-motor]]`). El juego de casos está
-  en `docs/PBI/PBI-009-casos-de-prueba.md`.
+- **Registrado en Kiwi el 2026-09-27** (Bug `pk=10`), con los casos cargados como
+  `PROPOSED` **antes** de arreglar nada.
+- **Pendiente:** que los tests los escriba TDD y no Desarrollo
+  (`[[ADR-006-separacion-tdd-desarrollo-qa-por-motor]]`), que QA los corra
+  independiente, y linkear este Bug a la Test Execution con `Bug.add_execution`
+  cuando exista el Test Run.

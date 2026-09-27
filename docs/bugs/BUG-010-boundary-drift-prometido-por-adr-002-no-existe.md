@@ -48,7 +48,10 @@ related_documents:
 - **Tipo:** `product-defect` (con componente `documentation-defect`: el ADR describe algo que no pasa)
 - **Severidad:** `3-medium` por sí solo. Sube a `2-high` leído junto a `[[BUG-008-texto-de-los-encabezados-no-se-cuenta]]`, porque este instrumento era el que lo habría detectado.
 - **PBI relacionado:** `[[PBI-002-tokenizador-claude]]` (origen) · se corrige en `[[PBI-009-defaults-del-cli-y-total]]`
-- **Caso de Kiwi relacionado:** **pendiente de registrar**
+- **Registro en Kiwi:** **Bug `pk=11`**, severidad `Medium`, estado abierto, build
+  `d9c42ff` (registrado 2026-09-27).
+- **Caso de Kiwi relacionado:** `TOK-009-C13` (id 388), `PROPOSED`, en el plan
+  **30** «PBI-009 - Defaults del CLI y total».
 - **Reportado por:** Desarrollo, verificando afirmaciones de los motores en la ronda 2 de la consulta
 - **Fecha de detección:** 2026-09-27
 
@@ -154,5 +157,8 @@ otra. Una de las dos tiene que cambiar.
 
 - **Verificado por:** pendiente.
 - **Evidencia:** el `grep` de la sección 5 y la cita literal de ADR-002.
-- **Pendiente:** registrar en Kiwi. Los casos están en
-  `docs/PBI/PBI-009-casos-de-prueba.md`.
+- **Registrado en Kiwi el 2026-09-27** (Bug `pk=11`), con su caso de regresión
+  `TOK-009-C13` (id 388) cargado como `PROPOSED` antes de arreglar nada.
+- **Pendiente:** que el test lo escriba TDD y no Desarrollo, que QA lo corra
+  independiente, y linkear este Bug a la Test Execution con `Bug.add_execution`
+  cuando exista el Test Run.

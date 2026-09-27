@@ -50,8 +50,10 @@ modificación concreta del código que tiene que hacerlo fallar. Un caso que no
 puede fallar no prueba nada — es el paso 10 de los doce pasos, y es lo que faltó
 en PBI-001 y PBI-005 y dejó pasar los tres bugs.
 
-**Estado:** `PROPOSED`, sin cargar todavía. Falta la credencial de la bóveda para
-`tools/kiwi/cargar_casos.py`.
+**Estado: CARGADOS en Kiwi el 2026-09-27**, los quince como `PROPOSED`, en el plan
+**30** «PBI-009 - Defaults del CLI y total», ids **376 a 390**. Script:
+`tools/kiwi/cargar_pbi009_y_bugs.py` (idempotente). Los tres bugs quedaron
+registrados como Bug `pk=9`, `pk=10` y `pk=11`.
 
 **Cobertura:** los criterios de aceptación de
 `[[PBI-009-defaults-del-cli-y-total]]` más la regresión de los tres bugs.
@@ -164,14 +166,40 @@ archivos, residuo 0 en todos, antes de escribir una línea de código.
 
 **C15** cubre la variante B de presentación, que Fabián aprobó el 27/09/2026.
 
-## Registro en Kiwi
+## Registro en Kiwi — hecho el 2026-09-27
 
-- **Producto:** tokmd
-- **Plan:** el del PBI-009, a crear con `tools/kiwi/crear_planes.py`
-- **Casos:** trece, como `PROPOSED`, con `tools/kiwi/cargar_casos.py`
-- **Bugs a registrar** como registros Bug, y a linkear a la Test Execution
-  cuando exista: BUG-008, BUG-009 y BUG-010
-- **Recordatorio de la trampa ya pagada:** `cargar_casos.py` lee la contraseña
-  **cruda** por stdin; `crear_run.py`, `registrar_resultados.py` y
-  `confirmar_casos.py` esperan **JSON**
-- **Estado:** pendiente. Falta la credencial de la bóveda.
+| Qué | Id |
+|---|---|
+| Producto | `tokmd`, id 6 |
+| Plan | **30** — «PBI-009 - Defaults del CLI y total» |
+| Casos | **376 a 390**, los quince como `PROPOSED` |
+| Build | **33** — `d9c42ff` |
+| Bug BUG-008 | `pk=9`, `High`, abierto |
+| Bug BUG-009 | `pk=10`, `High`, abierto |
+| Bug BUG-010 | `pk=11`, `Medium`, abierto |
+
+Script: `tools/kiwi/cargar_pbi009_y_bugs.py`, idempotente (filtra por `summary`
+antes de crear, así que se puede volver a correr sin duplicar).
+
+**Pendiente:** linkear los tres Bug a su Test Execution con `Bug.add_execution`
+cuando exista el Test Run, o sea después de que el arreglo esté hecho y QA lo
+corra.
+
+### Tres trampas pagadas en esta carga (27/09/2026)
+
+1. **El contenedor publica su 8443 en el puerto 443 de Windows.** El default
+   `port=8443` de `rpc_client.connect` sirve **sólo corriendo adentro del
+   contenedor** (de ahí el `sys.path.insert(0, "/tmp/work")` de los scripts
+   viejos). Desde Windows hay que pasar `port=443`, o da
+   `ConnectionRefusedError 10061`.
+2. **El método es `Severity.filter`, no `BugSeverity.filter`.** El segundo no
+   existe y devuelve `Method not found`.
+3. **`Bug.create` espera el *id* del Build, no su nombre.** Pasarle el commit
+   corto como string da `Select a valid choice. That choice is not one of the
+   available choices.` Hay que resolver o crear el `Build` primero.
+
+### Lo de antes, que sigue valiendo
+
+`cargar_casos.py` lee la contraseña **cruda** por stdin; `crear_run.py`,
+`registrar_resultados.py` y `confirmar_casos.py` esperan **JSON**. El script
+nuevo sigue la convención de `cargar_casos.py`: contraseña cruda por stdin.

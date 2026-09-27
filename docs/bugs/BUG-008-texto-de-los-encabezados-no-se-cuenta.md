@@ -47,7 +47,11 @@ related_documents:
 - **Tipo:** `product-defect`
 - **Severidad:** `2-high` — es el número que la herramienta existe para dar, y está bajo por un 8,5 % en el archivo real del owner.
 - **PBI relacionado:** `[[PBI-001-parser-de-secciones]]` (origen del defecto) · **bloquea** `[[PBI-009-defaults-del-cli-y-total]]`
-- **Caso de Kiwi relacionado:** **pendiente de registrar**
+- **Registro en Kiwi:** **Bug `pk=9`**, severidad `High`, estado abierto, build
+  `d9c42ff` (registrado 2026-09-27).
+- **Casos de Kiwi relacionados:** `TOK-009-C08` (id 383) y `TOK-009-C09` (id 384),
+  `PROPOSED`, en el plan **30** «PBI-009 - Defaults del CLI y total». El
+  `TOK-009-C14` (id 389) verifica además que la suma cierre con el total.
 - **Reportado por:** Fabián Ferdgelis, owner, usando la herramienta como usuario final
 - **Fecha de detección:** 2026-09-27
 
@@ -226,6 +230,12 @@ adentro de la corrección de este bug, a criterio de quien lo tome.
   **no** es QA independiente.
 - **Evidencia:** la medición de la sección 4, reproducible con el script de la
   sección 5.
-- **Pendiente:** registrar el bug en Kiwi y cargar el caso de regresión como
-  `PROPOSED` **antes** de arreglarlo, con el test escrito por TDD y no por
-  Desarrollo (`[[ADR-006-separacion-tdd-desarrollo-qa-por-motor]]`).
+- **Registrado en Kiwi el 2026-09-27** (Bug `pk=9`), con los casos de regresión
+  cargados como `PROPOSED` **antes** de arreglar nada, que es lo que manda el
+  método.
+- **Pendiente:** que el test lo escriba TDD y no Desarrollo
+  (`[[ADR-006-separacion-tdd-desarrollo-qa-por-motor]]`), y que QA lo corra
+  independiente.
+- **Pendiente también:** linkear este Bug a la Test Execution con
+  `Bug.add_execution` cuando exista el Test Run. Hoy no existe porque el arreglo
+  no se hizo.

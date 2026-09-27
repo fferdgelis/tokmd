@@ -40,6 +40,7 @@ related_documents:
 | Fecha | Versión | Modificado por | Descripción |
 |---|---|---|---|
 | 2026-09-27 | 0.1.0 | Anthropic / claude-opus-5 / Claude Code / subscription | Creación, a pedido de Fabián. **El número PBI-009 se reasignó**: antes designaba la configuración de la API key del `--verify`, que quedó diferida en `docs/diferido/verify-api-key/`. Borrador para revisión del owner; no está `ready`. |
+| 2026-09-27 | 0.2.0 | Anthropic / claude-opus-5 / Claude Code / subscription | Fabián decidió las tres: flag `--sections`, versión `2.0.0`, y que el parser y el total den el mismo valor real. Entran al alcance BUG-009 y BUG-010 (ADR-003 y ADR-002 incumplidos, los levantó él). Se agrega la sección «la no-aditividad medida»: su requisito de igualdad exacta no es alcanzable, y está medido por qué. |
 
 ## 1. Valor y contexto
 
@@ -85,35 +86,44 @@ related_documents:
 - **Incluye:**
   - `--platform` deja de ser obligatorio; su default es `claude-code`.
   - La salida por defecto es **una línea con el total del archivo**.
-  - El desglose por secciones pasa a ser opt-in, con un flag nuevo.
+  - El desglose por secciones pasa a ser opt-in, con el flag **`--sections`**
+    (decidido por Fabián el 27/09).
   - El total se cuenta **de una sola pasada sobre el archivo completo**, no
     sumando filas (ver 4, «la decisión técnica»).
+  - **Los tres bugs de esta zona, juntos**, porque arreglar uno sin los otros
+    deja números que no cierran:
+    - `[[BUG-008-texto-de-los-encabezados-no-se-cuenta]]` — el título del
+      encabezado pasa a contarse en su propia sección.
+    - `[[BUG-009-adr-003-arbol-sin-own-ni-total]]` — `Own` **y** `Total` por
+      fila, más la fila raíz con el total, como decidió ADR-003.
+    - `[[BUG-010-boundary-drift-prometido-por-adr-002-no-existe]]` — la línea de
+      deriva que ADR-002 promete.
   - `README.md` y `README.es.md` actualizados: el ejemplo de portada pasa a ser
     `tokmd CLAUDE.md`.
   - `CHANGELOG.md` con el cambio incompatible declarado.
 
 - **No incluye:**
-  - **Arreglar `[[BUG-008-texto-de-los-encabezados-no-se-cuenta]]`.** Va aparte,
-    como bug, con su propio test de regresión. **Pero lo bloquea** — ver
-    Dependencias.
   - Documentar `--verify` en el README (hueco conocido, va aparte).
   - Cualquier cosa de la API key: diferido en `docs/diferido/verify-api-key/`.
-  - La línea `boundary drift: ±N` que `[[ADR-002-manejo-del-marco-y-la-deriva-de-ctok]]`
-    promete y el código no imprime.
+  - **El dibujo del árbol con conectores** (`├─`, `└─`) que Fabián mencionó como
+    posibilidad. La indentación por nivel ya existe y cumple ADR-003; los
+    conectores son presentación y van aparte si los quiere.
 
 - **Dependencias:**
-  - **`[[BUG-008-texto-de-los-encabezados-no-se-cuenta]]` es bloqueante para el
-    desglose, no para el total.** El total contado de una pasada es correcto
-    aunque el bug siga vivo; las filas del desglose seguirían 8,5 % abajo y no
-    sumarían al total. **No se publica una versión donde el total y el desglose
-    no cierren.**
+  - **Una decisión de ADR que todavía no está tomada**, y es la de la sección 4:
+    qué se hace con los 215 tokens de deriva de borde que quedan cuando el total
+    y la suma de filas no coinciden. Sin eso, el caso de prueba que verifica la
+    igualdad no se puede escribir, porque no se sabe contra qué comparar.
 
 - **Riesgos:**
-  - **Rompe compatibilidad.** Quien hoy corra
-    `tokmd x.md --platform claude-code` y espere la tabla va a recibir una línea.
-    Decisión de versión en la sección 4.
-  - Cambiar el default de salida toca `render.py`, que tiene datos dorados en
-    `tests/test_render.py`.
+  - **Rompe compatibilidad**, por eso va como **`2.0.0`** (decidido por Fabián).
+    Quien hoy corra `tokmd x.md --platform claude-code` y espere la tabla va a
+    recibir una línea.
+  - Toca `sections.py`, `render.py` y `tokenizers.py` a la vez, y hay que
+    **remedir todos los datos dorados** de `tests/test_sections.py`,
+    `tests/test_render.py` y `tests/test_tokenizers.py`.
+  - **Si además se cambia dónde se resta el marco** (ver sección 4), cambia el
+    número que informa la herramienta para todo archivo, no sólo el total.
 
 ## 3. Criterios de aceptación
 
@@ -131,21 +141,52 @@ related_documents:
       entonces el default de `claude-code` **no** se aplica y el comportamiento
       de selección de tokenizador es el de hoy (sin regresión en
       `[[PBI-004-cli-y-plataformas]]`).
-- [ ] **AC-05:** Dado el flag de desglose, cuando se corre
-      `tokmd archivo.md <flag-de-desglose>`, entonces se imprime la tabla
-      sección por sección como hoy, **y** el total.
-- [ ] **AC-06:** Dado un archivo con encabezados y con `[[BUG-008-texto-de-los-encabezados-no-se-cuenta]]`
-      corregido, cuando se pide el desglose, entonces la suma de las filas de
-      primer nivel coincide con el total informado (tolerancia: 0).
-- [ ] **AC-07:** Dado `--format json`, cuando se corre sin el flag de desglose,
-      entonces el JSON tiene el total como campo propio y es parseable.
-- [ ] **AC-08:** Dado un archivo que no existe o una ruta que es un directorio,
+- [ ] **AC-05:** Dado `--sections`, cuando se corre `tokmd archivo.md --sections`,
+      entonces se imprime el desglose sección por sección **y** el total.
+- [ ] **AC-06:** Dado `--format json`, cuando se corre sin `--sections`, entonces
+      el JSON tiene el total como campo propio y es parseable.
+- [ ] **AC-07:** Dado un archivo que no existe o una ruta que es un directorio,
       cuando se corre el comando, entonces el mensaje de error es legible y el
       código de salida no es 0 (sin regresión).
-- [ ] **AC-09:** Dado un archivo Markdown **sin ningún encabezado**, cuando se
+- [ ] **AC-08:** Dado un archivo Markdown **sin ningún encabezado**, cuando se
       corre el comando, entonces informa el total sin fallar.
-- [ ] **AC-10:** Dado un archivo vacío, cuando se corre el comando, entonces
+- [ ] **AC-09:** Dado un archivo vacío, cuando se corre el comando, entonces
       informa `0` sin fallar ni tirar traceback.
+
+### Regresión de BUG-008 — el encabezado se cuenta
+
+- [ ] **AC-10:** Dado un archivo con encabezados **sin cuerpo** (`#` usado como
+      comentario, el caso real del `CLAUDE.md` de Fabián), cuando se pide
+      `--sections`, entonces **ninguna** fila con encabezado no vacío informa
+      `Own = 0`.
+- [ ] **AC-11:** Dado un archivo con un único encabezado de texto conocido,
+      cuando se pide `--sections`, entonces el `Own` de esa fila **incluye** los
+      tokens del título.
+
+### Regresión de BUG-009 — el árbol que decidió ADR-003
+
+- [ ] **AC-12:** Dado `--sections`, cuando se corre, entonces cada fila muestra
+      **`Own` y `Total` como dos números distinguibles**.
+- [ ] **AC-13:** Dado `--sections`, cuando se corre, entonces existe una **fila
+      raíz** cuyo `Total` es el total del archivo.
+- [ ] **AC-14:** Dado un archivo con un padre de cuerpo corto y un hijo de cuerpo
+      largo, cuando se pide `--sections`, entonces en la fila del padre
+      `Own` < `Total`.
+
+### Regresión de BUG-010 — la deriva se declara
+
+- [ ] **AC-15:** Dado un archivo donde la suma de los `Own` no coincide con el
+      total contado de una pasada, cuando se pide `--sections`, entonces se
+      informa la deriva con su signo en vez de esconderla.
+- [ ] **AC-16:** Dado un archivo donde la deriva es 0, cuando se pide
+      `--sections`, entonces la salida **no** miente informando una deriva que no
+      existe.
+
+> **AC que falta y no se puede escribir todavía:** el que verificaría que la suma
+> de filas es **igual** al total. Está medido que no se alcanza (215 tokens,
+> 1,24 %, por la no-aditividad del tokenizador — ver sección 4). Hasta que Fabián
+> decida qué se hace con esa deriva, no hay contra qué comparar. AC-15 es la
+> versión verificable hoy.
 
 ## 4. Contrato técnico
 
@@ -159,9 +200,13 @@ related_documents:
 - **Métricas:** el total de `C:\Users\fferdgelis\.claude\CLAUDE.md` con
   tokenizador de Claude `4.8` tiene que dar **17.375** (medido el 27/09/2026
   contando el archivo de una pasada). Es el dato dorado del AC-02.
-- **ADR requerido:** `to investigate`. Cambiar el default de salida de una
-  herramienta ya publicada es una decisión con marcha atrás costosa; si Fabián
-  quiere dejarla escrita, sería ADR-007.
+- **ADR requerido:** **`ADR-007`, y es bloqueante.** Tiene que resolver las dos
+  decisiones abiertas: qué se hace con los 215 tokens de deriva de borde, y si el
+  marco se sigue restando por sección o una sola vez. Toca además
+  `[[ADR-002-manejo-del-marco-y-la-deriva-de-ctok]]`, que hoy decide lo segundo.
+  El mismo ADR-007 cubre lo que ya era motivo suficiente por sí solo: cambiar el
+  default de salida de una herramienta ya publicada es una decisión con marcha
+  atrás costosa.
 
 ### La decisión técnica que hay que tomar acá
 
@@ -183,43 +228,121 @@ valor de la tupla como `rows[0]` (la fila `(document)`) llevan el acumulado.
 **No reusar ese número**: arrastra las dos deformaciones de arriba. Sirve para
 comparar contra el total real y detectar la deriva.
 
-### Tres decisiones que son de Fabián
+### Las tres decisiones, tomadas por Fabián el 27/09/2026
 
-1. **Cómo se llama el flag del desglose.** Recomiendo **`--sections`**: dice qué
-   hace y no se confunde con `--format`. Alternativas: `--detail`, `--by-section`,
-   `--tree`.
-2. **Qué número de versión.** Cambiar la salida por defecto rompe a cualquiera
-   que parsee la tabla, así que por semver estricto es **`2.0.0`**. Es lo que
-   recomiendo: cuesta lo mismo y no deja a nadie pisado en silencio.
-   `1.1.0` con el cambio bien documentado en el `CHANGELOG` es defendible —
-   `v1.0.0` tiene un día y es improbable que alguien ya dependa de la tabla—,
-   pero es tu llamada, no mía.
-3. **Si además querés la fila de total en el desglose** o sólo el total arriba.
+1. **Flag del desglose: `--sections`.**
+2. **Versión: `2.0.0`** — «con el cambio rotundo de funcionamiento tiene que ser
+   la versión 2.0.0».
+3. **El arreglo de BUG-008:** *«tanto el parser como el total tienen que dar el
+   mismo valor y ese valor tiene que ser el valor real, no un invento»*. O sea
+   las dos cosas, con convergencia. Ver abajo: la primera mitad se cumple, la
+   segunda tiene un límite medido.
+
+### La no-aditividad medida: por qué la igualdad exacta no se alcanza
+
+**Medido el 27/09/2026** sobre `C:\Users\fferdgelis\.claude\CLAUDE.md`, con la
+partición del archivo verificada byte a byte (ningún carácter perdido ni
+duplicado), tokenizador de Claude `4.8`:
+
+| | Tokens |
+|---|---|
+| **A) El archivo contado de una sola pasada** — el valor real | **17.375** |
+| **B) Suma de las 44 filas con el título incluido, marco restado una vez** | **17.590** |
+| C) Suma de las 44 filas, marco restado una vez por sección (lo de hoy) | 17.332 |
+| **Deriva de borde real (A − B)** | **−215, o 1,24 %** |
+
+**El problema no es un bug: es una propiedad del tokenizador.** Los tokenizadores
+BPE fusionan caracteres vecinos. Cuando se corta el archivo en 44 trozos, las
+fusiones que cruzaban un límite de sección se pierden, y cada trozo por separado
+necesita **más** tokens que el mismo texto contado junto. Por eso B > A, y por eso
+**ninguna forma de sumar filas puede dar exactamente el total del archivo.**
+
+**Un dato incómodo que sale de la misma medición:** C (17.332) está más cerca de
+A (17.375) que B (17.590). O sea que restar el marco 44 veces —que es
+aritméticamente incorrecto— estaba **compensando por casualidad** la deriva de
+borde: 44 × 6 = 264 de sobrerresta contra 215 de deriva. Se cancelan casi. **El
+número de hoy parecía razonable por una coincidencia, no por diseño.**
+
+**Consecuencia para el requisito.** «El mismo valor, y que sea el real» se puede
+cumplir en su parte sustantiva —que no haya dos números distintos presentándose
+los dos como «el total», y que el que se presenta sea el real— pero no como
+igualdad aritmética exacta. Las tres salidas posibles:
+
+| Opción | Qué implica |
+|---|---|
+| **1. El total es A, y la deriva se declara** | El total es el valor real. Las filas son el desglose, y una línea dice `boundary drift: −215`. Es exactamente lo que `[[ADR-002-manejo-del-marco-y-la-deriva-de-ctok]]` ya decidió y nunca se implementó (`[[BUG-010-boundary-drift-prometido-por-adr-002-no-existe]]`). **Es la que recomiendo:** cumple «el valor real» y no esconde nada. |
+| **2. El total es B (la suma de filas)** | Las filas cierran perfecto con el total, pero **el total deja de ser el valor real**: informaría 17.590 cuando el archivo cuesta 17.375. Contradice tu requisito de frente. |
+| **3. Repartir la deriva entre las filas** | Los dos números cierran y el total es real, pero **las filas pasan a ser un invento**: a cada sección se le asigna una parte de una diferencia que no le pertenece. Contradice el «no un invento». |
+
+**Recomiendo la 1**, y es lo que asumen los casos de prueba
+`TOK-009-C05` y `TOK-009-C13` de `docs/PBI/PBI-009-casos-de-prueba.md`. **Pero la
+decisión es tuya y necesita ADR**, porque cambia lo que la herramienta promete y
+porque toca ADR-002.
+
+### Dónde se resta el marco: decisión abierta, del mismo ADR
+
+Hoy `count_claude` resta `FRAME` **en cada llamada**, o sea una vez por sección.
+Eso es aritméticamente incorrecto: el marco es un costo fijo del mensaje, no de
+cada sección. Corregirlo (restarlo una sola vez) **cambia el número que informa
+la herramienta para todo archivo**, así que va en el mismo ADR que la decisión de
+arriba. No se puede arreglar uno sin el otro: el `FRAME` mal restado y la deriva
+de borde son los dos términos de la misma resta.
+
+### Dato útil para quien lo implemente
+
+El total acumulado **ya se calcula y se descarta**. En `render.py`, `_build_rows`
+hace `_, rows = _accumulate_and_flatten(...)` y devuelve `rows[1:]` — tanto el
+primer valor de la tupla como `rows[0]` (la fila `(document)`) llevan el
+acumulado. **No reusar ese número como total**: arrastra las dos deformaciones.
+Sirve para compararlo contra el total real y calcular la deriva de C13.
+
+### Lo que Fabián preguntó sobre `--tree`
+
+Preguntó si `--tree` podría dibujar el árbol real con los títulos, el texto de
+cada sección, el total por sección, y la raíz con el total del archivo.
+
+**Eso no es un flag aparte: es el desglose bien hecho.** Todo lo que describió es
+literalmente lo que `[[ADR-003-parseo-de-secciones]]` ya decidió y el código no
+cumple (`[[BUG-009-adr-003-arbol-sin-own-ni-total]]`). Así que no hacen falta dos
+flags: `--sections` tiene que devolver **eso**. El único agregado opcional serían
+los conectores de dibujo (`├─`, `└─`) en vez de la indentación por espacios, que
+es presentación y queda fuera de este PBI.
 
 ## 5. Handoffs
 
 ### Definition of Ready
 
 - [x] Valor, alcance y fuera de alcance claros.
-- [x] Criterios observables y testeables.
-- [ ] ADR enlazado si cambia una decisión arquitectónica — **pendiente de que
-      Fabián decida si quiere ADR-007.**
-- [ ] Casos de Kiwi cargados como PROPOSED — **pendiente.**
-- [ ] **Las tres decisiones de la sección 4 tomadas por el owner.**
+- [x] Criterios observables y testeables — dieciséis, en la sección 3.
+- [x] **Las tres decisiones del owner tomadas** (27/09/2026): `--sections`,
+      `2.0.0`, y parser + total convergentes al valor real.
+- [ ] **ADR-007 escrito y aceptado** — bloqueante. Tiene que resolver las dos
+      decisiones abiertas de la sección 4: qué se hace con los 215 tokens de
+      deriva de borde, y dónde se resta el marco. Sin eso no se puede escribir el
+      criterio de igualdad ni tocar `tokenizers.py`.
+- [ ] Casos de Kiwi cargados como PROPOSED — redactados en
+      `docs/PBI/PBI-009-casos-de-prueba.md`, **sin cargar**: falta la credencial
+      de la bóveda.
 
-**Estado:** `not ready` — es un borrador para que Fabián lo revise. Falta el
-nombre del flag, el número de versión, y los casos en Kiwi.
+**Estado:** `blocked` — no por falta de definición, sino por el ADR-007. Todo lo
+demás está listo para arrancar.
 
 ### Handoff a TDD
 
-- **AC a convertir en pruebas:** los diez. El AC-02 y el AC-06 son los que
-  cazan el defecto de fondo: uno fija que el total se cuenta de una pasada, el
-  otro que la tabla cierra contra el total.
-- **Fixtures y contratos:** hacen falta dos fixtures nuevos —
-  un archivo con encabezados sin cuerpo (el caso que destapó
-  `[[BUG-008-texto-de-los-encabezados-no-se-cuenta]]`, con `#` usado como
-  comentario) y uno vacío (`tests/fixtures/empty.md.fixture` ya existe).
-  Los datos dorados se remiden contra el tokenizador, no se escriben a mano.
+- **AC a convertir en pruebas:** los dieciséis, mapeados uno a uno a los casos
+  `TOK-009-C01` a `C13` de `docs/PBI/PBI-009-casos-de-prueba.md`, que trae además
+  la columna «qué falla caza» de cada uno.
+- **Los que importan:** **AC-02** (el total es el del archivo de una pasada, no
+  la suma) y **AC-10** (una sección con encabezado no vacío no puede dar `Own=0`).
+  Ese último es el que cierra BUG-008 y el que ningún AC de PBI-001 ni PBI-005
+  tenía.
+- **Fixtures:** falta crear `tests/fixtures/headings_sin_cuerpo.md.fixture` —
+  varios `#` seguidos sin texto entre ellos, replicando el bloque de comentarios
+  de estilo shell del `CLAUDE.md` de Fabián. `empty`, `no_headings` y `sample` ya
+  existen; **los datos dorados de `sample` hay que remedirlos.**
+- **Los datos dorados se remiden contra el tokenizador, nunca se escriben a
+  mano.** Los del `CLAUDE.md` global están en la sección «Datos dorados» del
+  documento de casos, y valen sólo para ese archivo sin editar.
 
 ### Handoff a Desarrollo
 

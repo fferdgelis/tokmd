@@ -32,6 +32,7 @@ def render(
     root: Section,
     count_fn: Callable[[str], int],
     total: int,
+    frame: int = 0,
     fmt: str = "table",
     depth: int | None = None,
     sort: str = "document",
@@ -94,29 +95,34 @@ def render(
     Boundary drift (applies to "table" — printed as a trailing line after
     a blank line —, "md" — same trailing line convention — and "json" —
     as the `"drift"` key; NOT "csv"):
-    `drift = total - sum(row.own for row in <every non-root row>) - FRAME`
-    where `FRAME` is the same fixed per-chunk cost the caller's `count_fn`
-    already subtracts once per section internally (you don't need to know
-    its numeric value to test this — see the fixed test setup below, which
-    gives you a `count_fn` where you know `FRAME` exactly). When the total
-    and the sections agree exactly (the healthy, expected case for this
-    project), `drift == 0`.
+    `drift = total - sum(row.own for row in <every non-root row>) - frame`
+    — `frame` is the fourth parameter above, an explicit `int` the CALLER
+    passes in (default `0`, meaning "no adjustment expected"). `render`
+    itself has no way to know a "fixed per-chunk cost" on its own — it
+    only ever calls the opaque `count_fn(text) -> int`, which could be
+    anything — so this value always comes from outside. When the total
+    and the sections agree exactly, once `frame` is accounted for (the
+    healthy, expected case for this project's real tokenizer), `drift ==
+    0`.
     """
 ```
 
-## Why the root row and the drift formula work the way they do
+## Why the root row, `frame`, and the drift formula work the way they do
 
 This project measured, against a real oracle, that a whole document's true
 token count is **not** exactly the sum of its section's own counts (each
 counted with a fixed per-chunk cost subtracted) — it's that sum **plus
 exactly one more instance of the fixed cost**. So a caller that wants the
 root row to show the real, oracle-matching total has to pass it in directly
-(computed by the caller from the raw, unsplit document) rather than trust
-`render` to derive it by summing — summing would come out exactly `FRAME`
-tokens short. The `drift` figure exists to make this checkable at a
-glance: it should always land on `0` for a healthy document, and a nonzero
-value is a real signal that something is wrong (a section was skipped, the
-document doesn't reconstruct cleanly, etc.), not an expected property of
+via the `total` parameter (computed by the caller from the raw, unsplit
+document) rather than trust `render` to derive it by summing — summing
+would come out exactly one `frame`'s worth short. The `drift` figure exists
+to make this checkable at a glance, and it needs the caller to also pass
+that same fixed cost in via the `frame` parameter (`render` cannot infer it
+from `count_fn`, which is opaque): it should always land on `0` for a
+healthy document once `frame` is supplied correctly, and a nonzero value is
+a real signal that something is wrong (a section was skipped, the document
+doesn't reconstruct cleanly, etc.), not an expected property of
 the tool.
 
 ## Fixed test tree and count_fn (build/use this in every test that needs one)
@@ -135,7 +141,9 @@ def make_tree():
         ],
     )
 
-FRAME = 2
+FRAME = 2  # a plain test constant — NOT read by render() itself, only
+           # ever used as the value you pass explicitly via render()'s
+           # own `frame=` parameter, in the tests below that check drift.
 
 def count_fn(text: str) -> int:
     # word count minus a fixed per-chunk cost, floor at 0 — deterministic
@@ -154,10 +162,16 @@ arbitrary but fixed "real" total the caller is asserting — you are not
 computing it from the tree, you are supplying it, exactly as a real caller
 would supply an externally-measured value).
 
-With `total = 5`: `drift = 5 - 0 - FRAME(2) = 3` — **not** zero, on
-purpose, for tests that check the drift formula is applied correctly
-(AC-15). For tests that need drift to land on `0` (AC-16), use
-`total = FRAME` (i.e. `total = 2`): `drift = 2 - 0 - 2 = 0`.
+Whenever a test checks the drift figure, call `render` with
+`frame=FRAME` explicitly (`render` does not know `FRAME` on its own — you
+are the caller supplying it, exactly matching the per-chunk cost your
+`count_fn` used). With `total = 5, frame=FRAME (2)`:
+`drift = 5 - 0 - 2 = 3` — **not** zero, on purpose, for tests that check the
+drift formula is applied correctly (AC-15). For tests that need drift to
+land on `0` (AC-16), use `total = FRAME` (i.e. `total = 2`, same `frame=2`):
+`drift = 2 - 0 - 2 = 0`. Tests that don't check the drift line at all can
+omit `frame=` (it defaults to `0`) — the drift figure is simply not
+inspected in those tests.
 
 ## Test cases to write, one test (or more) per item
 
@@ -185,22 +199,23 @@ purpose, for tests that check the drift formula is applied correctly
   than its `total` (own + child's total). Assert the parent's row shows
   `own < total` (two different numbers, in that order of magnitude).
 
-- **AC-15**: `render(tree, count_fn, total=5, fmt="table")` — the output
-  contains a line with the text `"boundary drift"` and the value `3`
-  appears in that line (per the worked example above: `5 - 0 - 2 = 3`).
-  The sign must be visible when negative too: repeat with `total=-3` (an
-  edge case) and assert the drift line shows a negative number
-  (`-3 - 0 - 2 = -5`).
+- **AC-15**: `render(tree, count_fn, total=5, frame=FRAME, fmt="table")` —
+  the output contains a line with the text `"boundary drift"` and the
+  value `3` appears in that line (per the worked example above:
+  `5 - 0 - 2 = 3`). The sign must be visible when negative too: repeat
+  with `total=-3` (an edge case, `frame=FRAME` still) and assert the drift
+  line shows a negative number (`-3 - 0 - 2 = -5`).
 
-- **AC-16**: `render(tree, count_fn, total=2, fmt="table")` — the drift
-  line shows exactly `0` (per the worked example: `2 - 0 - 2 = 0`) — the
-  output must not omit this line or claim a nonzero drift when it's
-  actually zero.
+- **AC-16**: `render(tree, count_fn, total=2, frame=FRAME, fmt="table")` —
+  the drift line shows exactly `0` (per the worked example: `2 - 0 - 2 =
+  0`) — the output must not omit this line or claim a nonzero drift when
+  it's actually zero.
 
-- **AC-06**: `render(tree, count_fn, total=5, fmt="json")` — `json.loads`
-  parses it into a `dict` (not a `list`, unlike the old contract), with a
-  top-level `"total"` key equal to `5`, a `"drift"` key equal to `3` (same
-  formula as AC-15), and a `"rows"` key that is a list containing entries
+- **AC-06**: `render(tree, count_fn, total=5, frame=FRAME, fmt="json")` —
+  `json.loads` parses it into a `dict` (not a `list`, unlike the old
+  contract), with a top-level `"total"` key equal to `5`, a `"drift"` key
+  equal to `3` (same formula as AC-15), and a `"rows"` key that is a list
+  containing entries
   for `"Intro"`, `"Background"`, `"Conclusion"` (root is NOT in `"rows"` —
   it's already represented by the top-level `"total"`), each with `"own"`
   and `"total"` fields.

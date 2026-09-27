@@ -1,0 +1,78 @@
+You wrote two pytest test functions for a CLI in an earlier pass. Both of
+them fail immediately, on every platform, before ever invoking the CLI
+under test, because of a bug in the test code itself — not the CLI. Fix
+just this bug; the test logic and assertions are otherwise correct and
+must not change.
+
+## The two functions, as originally written
+
+```python
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows encoding bug only")
+@pytest.mark.parametrize("fmt", ["table", "md", "csv", "json"])
+def test_windows_encoding_no_unicode_encode_error(tmp_path, fmt):
+    file = tmp_path / "unicode_heading.md"
+    file.write_text("## Flecha \u2192 \u00ab comillas \u00bb \u2014 guion\nBody text.\n")
+    env = os.environ.copy()
+    env.pop("PYTHONIOENCODING", None)
+    result = subprocess.run(
+        ["tokmd", str(file), "--platform", "claude-code", "--sections", "--format", fmt],
+        capture_output=True,
+        env=env,
+    )
+    assert result.returncode == 0
+    stderr = result.stderr.decode("utf-8", errors="replace")
+    assert "UnicodeEncodeError" not in stderr
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows encoding bug only")
+def test_windows_encoding_arrow_survives(tmp_path):
+    file = tmp_path / "unicode_heading.md"
+    file.write_text("## Flecha \u2192 \u00ab comillas \u00bb \u2014 guion\nBody text.\n")
+    env = os.environ.copy()
+    env.pop("PYTHONIOENCODING", None)
+    result = subprocess.run(
+        ["tokmd", str(file), "--platform", "claude-code", "--sections", "--format", "table"],
+        capture_output=True,
+        env=env,
+    )
+    assert result.returncode == 0
+    stdout = result.stdout.decode("utf-8")
+    assert "\u2192" in stdout
+```
+
+## The symptom (crude, exactly as pytest printed it — the CLI is never reached)
+
+```
+tests\test_cli.py:273: in test_windows_encoding_arrow_survives
+    file.write_text("## Flecha \u2192 \xab comillas \xbb \u2014 guion\nBody text.\n")
+  C:\...\Lib\pathlib.py:1048: in write_text
+    return f.write(data)
+  C:\...\Lib\encodings\cp1252.py:19: in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2192' in
+position 10: character maps to <undefined>
+```
+
+`Path.write_text(...)` with no `encoding=` argument uses the platform's
+default text encoding. On this project's Windows machine that default is
+`cp1252`, which cannot represent `\u2192` (the arrow character the test
+itself is trying to write into the fixture file) — so the test crashes
+while setting up its own fixture, before the subprocess is ever started.
+This has nothing to do with the CLI under test; it is a defect in the test
+fixture's own file-writing call.
+
+## The fix
+
+Both `write_text` calls must pass `encoding="utf-8"` explicitly, so the
+fixture file is written the same way regardless of the machine's default
+locale encoding: `file.write_text(text, encoding="utf-8")`.
+
+## Output format
+
+Return exactly one fenced Python code block containing **only these two
+corrected functions**, nothing else: no prose before or after, no other
+functions, no new imports beyond what the two functions above already use
+(`pytest`, `os`, `subprocess`, `sys` — already imported elsewhere in the
+real file; do not repeat the imports in your answer). Keep every other
+line of both functions byte-for-byte identical to the version above —
+change only the two `write_text` calls.

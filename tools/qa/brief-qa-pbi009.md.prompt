@@ -1,0 +1,122 @@
+You are the independent QA role (ADR-005/ADR-006). You did NOT write the
+code and did NOT write the tests. You are working read-only against a
+snapshot of git commit 421b8cb — do not edit any file, do not write any
+new file anywhere.
+
+This snapshot is a plain export: it has NO `.git` directory and NO network
+access. Do not run `git` commands, and do not try to reach any host —
+every automated test in this scope runs entirely offline (`ctok`/
+`tiktoken`, no real Anthropic API call).
+
+## Your job
+
+For each Kiwi test case below, actually run the relevant pytest test(s) in
+this checkout and report a verdict. Three of the seventeen cases (marked
+below) are NOT covered by a specific pytest test — for those, run the real
+`tokmd` command yourself against a fixture file included in this snapshot
+and check the exact number, because that number was verified earlier this
+session against Anthropic's real token-counting API by a separate session
+(not by any test in this suite), and this is your chance to confirm it
+independently on your own machine, against the actual implementation.
+
+Do not guess or reason about whether the code "should" work — execute
+`uv run pytest -k <name> -v` (or the full suite) and read the real output.
+If a command fails to run at all, that is BLOCKED, not FAILED.
+
+Do not fix anything. Do not edit or create any file. If you find a real
+defect, report it as FAILED with the raw output as evidence — do not patch
+it.
+
+Start by running, once, in this checkout:
+
+    uv sync
+    uv run pytest -v
+
+## Test cases (PBI-009 — defaults del CLI, total, y regresión de BUG-008/009/010/011)
+
+- TOK-009-C01 - tokmd archivo.md corre sin ninguna opcion
+  -> pytest test: test_default_platform_no_missing_option (tests/test_cli.py)
+- TOK-009-C02 - Sin --platform la plataforma resuelta es claude-code
+  -> pytest test: test_omitting_platform_equals_explicit_claude_code (tests/test_cli.py)
+- TOK-009-C03 - La salida por defecto es el total, no el desglose
+  -> pytest test: test_default_output_is_digits_only_and_matches_claude_code (tests/test_cli.py)
+- TOK-009-C04 - --platform codex explicito sigue funcionando
+  -> pytest test: test_explicit_codex_platform_not_overridden (tests/test_cli.py)
+- TOK-009-C05 - El total es el del archivo de una pasada y coincide con la API
+  -> **NO tiene test unitario** (el número real lo verifica un servicio de
+  red, y esta suite nunca toca la red por diseño). Corré vos mismo, en este
+  mismo checkout:
+
+      uv run tokmd local/qa-fixtures/claude-md-global.md
+
+  El número tiene que ser **exactamente `17381`**. Reportá el número real
+  que te dio, no sólo si "parece razonable".
+- TOK-009-C06 - Archivo vacio informa 0 sin traceback
+  -> pytest test: test_empty_file_outputs_zero (tests/test_cli.py)
+- TOK-009-C07 - Archivo sin ningun encabezado informa el total
+  -> pytest test: test_no_headings_file_outputs_digits_only (tests/test_cli.py)
+- TOK-009-C08 - Una seccion con encabezado no vacio no puede dar Own=0
+  -> pytest test: test_heading_only_sections_have_nonempty_own_text (tests/test_sections.py)
+- TOK-009-C09 - El titulo del encabezado esta contado en su propia seccion
+  -> pytest test: test_heading_own_text_includes_heading_line_and_invariant_holds (tests/test_sections.py)
+- TOK-009-C10 - Cada fila muestra Own y Total como dos numeros distinguibles
+  -> pytest test: test_table_shows_root_and_section_rows_and_uneven_own_total (tests/test_render.py)
+- TOK-009-C11 - Hay una fila raiz con el total del archivo
+  -> pytest test: test_root_total_is_injected_value_not_summed (tests/test_render.py)
+- TOK-009-C12 - Own != Total en una seccion con hijos que pesan
+  -> pytest test: test_uneven_parent_own_less_than_total (tests/test_render.py)
+- TOK-009-C13 - Si la suma de Own no coincide con el total, se informa
+  -> pytest tests: test_drift_positive_and_negative AND test_drift_zero (tests/test_render.py)
+- TOK-009-C14 - La suma de Own es EXACTAMENTE el total, en cualquier archivo
+  -> **NO tiene test unitario propio** (los tests unitarios usan un `count_fn`
+  sintético, no el tokenizador real de Claude — la propiedad "cierra exacto
+  contra el archivo real" sólo se puede confirmar contra un archivo real).
+  Corré vos mismo:
+
+      uv run tokmd local/qa-fixtures/claude-md-global.md --sections
+
+  La última línea antes del final tiene que decir exactamente
+  **`boundary drift: +0`**. Reportá la línea real que viste.
+- TOK-009-C15 - El desglose usa conectores de arbol
+  -> pytest test: test_tree_connectors_table_only (tests/test_render.py)
+- TOK-009-C16 - La salida no revienta por encoding en Windows
+  -> pytest test: test_windows_encoding_no_unicode_encode_error (tests/test_cli.py,
+  parametrizado por --format: table/md/csv/json — son 4 corridas, reportá
+  las 4)
+- TOK-009-C17 - El caracter no se reemplaza, se preserva
+  -> pytest test: test_windows_encoding_arrow_survives (tests/test_cli.py)
+
+## Una cuarta verificación manual, fuera de la lista de Kiwi (opcional pero pedida)
+
+Corré también:
+
+    uv run tokmd local/qa-fixtures/claude-md-global.md --platform codex
+
+El número tiene que ser **exactamente `10742`** (medido independientemente
+contra `tiktoken o200k_base` por otra sesión, en otro momento). Reportalo
+igual que C05/C14, con su propia línea VEREDICTO (usá el id `TOK-009-C05b`).
+
+## Context you should know, but not re-verify (out of scope for this snapshot)
+
+`tests/test_cli_verify.py` and `tests/test_cli_verify_gap01.py` (PBI-008,
+`--verify`) also run as part of the full suite and must still pass — this
+PBI did not intentionally change that flag's behavior, only the code paths
+around it (the CLI's default output and the tokenizer functions it calls).
+Confirm they're in the full-suite run above; no separate Kiwi case for them
+here.
+
+## Output format
+
+Run `uv sync` then `uv run pytest -v` once for the whole suite, and report
+the raw output. Then, for each of the eighteen items above (seventeen Kiwi
+cases plus the extra codex check), output one line in exactly this format
+(no extra prose):
+
+VEREDICTO: <exact case id from the list above> | <PASSED|FAILED|BLOCKED> | <one-line evidence>
+
+For C05, C14, and C05b, the "evidence" must include the actual number or
+line you saw, not just "matches expected".
+
+Print the raw pytest output first, then the eighteen VEREDICTO lines, then
+nothing else. Do not write your report to any file — this response IS the
+report.

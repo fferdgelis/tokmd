@@ -475,8 +475,27 @@ volver a tocar las cuatro specs a la vez, porque se referencian entre sí):
 
 ## 6. Cierre
 
-- **Artefactos y enlaces:** pendiente.
-- **Resultado de QA independiente:** `pending`
+- **Artefactos y enlaces:** Kiwi Test Run **70** (build `421b8cb`), 17
+  Test Execution, todas `PASSED`. Log crudo de QA en
+  `docs/handoff/qa/fase-6-pbi009-kimi-k3.txt`. Brief:
+  `tools/qa/brief-qa-pbi009.md.prompt`. Los cuatro bugs (`pk=9,10,11,13`)
+  quedaron linkeados a su Test Execution correspondiente vía
+  `Bug.add_execution` — el estado del registro Bug en sí no se pudo pisar
+  por API (`Bug.update` no existe en Kiwi; el cierre formal, si Fabián lo
+  quiere, es manual en `/admin`).
+- **Resultado de QA independiente:** `accepted` — **17/17 PASSED**,
+  ejecutado por Kimi K3 vía OpenCode, read-only, sobre un snapshot del
+  commit `421b8cb`, sin haber escrito tests ni código. Dos de los
+  diecisiete casos (`C05`, `C14`) no tenían test unitario propio —el
+  número real sólo lo confirma un servicio de red, y la suite nunca toca
+  la red por diseño— así que QA corrió `tokmd` a mano contra una copia del
+  `CLAUDE.md` global incluida como fixture en el snapshot, y confirmó los
+  mismos números que Desarrollo había verificado manualmente: **17.381**
+  (`tokmd CLAUDE.md`), **`boundary drift: +0`** (`--sections`), y de
+  regalo **10.742** (`--platform codex`, no pedido por Kiwi pero sí por el
+  brief). Suite completa dentro del snapshot: 77 passed, 0 failed.
 - **Aceptación del owner:** `pending`
-- **PBI o Bug siguiente:** `[[BUG-008-texto-de-los-encabezados-no-se-cuenta]]`
-  tiene que cerrarse para poder publicar esto con el desglose cuadrado.
+- **PBI o Bug siguiente:** ninguno bloqueante. Pendiente, sin decidir por
+  Desarrollo: el bump de versión a `2.0.0` (toca `test_version_flag_succeeds`,
+  hoy en `"1.0.0"`) y actualizar `README.md`/`README.es.md` para documentar
+  `--sections` y el nuevo comportamiento por defecto.

@@ -44,7 +44,7 @@ related_documents:
 ## 1. Clasificación
 
 - **Título:** ADR-002 decide que `tokmd` imprima `boundary drift: ±N` cuando la suma de filas no coincide con el archivo completo; ese código nunca se escribió.
-- **Estado:** `confirmed`
+- **Estado:** `verified` (arreglado y confirmado por QA independiente el 2026-09-27)
 - **Tipo:** `product-defect` (con componente `documentation-defect`: el ADR describe algo que no pasa)
 - **Severidad:** `3-medium` por sí solo. Sube a `2-high` leído junto a `[[BUG-008-texto-de-los-encabezados-no-se-cuenta]]`, porque este instrumento era el que lo habría detectado.
 - **PBI relacionado:** `[[PBI-002-tokenizador-claude]]` (origen) · se corrige en `[[PBI-009-defaults-del-cli-y-total]]`
@@ -140,6 +140,12 @@ sección 6 de BUG-009 para el patrón completo.
 
 ## 7. Corrección
 
+> **Implementada el 2026-09-27, commit `421b8cb`.** Opción (a): la línea
+> se imprime (`boundary drift: ±N`), con la fórmula corregida por ADR-007
+> (resta el `FRAME` una sola vez). Detalle completo en el PBI-009 y su
+> dev-log.
+
+
 **Sin implementar.** Dos caminos, y la elección es del owner porque cambian lo
 que la herramienta promete:
 
@@ -159,6 +165,13 @@ otra. Una de las dos tiene que cambiar.
 - **Evidencia:** el `grep` de la sección 5 y la cita literal de ADR-002.
 - **Registrado en Kiwi el 2026-09-27** (Bug `pk=11`), con su caso de regresión
   `TOK-009-C13` (id 388) cargado como `PROPOSED` antes de arreglar nada.
-- **Pendiente:** que el test lo escriba TDD y no Desarrollo, que QA lo corra
-  independiente, y linkear este Bug a la Test Execution con `Bug.add_execution`
-  cuando exista el Test Run.
+- **Arreglado el 2026-09-27**, por Desarrollo (Claude), contra el test que
+  escribió TDD (DeepSeek) sin ver `render.py`.
+- **QA independiente: `PASSED`.** Kimi K3/OpenCode, read-only, sobre el commit
+  `421b8cb`. Test Run **70**, caso `TOK-009-C13` (id 388), Test Execution
+  **271**, linkeada a este Bug. QA además corrió `tokmd` a mano contra el
+  `CLAUDE.md` global real (no un fixture sintético) y confirmó
+  `boundary drift: +0` — no sólo el test unitario, el caso real. Log crudo:
+  `docs/handoff/qa/fase-6-pbi009-kimi-k3.txt`.
+- **Estado del registro Bug:** sigue `abierto` en Kiwi — `Bug.update` no
+  existe en la API. Cierre formal, si Fabián lo quiere, manual en `/admin`.

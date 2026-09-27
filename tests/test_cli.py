@@ -124,7 +124,7 @@ def test_version_flag_succeeds():
     result = runner.invoke(main, ["--version"])
 
     assert result.exit_code == 0
-    assert result.output.strip() == "1.0.0"
+    assert result.output.strip() == "2.0.0"
 
 
 # --- PBI-009 (28/09/2026): --platform pasa a tener default "claude-code",
@@ -138,10 +138,9 @@ def test_version_flag_succeeds():
 # thinking deshabilitado. Desarrollo (Claude) revisó el archivo generado
 # y no lo editó.
 #
-# NOTA para quien implemente: test_version_flag_succeeds (arriba) espera
-# "1.0.0"; este PBI sube la versión a "2.0.0" (decisión de Fabián,
-# 27/09/2026). Ese test hay que actualizarlo aparte — es un dato de
-# release, no una decisión de contrato de TDD.
+# NOTA: test_version_flag_succeeds (arriba) esperaba "1.0.0"; Fabián
+# confirmó el corte de versión a "2.0.0" el 27/09/2026 (relayado por
+# TTOK-05), y pyproject.toml + este test se actualizaron juntos.
 
 
 # AC-01

@@ -4,8 +4,8 @@ aliases:
   - "PBI-009 defaults del CLI"
 project: tokmd
 document_type: pbi
-status: active
-version: 0.1.0
+status: closed
+version: 0.3.0
 created: 2026-09-27
 updated: 2026-09-27
 language: es
@@ -20,8 +20,8 @@ llm_channel: "subscription"
 reasoning_mode: "no expuesto"
 last_modified_by: "Anthropic / claude-opus-5 / Claude Code / subscription"
 modified_by: "Anthropic / claude-opus-5 / Claude Code / subscription"
-reviewed_by: "pending"
-review_status: "pending"
+reviewed_by: "Fabián Ferdgelis, owner"
+review_status: "approved"
 source_of_truth: true
 tags:
   - project/tokmd
@@ -41,6 +41,7 @@ related_documents:
 |---|---|---|---|
 | 2026-09-27 | 0.1.0 | Anthropic / claude-opus-5 / Claude Code / subscription | Creación, a pedido de Fabián. **El número PBI-009 se reasignó**: antes designaba la configuración de la API key del `--verify`, que quedó diferida en `docs/diferido/verify-api-key/`. Borrador para revisión del owner; no está `ready`. |
 | 2026-09-27 | 0.2.0 | Anthropic / claude-opus-5 / Claude Code / subscription | Fabián decidió las tres: flag `--sections`, versión `2.0.0`, y que el parser y el total den el mismo valor real. Entran al alcance BUG-009 y BUG-010 (ADR-003 y ADR-002 incumplidos, los levantó él). Se agrega la sección «la no-aditividad medida»: su requisito de igualdad exacta no es alcanzable, y está medido por qué. |
+| 2026-09-27 | 0.3.0 | Anthropic / claude-sonnet-5 / Claude Code / subscription | Cierre: bump de versión a `2.0.0` (commit `657386e`), README actualizado (commit `8106bd1`), y Fabián aprobó el PBI («apruebo PBI-009, dalo por cerrado»). `status` → `closed`. |
 
 ## 1. Valor y contexto
 
@@ -494,8 +495,15 @@ volver a tocar las cuatro specs a la vez, porque se referencian entre sí):
   (`tokmd CLAUDE.md`), **`boundary drift: +0`** (`--sections`), y de
   regalo **10.742** (`--platform codex`, no pedido por Kiwi pero sí por el
   brief). Suite completa dentro del snapshot: 77 passed, 0 failed.
-- **Aceptación del owner:** `pending`
-- **PBI o Bug siguiente:** ninguno bloqueante. Pendiente, sin decidir por
-  Desarrollo: el bump de versión a `2.0.0` (toca `test_version_flag_succeeds`,
-  hoy en `"1.0.0"`) y actualizar `README.md`/`README.es.md` para documentar
-  `--sections` y el nuevo comportamiento por defecto.
+- **Aceptación del owner:** `approved` — Fabián Ferdgelis, 2026-09-27
+  ("apruebo PBI-009, dalo por cerrado").
+- **Bump de versión:** hecho, commit `657386e`. `pyproject.toml` y
+  `test_version_flag_succeeds` a `2.0.0`, confirmado por Fabián (relayado
+  por TTOK-05). Suite completa: 77 passed.
+- **Documentación:** `README.md`/`README.es.md` actualizados, commit
+  `8106bd1` — `--sections`, el desglose `own`/`total` con fila raíz y
+  `boundary drift`, y el nuevo comportamiento por defecto.
+- **Estado: `closed`.** Nada bloqueante pendiente. Los cuatro bugs
+  (`pk=9,10,11,13`) siguen `abiertos` en Kiwi por el límite de API ya
+  documentado (`Bug.update` no existe); cerrarlos es manual en `/admin`,
+  a discreción de Fabián.

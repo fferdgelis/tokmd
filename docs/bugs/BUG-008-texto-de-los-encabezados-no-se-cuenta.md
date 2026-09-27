@@ -245,6 +245,6 @@ adentro de la corrección de este bug, a criterio de quien lo tome.
   `421b8cb`. Test Run **70**, casos `TOK-009-C08` (id 383) y `TOK-009-C09`
   (id 384), Test Execution **266** y **267**, linkeadas a este Bug vía
   `Bug.add_execution`. Log crudo: `docs/handoff/qa/fase-6-pbi009-kimi-k3.txt`.
-- **Estado del registro Bug:** sigue `abierto` en Kiwi — `Bug.update` no
-  existe en la API, así que el estado no se pudo pisar por script. El cierre
-  formal, si Fabián lo quiere, es manual en `/admin`.
+- **Estado del registro Bug:** `cerrado` en Kiwi (2026-09-27). `Bug.update`
+  no existe en la API, así que el cierre se hizo por la interfaz web
+  (`/bugs/9/`, acción "Close" con comentario), a pedido de Fabián.

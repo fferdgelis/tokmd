@@ -173,5 +173,6 @@ otra. Una de las dos tiene que cambiar.
   `CLAUDE.md` global real (no un fixture sintético) y confirmó
   `boundary drift: +0` — no sólo el test unitario, el caso real. Log crudo:
   `docs/handoff/qa/fase-6-pbi009-kimi-k3.txt`.
-- **Estado del registro Bug:** sigue `abierto` en Kiwi — `Bug.update` no
-  existe en la API. Cierre formal, si Fabián lo quiere, manual en `/admin`.
+- **Estado del registro Bug:** `cerrado` en Kiwi (2026-09-27). `Bug.update`
+  no existe en la API, así que el cierre se hizo por la interfaz web
+  (`/bugs/11/`, acción "Close" con comentario), a pedido de Fabián.

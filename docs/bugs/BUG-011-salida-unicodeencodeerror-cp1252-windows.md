@@ -176,5 +176,6 @@ de 11.660 sin ningún error — está en
   este Bug. Las cuatro variantes de `--format` (`table`/`md`/`csv`/`json`)
   corrieron en verde. Log crudo:
   `docs/handoff/qa/fase-6-pbi009-kimi-k3.txt`.
-- **Estado del registro Bug:** sigue `abierto` en Kiwi — `Bug.update` no
-  existe en la API. Cierre formal, si Fabián lo quiere, manual en `/admin`.
+- **Estado del registro Bug:** `cerrado` en Kiwi (2026-09-27). `Bug.update`
+  no existe en la API, así que el cierre se hizo por la interfaz web
+  (`/bugs/13/`, acción "Close" con comentario), a pedido de Fabián.

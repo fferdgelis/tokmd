@@ -240,6 +240,20 @@ comparar contra el total real y detectar la deriva.
 
 ### La no-aditividad medida: por qué la igualdad exacta no se alcanza
 
+> **⚠ SUPERADO POR MEDICIÓN, 27/09/2026 — leer
+> `[[ADR-007-costo-fijo-por-trozo-y-aditividad-del-arbol]]` en su lugar.**
+> Todo lo que sigue en esta sección parte de un supuesto que resultó falso: que
+> los 215 tokens eran deriva de borde del tokenizador, y por lo tanto
+> irreducibles. **No lo son.** Son el marco contado una vez por sección en vez de
+> una por documento, y el marco vale **5**, no los 6 que mide `FRAME`. Medido en
+> once archivos: **−5,00 tokens por corte**, constante. Corrigiéndolo, la suma de
+> `Own` da **17.376** y el archivo contado de una pasada da **17.376**: deriva
+> `+0`. **El requisito de Fabián se cumple exactamente.**
+>
+> Se deja el análisis viejo abajo porque explica de dónde salían las tres
+> opciones descartadas, y porque el «dato incómodo» del final sigue siendo
+> cierto y es importante.
+
 **Medido el 27/09/2026** sobre `C:\Users\fferdgelis\.claude\CLAUDE.md`, con la
 partición del archivo verificada byte a byte (ningún carácter perdido ni
 duplicado), tokenizador de Claude `4.8`:
@@ -316,10 +330,15 @@ es presentación y queda fuera de este PBI.
 - [x] Criterios observables y testeables — dieciséis, en la sección 3.
 - [x] **Las tres decisiones del owner tomadas** (27/09/2026): `--sections`,
       `2.0.0`, y parser + total convergentes al valor real.
-- [ ] **ADR-007 escrito y aceptado** — bloqueante. Tiene que resolver las dos
-      decisiones abiertas de la sección 4: qué se hace con los 215 tokens de
-      deriva de borde, y dónde se resta el marco. Sin eso no se puede escribir el
-      criterio de igualdad ni tocar `tokenizers.py`.
+- [ ] **ADR-007 aceptado** — bloqueante. El borrador está escrito
+      (`[[ADR-007-costo-fijo-por-trozo-y-aditividad-del-arbol]]`) y propone la
+      opción D: costo fijo 5 restado por trozo, con lo que la suma de `Own` da el
+      total real exacto. Falta la decisión de Fabián **y cerrar el cabo suelto
+      del −1 en archivos con front matter**, que el propio ADR marca como
+      condición para aceptarlo.
+- [ ] **AC-17 (nuevo, si se acepta la opción D):** dado cualquier archivo sin
+      front matter, cuando se pide `--sections`, entonces la deriva informada es
+      exactamente **`+0`**. Reemplaza al AC que «no se podía escribir».
 - [ ] Casos de Kiwi cargados como PROPOSED — redactados en
       `docs/PBI/PBI-009-casos-de-prueba.md`, **sin cargar**: falta la credencial
       de la bóveda.

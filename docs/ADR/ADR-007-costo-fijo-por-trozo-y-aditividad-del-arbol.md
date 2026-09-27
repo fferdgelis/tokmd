@@ -43,6 +43,7 @@ related_documents:
 |---|---|---|---|
 | 2026-09-27 | 0.1.0 | Anthropic / claude-opus-5 / Claude Code / subscription | Borrador a pedido de Fabián, con cuatro opciones. La medición cambió la conclusión sobre la marcha: lo que parecía deriva de borde irreducible es el marco contado N veces, y su requisito de igualdad exacta **sí** se puede cumplir. |
 | 2026-09-27 | 0.2.0 | Anthropic / claude-opus-5 / Claude Code / subscription | Cabo suelto cerrado, también a pedido de Fabián: el −1 no era el front matter sino cualquier trozo que empieza con `\n`. Arreglo de una línea en `FRONT_MATTER_RE`, verificado sobre 17 archivos con residuo 0 en todos. Se cumple la condición que este ADR se puso para poder aceptarse. |
+| 2026-09-27 | 0.3.0 | Anthropic / claude-opus-5 / Claude Code / subscription | **Corrección de un error propio, traído por la sesión TTOK-05:** el total no lleva el marco restado. La v0.2.0 decía 17.376 y la API cobra **17.381**; `ctok` crudo coincide exacto con la API. El marco pasa a mostrarse como renglón propio en vez de descontarse. El hallazgo del costo 5 por corte queda confirmado por una segunda medición independiente. |
 
 ## Estado
 
@@ -192,9 +193,49 @@ línea informa `boundary drift: −215`.
 1. El costo fijo por trozo se define como **5** para la familia `4.8` (y se
    remide por familia), en vez de `token_count("")`.
 2. `own` de cada nodo = `token_count(su_texto_con_encabezado) − 5`.
-3. El **total** se cuenta de una sola pasada: `token_count(archivo) − 5`.
-4. La línea de deriva **se implementa igual** (`[[BUG-010-boundary-drift-prometido-por-adr-002-no-existe]]`),
+3. El **total** se cuenta de una sola pasada, **crudo y sin restar nada**:
+   `token_count(archivo)`. Ver la corrección de abajo: el marco **es** parte de
+   lo que la API cobra, así que restarlo deja el total por debajo del valor real.
+4. El marco se muestra como **renglón propio**, no se esconde ni se descuenta:
+
+   ```
+   suma de Own            17.376
+   marco del mensaje           5
+   ─────────────────────────────
+   TOTAL                  17.381   <- lo que cobra la API
+   ```
+
+5. La línea de deriva **se implementa igual** (`[[BUG-010-boundary-drift-prometido-por-adr-002-no-existe]]`),
    como red de seguridad: tiene que dar `+0`, y si algún día no da 0, se ve.
+
+### Corrección del 27/09/2026: el total no lleva el marco restado
+
+**La v0.2.0 de este ADR decía que el total era `token_count(archivo) − 5`, o sea
+17.376. Estaba 5 tokens abajo.** Lo corrige la sesión **TTOK-05** (Claude Fable
+5.1), que midió el mismo archivo **contra la API real de Anthropic** —cosa que
+este ADR no había hecho— y dejó el resultado en
+`docs/investigation/20260927-count-tokens-api-vs-tokmd-ctok-ttok.md`:
+
+| Fuente | Tokens |
+|---|---|
+| `POST /v1/messages/count_tokens`, Sonnet 5 / Opus 5 / Opus 4.8 | **17.381** |
+| `ctok.token_count(archivo, "4.8")` **crudo, sin restar nada** | **17.381** |
+| `Σ token_count(trozo) − 43 × 5` (los 44 trozos de este ADR) | **17.381** |
+| Lo que decía la v0.2.0 (`crudo − 5`) | 17.376 → **−5 contra la API** |
+
+**Lo que esto enseña, y contradice a `[[ADR-002-manejo-del-marco-y-la-deriva-de-ctok]]`
+en un punto más:** el marco del mensaje **no es overhead a descontar, es parte de
+lo que Anthropic cobra**, porque el archivo viaja como `content` de un mensaje
+real. `ctok` crudo es exacto contra la API. Restarlo —que es lo que ADR-002
+decidió— da un número que **nadie factura**.
+
+Las dos mediciones son consistentes y se refuerzan: TTOK-05 confirma por su lado
+que el costo por trozo es 5 («coincide con la sonda de esta sesión:
+`58 = 38 + 25 − 5`»), medido sin conocer este ADR.
+
+**El hallazgo central de este ADR no cambia** —el costo por corte es 5, la
+tokenización es aditiva, la suma cierra exacto—; lo que cambia es **contra qué
+número cierra**: 17.381, el que cobra la API, no 17.376.
 
 - **Los dos números coinciden exactamente y los dos son el valor real.** Medido:
   17.376 = 17.376, deriva `+0`.
@@ -241,14 +282,16 @@ un paso: era el marco, no deriva, y el coeficiente es 5.
 ## Consecuencias
 
 - **El número que informa `tokmd` cambia para todo archivo.** Más alto que hoy,
-  porque hoy sobre-resta. Para el `CLAUDE.md` global: de 15.903 a **17.376**
-  (+9,3 %). Es un motivo más para la `2.0.0` que Fabián ya decidió.
+  porque hoy sobre-resta. Para el `CLAUDE.md` global: de 15.903 a **17.381**
+  (+9,3 %), que es **exactamente lo que cobra la API**. Es un motivo más para la
+  `2.0.0` que Fabián ya decidió.
 - **Hay que remedir todos los datos dorados** de `tests/test_tokenizers.py`,
   `tests/test_sections.py` y `tests/test_render.py`.
 - **Las mediciones anteriores del proyecto quedan desactualizadas**, incluida la
   de PBI-008 que está en `framework-multi-ai`
   (`docs/mejoras Claude-MD-General/MEDICION-CLAUDE-MD-GLOBAL.md`, 15.877) y que
-  Fabián estaba usando para decidir qué recortar. El valor correcto es **17.376**.
+  Fabián estaba usando para decidir qué recortar. **El valor correcto es 17.381**,
+  medido contra la API por TTOK-05 y reproducido por `ctok` crudo.
 - El costo fijo pasa a ser un dato medido por familia, con su propio test, no una
   llamada a `token_count("")`.
 - `--verify` hereda el mismo tratamiento: `measure_frame` mide contra la API el
@@ -263,12 +306,17 @@ un paso: era el marco, no deriva, y el coeficiente es 5.
 |---|---|
 | Costo fijo por trozo | **5** |
 | `token_count("")` (lo que ADR-002 llamaba `FRAME`) | 6 |
-| `CLAUDE.md` global, total de una pasada | **17.376** |
-| `CLAUDE.md` global, suma de los `Own` | **17.376** |
+| **`CLAUDE.md` global, lo que cobra la API** (oráculo, TTOK-05) | **17.381** |
+| `CLAUDE.md` global, `ctok` crudo de una pasada | **17.381** ✓ coincide |
+| `CLAUDE.md` global, `Σ ctok(trozo) − 43 × 5` | **17.381** ✓ coincide |
+| `CLAUDE.md` global, suma de los `Own` (cada trozo − 5) | 17.376 |
+| … más el marco del mensaje, una vez | + 5 = **17.381** ✓ |
 | Deriva resultante | **+0** |
 | Archivos verificados con residuo 0, con `FRONT_MATTER_RE` corregida | **17 de 17** |
 | Costo de cortar en un salto de línea | **5** |
 | Costo de cortar en medio de una frase (el parser nunca lo hace) | 7 |
+| Familias de tokenizador que expone la API | 2: desde Opus 4.7, y la anterior |
+| El mismo archivo en la familia anterior (Sonnet 4.6 / Haiku 4.5) | 13.076 |
 
 **Cómo se verifica que sigue sano:** el criterio `AC-15` de
 `[[PBI-009-defaults-del-cli-y-total]]` y el caso `TOK-009-C13`. La línea de

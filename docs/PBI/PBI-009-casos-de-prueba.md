@@ -51,7 +51,10 @@ puede fallar no prueba nada — es el paso 10 de los doce pasos, y es lo que fal
 en PBI-001 y PBI-005 y dejó pasar los tres bugs.
 
 **Estado: CARGADOS en Kiwi el 2026-09-27**, los quince como `PROPOSED`, en el plan
-**30** «PBI-009 - Defaults del CLI y total», ids **376 a 390**. Script:
+**30** «PBI-009 - Defaults del CLI y total», ids **376 a 391** (sin el 380: fue
+`TOK-009-C05` con un texto que se corrigió después, y quedó dado de baja — el id
+vigente de `TOK-009-C05` es **391**, ver la nota de idempotencia más abajo).
+Script:
 `tools/kiwi/cargar_pbi009_y_bugs.py` (idempotente). Los tres bugs quedaron
 registrados como Bug `pk=9`, `pk=10` y `pk=11`.
 
@@ -172,20 +175,21 @@ archivos, residuo 0 en todos, antes de escribir una línea de código.
 |---|---|
 | Producto | `tokmd`, id 6 |
 | Plan | **30** — «PBI-009 - Defaults del CLI y total» |
-| Casos | **376 a 390**, los quince como `PROPOSED` |
+| Casos | **376–379, 381–391**, los quince como `PROPOSED` (el 380 se dio de baja, ver abajo) |
 | Build | **33** — `d9c42ff` |
 | Bug BUG-008 | `pk=9`, `High`, abierto |
 | Bug BUG-009 | `pk=10`, `High`, abierto |
 | Bug BUG-010 | `pk=11`, `Medium`, abierto |
 
-Script: `tools/kiwi/cargar_pbi009_y_bugs.py`, idempotente (filtra por `summary`
-antes de crear, así que se puede volver a correr sin duplicar).
+Script: `tools/kiwi/cargar_pbi009_y_bugs.py`, idempotente — pero **no** por el
+texto completo del `summary` (ver la trampa 4 de abajo), sino por el prefijo fijo
+de cada id (`TOK-009-CNN -` o `BUG-0NN:`).
 
 **Pendiente:** linkear los tres Bug a su Test Execution con `Bug.add_execution`
 cuando exista el Test Run, o sea después de que el arreglo esté hecho y QA lo
 corra.
 
-### Tres trampas pagadas en esta carga (27/09/2026)
+### Cuatro trampas pagadas en esta carga (27/09/2026)
 
 1. **El contenedor publica su 8443 en el puerto 443 de Windows.** El default
    `port=8443` de `rpc_client.connect` sirve **sólo corriendo adentro del
@@ -197,6 +201,18 @@ corra.
 3. **`Bug.create` espera el *id* del Build, no su nombre.** Pasarle el commit
    corto como string da `Select a valid choice. That choice is not one of the
    available choices.` Hay que resolver o crear el `Build` primero.
+4. **Filtrar la idempotencia por el `summary` completo es frágil, y se rompió en
+   esta misma sesión.** Un número (17.376) se corrigió a otro (17.381) en la
+   descripción de `TOK-009-C05`, el filtro dejó de matchear el texto viejo, y se
+   creó un caso duplicado (`id=391`) en vez de actualizar el existente
+   (`id=380`). Peor con `Bug.filter`: Kiwi guarda el `summary` con las comillas
+   HTML-escapadas (`&#x27;`), así que comparar contra el string crudo del lado
+   del cliente **nunca matchea** — eso duplicó `BUG-010` (`pk=11` y `pk=12`) en
+   la misma corrida. **Arreglo:** identificar por el prefijo fijo del id
+   (`TOK-009-CNN -`, `BUG-0NN:`), que nunca cambia, y consultarlo contra el
+   servidor en vez de comparar strings del lado del cliente. Los dos duplicados
+   (`id=380`, `pk=12`) se borraron y se verificó una tercera corrida: 15
+   actualizados, 0 creados.
 
 ### Lo de antes, que sigue valiendo
 

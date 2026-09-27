@@ -252,7 +252,10 @@ comparar contra el total real y detectar la deriva.
 > irreducibles. **No lo son.** Son el marco contado una vez por sección en vez de
 > una por documento, y el marco vale **5**, no los 6 que mide `FRAME`. Medido en
 > once archivos: **−5,00 tokens por corte**, constante. Corrigiéndolo, la suma de
-> `Own` da **17.376** y el archivo contado de una pasada da **17.376**: deriva
+> `Own` más el marco da **17.381**, exactamente lo que cobra la API de
+> Anthropic (medido por TTOK-05 contra `count_tokens`; ver
+> `[[ADR-007-costo-fijo-por-trozo-y-aditividad-del-arbol]]`, corrección
+> v0.3.0). El archivo contado de una pasada da **17.381**: deriva
 > `+0`. **El requisito de Fabián se cumple exactamente.**
 >
 > Se deja el análisis viejo abajo porque explica de dónde salían las tres

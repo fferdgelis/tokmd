@@ -52,10 +52,16 @@ CASOS = [
 
     # --- Bloque B: el total es el valor real ---
     ("TOK-009-C05", "Functional", "Render",
-     "TOK-009-C05 - El total es el del archivo de una pasada, no la suma de filas",
+     "TOK-009-C05 - El total es el del archivo de una pasada y coincide con la API",
      "Dado el CLAUDE.md global sin editar, cuando se corre `tokmd CLAUDE.md`, entonces "
-     "informa 17376 exacto (dato dorado medido 2026-09-27, ctok familia 4.8). (AC-02)\n\n"
-     "QUE FALLA CAZA: calcular el total sumando filas con el metodo viejo."),
+     "informa 17381 exacto. (AC-02)\n\n"
+     "DATO DORADO: 17381 es lo que cobra la API de Anthropic, medido contra "
+     "POST /v1/messages/count_tokens el 2026-09-27 por la sesion TTOK-05 (Sonnet 5, "
+     "Opus 5 y Opus 4.8 dan el mismo numero). ctok CRUDO sobre el archivo entero da "
+     "17381 tambien, o sea que coincide al token. OJO: el marco del mensaje NO se resta "
+     "del total; es parte de lo que la API cobra. Restarlo daba 17376, cinco abajo.\n\n"
+     "QUE FALLA CAZA: calcular el total sumando filas con el metodo viejo (15903); "
+     "restar el marco del total (17376)."),
     ("TOK-009-C06", "Edge case", "Render",
      "TOK-009-C06 - Archivo vacio informa 0 sin traceback",
      "Dado tests/fixtures/empty.md.fixture, cuando se corre el comando, entonces informa "
@@ -115,8 +121,11 @@ CASOS = [
      "ES EL CASO MAS IMPORTANTE: verifica de punta a punta el requisito de Fabian de que "
      "el parser y el total den el mismo valor y que ese valor sea el real. YA ESTA MEDIDO "
      "QUE PASA: 17 archivos, residuo 0 en todos (ADR-007, 2026-09-27).\n\n"
+     "Sobre el CLAUDE.md global: suma de Own 17376 + marco del mensaje 5 = 17381, que es "
+     "lo que cobra la API. El marco se muestra como renglon propio, no se descuenta.\n\n"
      "QUE FALLA CAZA: restar el costo fijo por seccion en vez de por corte; usar 6 en vez "
-     "de 5; no absorber las lineas en blanco al front matter."),
+     "de 5; no absorber las lineas en blanco al front matter; descontar el marco del "
+     "total en vez de mostrarlo aparte."),
     ("TOK-009-C15", "Functional", "Render",
      "TOK-009-C15 - El desglose usa conectores de arbol",
      "Dado tests/fixtures/sample.md.fixture, cuando se pide --sections, entonces las filas "
@@ -178,6 +187,10 @@ def main():
         print(f"      CREADO id={plan['id']}")
 
     print(f"[3/5] Cargando {len(CASOS)} casos como PROPOSED ...")
+    # IDENTIDAD: por id_caso (prefijo "TOK-009-CNN"), NO por el summary
+    # completo. Un summary completo se rompe si se corrige el texto despues
+    # (paso de esta misma sesion, 27/09/2026: cambiar la descripcion de
+    # TOK-009-C05 con el filtro viejo creo un duplicado, id=391 sobre id=380).
     creados = actualizados = 0
     for id_caso, cat_nombre, comp_nombre, summary, texto in CASOS:
         categoria = uno(rpc.Category.filter({"product": producto["id"], "name": cat_nombre}),
@@ -190,7 +203,10 @@ def main():
             "text": texto,
             "is_automated": True,
         }
-        existentes = rpc.TestCase.filter({"summary": summary, "category": categoria["id"]})
+        existentes = [
+            tc for tc in rpc.TestCase.filter({"category": categoria["id"]})
+            if tc["summary"].startswith(id_caso + " - ")
+        ]
         if existentes:
             tc_id = existentes[0]["id"]
             rpc.TestCase.update(tc_id, valores)
@@ -230,10 +246,17 @@ def main():
         print(f"      CREADO id={build['id']}")
 
     print(f"[5/6] Registrando {len(BUGS)} bugs ...")
-    existentes_bugs = {b["summary"] for b in rpc.Bug.filter({})}
+    # IDENTIDAD: por el prefijo "BUG-0NN:" (fijo, nunca se edita), buscado con
+    # rpc.Bug.filter (server-side), no comparando strings del lado del cliente.
+    # Kiwi guarda el summary con las comillas HTML-escapadas (&#x27;), asi que
+    # comparar el string crudo del lado del cliente nunca matchea -- eso fue
+    # lo que duplico BUG-010 (pk=11 y pk=12) en esta misma sesion.
     for summary, sev_nombre in BUGS:
-        if summary in existentes_bugs:
-            print(f"      ya existia: {summary[:60]}")
+        prefijo = summary.split(":", 1)[0]  # "BUG-008", "BUG-009", "BUG-010"
+        ya = [b for b in rpc.Bug.filter({"product__name": PRODUCTO})
+              if b["summary"].startswith(prefijo + ":")]
+        if ya:
+            print(f"      ya existia pk={ya[0]['pk']}: {summary[:55]}")
             continue
         # El metodo es Severity.filter, NO BugSeverity.filter (verificado
         # 2026-09-27 con rpc.system.listMethods()).

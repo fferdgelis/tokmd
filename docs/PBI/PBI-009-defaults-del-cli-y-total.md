@@ -102,12 +102,17 @@ related_documents:
     `tokmd CLAUDE.md`.
   - `CHANGELOG.md` con el cambio incompatible declarado.
 
+  - **El dibujo del árbol con conectores** (`├─`, `└─`, `│`) — **variante B,
+    aprobada por Fabián el 27/09/2026** sobre la indentación por espacios.
+  - **`FRONT_MATTER_RE` corregida** para que absorba las líneas en blanco que
+    siguen al `---` de cierre. Es el cambio de una línea que cierra el residuo de
+    1 token del `[[ADR-007-costo-fijo-por-trozo-y-aditividad-del-arbol]]` y, de
+    paso, el segundo texto sin contar de
+    `[[BUG-008-texto-de-los-encabezados-no-se-cuenta]]`.
+
 - **No incluye:**
   - Documentar `--verify` en el README (hueco conocido, va aparte).
   - Cualquier cosa de la API key: diferido en `docs/diferido/verify-api-key/`.
-  - **El dibujo del árbol con conectores** (`├─`, `└─`) que Fabián mencionó como
-    posibilidad. La indentación por nivel ya existe y cumple ADR-003; los
-    conectores son presentación y van aparte si los quiere.
 
 - **Dependencias:**
   - **Una decisión de ADR que todavía no está tomada**, y es la de la sección 4:
@@ -330,15 +335,16 @@ es presentación y queda fuera de este PBI.
 - [x] Criterios observables y testeables — dieciséis, en la sección 3.
 - [x] **Las tres decisiones del owner tomadas** (27/09/2026): `--sections`,
       `2.0.0`, y parser + total convergentes al valor real.
-- [ ] **ADR-007 aceptado** — bloqueante. El borrador está escrito
-      (`[[ADR-007-costo-fijo-por-trozo-y-aditividad-del-arbol]]`) y propone la
-      opción D: costo fijo 5 restado por trozo, con lo que la suma de `Own` da el
-      total real exacto. Falta la decisión de Fabián **y cerrar el cabo suelto
-      del −1 en archivos con front matter**, que el propio ADR marca como
-      condición para aceptarlo.
-- [ ] **AC-17 (nuevo, si se acepta la opción D):** dado cualquier archivo sin
-      front matter, cuando se pide `--sections`, entonces la deriva informada es
-      exactamente **`+0`**. Reemplaza al AC que «no se podía escribir».
+- [ ] **ADR-007 aceptado** — bloqueante, y es lo único que falta. El borrador
+      está escrito (`[[ADR-007-costo-fijo-por-trozo-y-aditividad-del-arbol]]`),
+      propone la opción D (costo fijo 5 restado por trozo) y **su condición ya
+      está cumplida**: el residuo de −1 quedó explicado, arreglado y verificado en
+      17 archivos con residuo 0. Falta sólo la decisión de Fabián.
+- [x] **AC-17:** dado **cualquier** archivo, con front matter o sin él, cuando se
+      pide `--sections`, entonces la deriva informada es exactamente **`+0`**.
+      Reemplaza al AC que «no se podía escribir», y ya está verificado en 17
+      archivos antes de escribir una línea de código.
+- [x] **Presentación decidida:** variante B, con conectores de árbol.
 - [ ] Casos de Kiwi cargados como PROPOSED — redactados en
       `docs/PBI/PBI-009-casos-de-prueba.md`, **sin cargar**: falta la credencial
       de la bóveda.

@@ -40,6 +40,7 @@ related_documents:
 | Fecha | Versión | Modificado por | Descripción |
 |---|---|---|---|
 | 2026-09-27 | 0.1.0 | Anthropic / claude-opus-5 / Claude Code / subscription | Creación, a pedido de Fabián: *«el bug 008 tiene que estar ASAP en kiwi y con el detalle de casos que se van a correr para el testeo del buen funcionamiento»*. Pendiente de cargar a Kiwi como PROPOSED. |
+| 2026-09-27 | 0.2.0 | Anthropic / claude-opus-5 / Claude Code / subscription | Se agregan **TOK-009-C14** (la suma de `Own` es exactamente el total, ya medido en 17 archivos) y **TOK-009-C15** (conectores de árbol, variante B aprobada por Fabián). Quince casos. El apartado que decía que la igualdad no se podía verificar quedó desmentido por medición. |
 
 ## Para qué sirve este documento
 
@@ -52,9 +53,9 @@ en PBI-001 y PBI-005 y dejó pasar los tres bugs.
 **Estado:** `PROPOSED`, sin cargar todavía. Falta la credencial de la bóveda para
 `tools/kiwi/cargar_casos.py`.
 
-**Cobertura:** los diez criterios de aceptación de
-`[[PBI-009-defaults-del-cli-y-total]]` más la regresión de los tres bugs. Trece
-casos.
+**Cobertura:** los criterios de aceptación de
+`[[PBI-009-defaults-del-cli-y-total]]` más la regresión de los tres bugs.
+**Quince casos.**
 
 ## Los tres bugs que estos casos tienen que cazar
 
@@ -143,18 +144,25 @@ No son nuevos, pero el cambio los toca y tienen que seguir en verde:
 - `--verify` sigue funcionando igual que hoy.
 - Un archivo que no existe sigue dando error legible y código de salida ≠ 0.
 
-## Lo que estos casos NO cubren, y hay que decidir antes
+## El caso que faltaba, y ahora sí se puede escribir
 
-**El requisito de Fabián de que «el parser y el total den el mismo valor» no
-está entre los casos, porque está medido que no se puede cumplir exactamente:**
-la tokenización no es aditiva y quedan 215 tokens (1,24 %) de deriva de borde
-real. Ver la sección 4 de `[[PBI-009-defaults-del-cli-y-total]]`.
+> **Actualizado el 27/09/2026.** La versión 0.1.0 de este documento decía que el
+> requisito de Fabián —«el parser y el total tienen que dar el mismo valor»— no se
+> podía verificar porque la tokenización no era aditiva. **La medición lo
+> desmintió:** lo que parecía deriva de borde era el marco contado una vez por
+> sección, y vale 5, no 6. Ver
+> `[[ADR-007-costo-fijo-por-trozo-y-aditividad-del-arbol]]`.
 
-Hasta que el owner decida qué hacer con esa deriva —reportarla (C13), repartirla,
-o declarar que el total manda y las filas son desglose aproximado— **no se puede
-escribir un caso que verifique la igualdad**, porque no se sabe contra qué
-comparar. C05 y C13 son la versión que sí se puede verificar hoy: el total es el
-valor real, y la diferencia se declara en vez de esconderse.
+| Caso | Título | Precondición | Pasos | Resultado esperado | Qué falla caza |
+|---|---|---|---|---|---|
+| **TOK-009-C14** | La suma de `Own` es **exactamente** el total, en cualquier archivo | Cualquiera de los 17 archivos medidos, con y sin front matter | `tokmd <archivo> --sections` | `boundary drift` = **`+0`** exacto | Restar el costo fijo por sección en vez de por corte; usar 6 en vez de 5; no absorber las líneas en blanco al front matter |
+| **TOK-009-C15** | El desglose usa conectores de árbol | `sample.md.fixture` | `tokmd <fixture> --sections` | Las filas anidadas se dibujan con `├─`, `└─` y `│`, no con espacios | Volver a la indentación por espacios |
+
+**C14 es el caso más importante de los quince**, porque es el único que verifica
+el requisito del owner de punta a punta y porque **ya está medido que pasa**: 17
+archivos, residuo 0 en todos, antes de escribir una línea de código.
+
+**C15** cubre la variante B de presentación, que Fabián aprobó el 27/09/2026.
 
 ## Registro en Kiwi
 

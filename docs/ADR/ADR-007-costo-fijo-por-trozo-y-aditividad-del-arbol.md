@@ -42,11 +42,18 @@ related_documents:
 | Fecha | Versión | Modificado por | Descripción |
 |---|---|---|---|
 | 2026-09-27 | 0.1.0 | Anthropic / claude-opus-5 / Claude Code / subscription | Borrador a pedido de Fabián, con cuatro opciones. La medición cambió la conclusión sobre la marcha: lo que parecía deriva de borde irreducible es el marco contado N veces, y su requisito de igualdad exacta **sí** se puede cumplir. |
+| 2026-09-27 | 0.2.0 | Anthropic / claude-opus-5 / Claude Code / subscription | Cabo suelto cerrado, también a pedido de Fabián: el −1 no era el front matter sino cualquier trozo que empieza con `\n`. Arreglo de una línea en `FRONT_MATTER_RE`, verificado sobre 17 archivos con residuo 0 en todos. Se cumple la condición que este ADR se puso para poder aceptarse. |
 
 ## Estado
 
-`proposed`. **Bloquea `[[PBI-009-defaults-del-cli-y-total]]`.** Pendiente de
-decisión de Fabián Ferdgelis.
+`proposed`, **con la condición cumplida.** **Bloquea
+`[[PBI-009-defaults-del-cli-y-total]]`.** Pendiente sólo de la decisión de Fabián
+Ferdgelis sobre la opción D.
+
+La versión 0.1.0 de este ADR decía que no se podía aceptar sin explicar el
+residuo de −1 de los archivos con front matter. **Está explicado, arreglado y
+verificado** (sección «El cabo suelto del −1»): residuo 0 en 17 archivos, sin
+excepciones.
 
 ## Contexto
 
@@ -259,20 +266,93 @@ un paso: era el marco, no deriva, y el coeficiente es 5.
 | `CLAUDE.md` global, total de una pasada | **17.376** |
 | `CLAUDE.md` global, suma de los `Own` | **17.376** |
 | Deriva resultante | **+0** |
+| Archivos verificados con residuo 0, con `FRONT_MATTER_RE` corregida | **17 de 17** |
+| Costo de cortar en un salto de línea | **5** |
+| Costo de cortar en medio de una frase (el parser nunca lo hace) | 7 |
 
 **Cómo se verifica que sigue sano:** el criterio `AC-15` de
 `[[PBI-009-defaults-del-cli-y-total]]` y el caso `TOK-009-C13`. La línea de
-deriva tiene que dar `+0` para todo archivo sin front matter. **Si algún día no
-da 0, hay un defecto nuevo.**
+deriva tiene que dar `+0` para **todo** archivo, con front matter o sin él.
+**Si algún día no da 0, hay un defecto nuevo.** Eso convierte los tres
+instrumentos que ADR-002 y ADR-003 decidieron y nadie implementó en un control
+que se verifica solo en cada corrida.
 
-**El cabo suelto que hay que cerrar antes de aceptar este ADR:** los archivos con
-front matter YAML dan **−1**, en los siete medidos, sin excepción. Es constante y
-chico, pero es un token que no se explica. **No se acepta este ADR sin saber de
-dónde sale**, porque un residuo inexplicado de 1 token es exactamente la clase de
-cosa que después resulta ser otro `FRAME` mal medido. Hipótesis a probar: el
-trozo de front matter termina en `---\n` y el bloque siguiente arranca en `#`;
-puede que `markdown-it` no incluya alguna línea en blanco del límite, o que el
-front matter como primer trozo se tokenice distinto.
+### El cabo suelto del −1: cerrado, y no era el front matter
+
+**Investigado a pedido de Fabián el 27/09/2026. La causa es otra y el arreglo es
+de una línea.**
+
+Localizado con residuo **incremental** —comparando el prefijo de los primeros `k`
+trozos contado junto contra la suma de esos `k` trozos— sobre
+`ADR-003-parseo-de-secciones.md`:
+
+| k | Trozo agregado | Residuo | Salto |
+|---|---|---|---|
+| 1 | `(front matter)` | 0 | +0 |
+| 2 | `(preamble)` | **−1** | **−1 ← acá** |
+| 3 | `# ADR-003 — Parseo de secciones…` | −1 | +0 |
+| … | (los siete restantes) | −1 | +0 |
+
+El salto ocurre **una sola vez**, al agregar el trozo `(preamble)`, cuyo contenido
+completo es **un único `"\n"`**. Nada más aporta residuo.
+
+Control aislado con textos sintéticos:
+
+| Corte | Costo |
+|---|---|
+| `'---\nk: v\n---\n'` + `'# H1\ncuerpo\n'` | **5** ✓ |
+| `'---\nk: v\n---\n'` + `'\n# H1\ncuerpo\n'` | **6** ✗ |
+| `'---\nk: v\n---\n\n'` + `'# H1\ncuerpo\n'` | **5** ✓ |
+| `'xxx\nk: v\nyyy\n'` + `'# H1\ncuerpo\n'` | **5** ✓ |
+| `'texto comun\n'` + `'# H1\ncuerpo\n'` | **5** ✓ |
+
+**La causa:** no tiene nada que ver con el front matter —un bloque `xxx/yyy` con
+la misma forma cuesta 5—. **Es que el trozo siguiente empieza con `\n`.** En el
+texto junto, el `\n` final de un trozo y el `\n` inicial del siguiente forman
+`\n\n`, que es **un solo token**; partidos son dos. Un token de más, una vez.
+
+**Por qué sólo aparece con front matter:** `FRONT_MATTER_RE` termina en `\r?\n?`
+**opcional**, así que consume el `---\n` de cierre pero **deja afuera la línea en
+blanco que le sigue**. Esa línea se convierte en un trozo `(preamble)` de un solo
+`\n`, y ese trozo empieza con `\n`. Un archivo sin front matter nunca tiene un
+trozo así: los trozos de encabezado empiezan con `#`.
+
+**El arreglo — que el front matter absorba las líneas en blanco que le siguen:**
+
+```python
+FRONT_MATTER_RE = re.compile(
+    r"\A---\r?\n(?:.*?\r?\n)?---[ \t]*\r?\n(?:[ \t]*\r?\n)*",
+    re.DOTALL,
+)
+```
+
+**Verificado sobre 17 archivos reales** (los 11 anteriores más los documentos
+nuevos de esta sesión), con la partición recompuesta byte a byte en cada uno:
+
+| | Archivos con residuo ≠ 0 |
+|---|---|
+| Expresión actual | **12** |
+| Expresión corregida | **0** |
+
+**Residuo 0 en todos, sin excepciones.** La suma de los `Own` da el total real
+exacto para cualquier archivo. El cabo suelto queda cerrado y la condición para
+aceptar este ADR, cumplida.
+
+### Un defecto adicional que salió de la misma investigación
+
+`src/tokmd/sections.py` descarta el preámbulo cuando está en blanco:
+
+```python
+if preamble_text.strip():
+    root.children.append(Section(title="(preamble)", ...))
+```
+
+O sea que en el árbol real de `tokmd` ese `\n` **no entra en ningún `own_text` y
+no lo cuenta nadie**. Es el mismo defecto de fondo que
+`[[BUG-008-texto-de-los-encabezados-no-se-cuenta]]` —texto del archivo que no
+figura en ninguna fila— con otro carácter. Quedó anotado en la sección 6 de ese
+bug en vez de abrir un registro nuevo, porque **el arreglo de la expresión de
+arriba lo resuelve de paso**: sin trozo en blanco, no hay nada que descartar.
 
 **Reversibilidad:** el cambio es un número y dónde se resta. Volver atrás es
 volver a `FRAME = token_count("")` restado por sección, con el efecto de
@@ -281,9 +361,11 @@ corregir ADR-002 otra vez.
 
 ## Lo que este ADR NO decide
 
-- **Los conectores de árbol** (`├─`, `└─`) contra la indentación por espacios: es
-  presentación, no cálculo. Va en el PBI si Fabián lo quiere.
+- **La presentación del árbol.** Fabián aprobó el 27/09/2026 la **variante B**,
+  con conectores (`├─`, `└─`, `│`), sobre la indentación por espacios. Es
+  presentación y no cálculo, así que va en
+  `[[PBI-009-defaults-del-cli-y-total]]`, no acá.
 - **Si `--sections` y `--tree` son un flag o dos.** Todo lo que Fabián describió
   para `--tree` es lo que ADR-003 ya manda para el desglose, así que con uno
-  alcanza; la única diferencia posible es el dibujo.
+  alcanza; la única diferencia era el dibujo, y ya está decidido.
 - **Qué recortar del `CLAUDE.md` global** con el número corregido. Es de Fabián.

@@ -169,6 +169,30 @@ nadie más lo recoge.
    equivocado; el archivo dice eso.** Vale saberlo aparte del bug: cualquier
    herramienta que lea ese `CLAUDE.md` como Markdown ve 19 encabezados de nivel 1.
 
+### Segundo texto que no se cuenta: el preámbulo en blanco (27/09/2026)
+
+Encontrado investigando el residuo de 1 token del
+`[[ADR-007-costo-fijo-por-trozo-y-aditividad-del-arbol]]`. **Es el mismo defecto
+de fondo que el título del encabezado —texto del archivo que no entra en ningún
+`own_text`— con otro carácter.** Se anota acá en vez de abrir un registro nuevo.
+
+`FRONT_MATTER_RE` termina en `\r?\n?` **opcional**: consume el `---\n` de cierre
+pero deja afuera la línea en blanco que le sigue. Esa línea queda como trozo
+`(preamble)` de un solo `"\n"`, y después `parse_sections` la descarta:
+
+```python
+if preamble_text.strip():
+    root.children.append(Section(title="(preamble)", level=0, own_text=preamble_text))
+```
+
+`"\n".strip()` es falsy, así que **ese `\n` no entra en ningún `own_text` y no lo
+cuenta nadie.** Afecta a todo archivo con front matter seguido de una línea en
+blanco, que en este repositorio son **12 de 17** medidos.
+
+**Se arregla con el mismo cambio de una línea que el ADR-007:** si el front
+matter absorbe las líneas en blanco que le siguen, no queda trozo en blanco que
+descartar. No hace falta tocar el `if`.
+
 ## 7. Corrección
 
 **Sin implementar.** Pendiente de que Fabián elija, porque las dos opciones dan

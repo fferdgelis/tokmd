@@ -44,17 +44,14 @@ related_documents:
 | 2026-09-27 | 0.1.0 | Anthropic / claude-opus-5 / Claude Code / subscription | Borrador a pedido de Fabián, con cuatro opciones. La medición cambió la conclusión sobre la marcha: lo que parecía deriva de borde irreducible es el marco contado N veces, y su requisito de igualdad exacta **sí** se puede cumplir. |
 | 2026-09-27 | 0.2.0 | Anthropic / claude-opus-5 / Claude Code / subscription | Cabo suelto cerrado, también a pedido de Fabián: el −1 no era el front matter sino cualquier trozo que empieza con `\n`. Arreglo de una línea en `FRONT_MATTER_RE`, verificado sobre 17 archivos con residuo 0 en todos. Se cumple la condición que este ADR se puso para poder aceptarse. |
 | 2026-09-27 | 0.3.0 | Anthropic / claude-opus-5 / Claude Code / subscription | **Corrección de un error propio, traído por la sesión TTOK-05:** el total no lleva el marco restado. La v0.2.0 decía 17.376 y la API cobra **17.381**; `ctok` crudo coincide exacto con la API. El marco pasa a mostrarse como renglón propio en vez de descontarse. El hallazgo del costo 5 por corte queda confirmado por una segunda medición independiente. |
+| 2026-09-27 | 0.4.0 | Anthropic / claude-sonnet-5 / Claude Code / subscription | **Aceptado por Fabián.** Estado a `accepted`. Corregido en consecuencia `[[ADR-002-manejo-del-marco-y-la-deriva-de-ctok]]` (v0.3.0), cuya definición de `FRAME` y afirmación de deriva de borde quedaban desmentidas por este ADR. |
 
 ## Estado
 
-`proposed`, **con la condición cumplida.** **Bloquea
-`[[PBI-009-defaults-del-cli-y-total]]`.** Pendiente sólo de la decisión de Fabián
-Ferdgelis sobre la opción D.
-
-La versión 0.1.0 de este ADR decía que no se podía aceptar sin explicar el
-residuo de −1 de los archivos con front matter. **Está explicado, arreglado y
-verificado** (sección «El cabo suelto del −1»): residuo 0 en 17 archivos, sin
-excepciones.
+`accepted`. **Aceptado por Fabián Ferdgelis el 2026-09-27**, opción D: costo fijo
+5 restado por trozo, total contado de una pasada sin restar el marco, línea de
+deriva como control (`+0` esperado siempre). Deja de bloquear
+`[[PBI-009-defaults-del-cli-y-total]]`.
 
 ## Contexto
 

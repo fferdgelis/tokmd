@@ -225,15 +225,17 @@ decidió que entra en este PBI, porque ya toca `cli.py`/`render.py` y sube a
 - **Versión de tests y configuración:** `pytest`, con datos dorados a remedir en
   `tests/test_render.py` y `tests/test_cli.py`.
 - **Métricas:** el total de `C:\Users\fferdgelis\.claude\CLAUDE.md` con
-  tokenizador de Claude `4.8` tiene que dar **17.375** (medido el 27/09/2026
-  contando el archivo de una pasada). Es el dato dorado del AC-02.
-- **ADR requerido:** **`ADR-007`, y es bloqueante.** Tiene que resolver las dos
-  decisiones abiertas: qué se hace con los 215 tokens de deriva de borde, y si el
-  marco se sigue restando por sección o una sola vez. Toca además
-  `[[ADR-002-manejo-del-marco-y-la-deriva-de-ctok]]`, que hoy decide lo segundo.
-  El mismo ADR-007 cubre lo que ya era motivo suficiente por sí solo: cambiar el
-  default de salida de una herramienta ya publicada es una decisión con marcha
-  atrás costosa.
+  tokenizador de Claude `4.8` tiene que dar **17.381** — es lo que cobra la API
+  de Anthropic (medido por TTOK-05 contra `count_tokens` el 27/09/2026) y
+  coincide exacto con `ctok` crudo de una pasada. Es el dato dorado del AC-02;
+  **no** 17.375/17.376, que era el total sin el marco, corregido por
+  `[[ADR-007-costo-fijo-por-trozo-y-aditividad-del-arbol]]` v0.3.0.
+- **ADR requerido:** `[[ADR-007-costo-fijo-por-trozo-y-aditividad-del-arbol]]`,
+  **aceptado por Fabián el 2026-09-27** (opción D). Corrigió en consecuencia
+  `[[ADR-002-manejo-del-marco-y-la-deriva-de-ctok]]` (v0.3.0): el costo fijo por
+  trozo es **5**, no los 6 de `token_count("")`; se resta una vez por sección
+  pero **no** del total, que se cuenta crudo de una pasada; y la línea de deriva
+  pasa de «limitación conocida» a control de sanidad (`+0` siempre esperado).
 
 ### La decisión técnica que hay que tomar acá
 
@@ -360,22 +362,25 @@ es presentación y queda fuera de este PBI.
 - [x] Criterios observables y testeables — dieciséis, en la sección 3.
 - [x] **Las tres decisiones del owner tomadas** (27/09/2026): `--sections`,
       `2.0.0`, y parser + total convergentes al valor real.
-- [ ] **ADR-007 aceptado** — bloqueante, y es lo único que falta. El borrador
-      está escrito (`[[ADR-007-costo-fijo-por-trozo-y-aditividad-del-arbol]]`),
-      propone la opción D (costo fijo 5 restado por trozo) y **su condición ya
-      está cumplida**: el residuo de −1 quedó explicado, arreglado y verificado en
-      17 archivos con residuo 0. Falta sólo la decisión de Fabián.
+- [x] **ADR-007 aceptado por Fabián el 2026-09-27**, opción D: costo fijo 5
+      restado por trozo, total contado de una pasada sin restar el marco, línea
+      de deriva como control. `[[ADR-007-costo-fijo-por-trozo-y-aditividad-del-arbol]]`
+      pasa a `accepted`; se corrigió en consecuencia
+      `[[ADR-002-manejo-del-marco-y-la-deriva-de-ctok]]` (v0.3.0).
 - [x] **AC-17:** dado **cualquier** archivo, con front matter o sin él, cuando se
       pide `--sections`, entonces la deriva informada es exactamente **`+0`**.
       Reemplaza al AC que «no se podía escribir», y ya está verificado en 17
       archivos antes de escribir una línea de código.
 - [x] **Presentación decidida:** variante B, con conectores de árbol.
-- [ ] Casos de Kiwi cargados como PROPOSED — redactados en
-      `docs/PBI/PBI-009-casos-de-prueba.md`, **sin cargar**: falta la credencial
-      de la bóveda.
+- [x] **BUG-011 sumado al alcance** (AC-18, AC-19), decidido por Fabián el mismo
+      día.
+- [x] Casos de Kiwi cargados como `PROPOSED` — plan 30, ids 376–379 y 381–393
+      (diecisiete casos; el 380 se dio de baja, ver
+      `docs/PBI/PBI-009-casos-de-prueba.md`). Bugs `pk=9`, `10`, `11`, `13`
+      registrados.
 
-**Estado:** `blocked` — no por falta de definición, sino por el ADR-007. Todo lo
-demás está listo para arrancar.
+**Estado:** `ready`. Las cuatro condiciones de la Definition of Ready están
+cumplidas. Queda para el handoff a TDD (abajo).
 
 ### Handoff a TDD
 

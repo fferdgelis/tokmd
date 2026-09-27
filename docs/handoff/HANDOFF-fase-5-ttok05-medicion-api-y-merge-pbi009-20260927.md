@@ -33,6 +33,7 @@ related_documents:
   - "[[ADR-007-costo-fijo-por-trozo-y-aditividad-del-arbol]]"
   - "[[PBI-009-defaults-del-cli-y-total]]"
   - "[[BUG-011-salida-unicodeencodeerror-cp1252-windows]]"
+  - "[[20260927-ctok-propio-o-dependencia-pros-y-contras]]"
 ---
 
 # Traspaso TTOK-05 → TTOK-06: el CLAUDE.md global medido contra la API (17.381), catorce respuestas, BUG-011 y merge de PBI-009 a main
@@ -43,6 +44,7 @@ related_documents:
 |---|---|---|---|
 | 2026-09-27 | 0.1.0 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | Creación, a pedido de Fabián, para abrir TTOK-06. TTOK-05 corrió en paralelo con TTOK-04 (Opus 5, rama `worktree-ttok04-pbi009-ronda2`); las dos sesiones se coordinaron por mensaje y acordaron un protocolo. |
 | 2026-09-27 | 0.1.1 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | TTOK-04 respondió: datos dorados corregidos, ADR-007 aceptado (opción D) y ADR-002 corregido, en `f6f80d9` de su rama. El primer paso pasa a ser el merge de ese commit. |
+| 2026-09-27 | 0.2.0 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | Merges hechos a pedido de Fabián: `a9fda47` (f6f80d9) y `2d16a13` (5a83e3a, PBI-009 listo para TDD). La rama de TTOK-04 quedó íntegra en `main`, pusheado. Se suma el informe sobre ctok propio (`75e5a42`). El primer paso de TTOK-06 pasa a ser el ciclo TDD de PBI-009. |
 
 ## En una línea
 
@@ -58,26 +60,35 @@ dorados de PBI-009 (17.375 vs 17.381), abajo.**
 ## Repositorio y commit actual
 
 `C:\IA\Projects\Claude-Tokenizer`, rama `main`, remoto
-`https://github.com/fferdgelis/tokmd`. `main` == `origin/main` en `cb11142`
-(merge `--no-ff` de `worktree-ttok04-pbi009-ronda2`) más el commit de este
-traspaso. La rama de TTOK-04 sigue viva en
-`.claude/worktrees/ttok04-pbi009-ronda2`; TTOK-04 sigue trabajando ahí y avisa
-antes de pedir otro merge.
+`https://github.com/fferdgelis/tokmd`. `main` == `origin/main` en `2d16a13`
+más el commit de este traspaso. **La rama `worktree-ttok04-pbi009-ronda2` está
+íntegramente mezclada en `main`** (tres merges `--no-ff`: `cb11142`,
+`a9fda47`, `2d16a13`); nada pendiente. El worktree sigue en
+`.claude/worktrees/ttok04-pbi009-ronda2` por si TTOK-04 sigue; avisa antes de
+pedir otro merge.
 
-## Primer paso concreto: mezclar `f6f80d9` de TTOK-04 a `main` (lo pide Fabián)
+Últimos commits de `main`, para orientarse:
 
-**Resuelto por TTOK-04 antes de cerrar TTOK-05, en su rama, todavía sin
-mezclar a `main`.** Commit `f6f80d9` de `worktree-ttok04-pbi009-ronda2`:
-datos dorados de PBI-009 corregidos a 17.381 (incluido TOK-009-C05, Kiwi
-id=391), **ADR-007 aceptado por Fabián (opción D)**, y **ADR-002 corregido en
-consecuencia** (el costo fijo por trozo pasa a ser 5, no 6, y el total no lo
-resta). Los dos ADR están `accepted`. Lo que le queda a TTOK-06 es verificar
-que Fabián haya pedido ese merge y que `main` lo tenga; hasta entonces, `main`
-sigue con lo de abajo.
+| Commit | Qué |
+|---|---|
+| `2d16a13` | merge `5a83e3a`: PBI-009 listo para TDD (AC-20, fórmula de deriva de ADR-002 corregida, cuatro specs para DeepSeek en `tools/deepseek/specs/PBI-009-{sections,tokenizers,render,cli}.md.prompt`) |
+| `a9fda47` | merge `f6f80d9`: **ADR-007 aceptado (opción D), ADR-002 corregido, PBI-009 `ready`**, datos dorados en 17.381 |
+| `75e5a42` | informe «ctok propio o dependencia» (ver abajo) |
+| `cb11142` | merge de la rama de TTOK-04: PBI-009, ADR-007, BUG-008–011, Kiwi |
+| `dad57fa` | los dos informes de medición y las catorce respuestas |
 
-Estado que tenía `main` al escribir este traspaso (`cb11142`): ADR-007 v0.3.0
-decía ya que el **total es 17.381, marco incluido** (`Own 17.376 + marco 5`),
-pero quedaban tres lugares con el número viejo:
+## Primer paso concreto: PBI-009 está `ready`; sigue el ciclo TDD → Desarrollo → QA
+
+Con `2d16a13` en `main`, PBI-009 tiene ADR-007 y ADR-002 aceptados, 20 AC,
+17 casos en Kiwi (plan 30) y cuatro specs escritas para el rol TDD (DeepSeek,
+según ADR-006). Lo que sigue es el ciclo de siempre: TDD escribe los tests
+desde las specs, Desarrollo implementa hasta verde, QA corre los casos de
+Kiwi. **Los datos dorados son 17.381 (total, marco incluido) y 17.376 (suma
+de `Own`)**; cualquier número distinto en un test o en un caso es un error a
+reportar, no a acomodar.
+
+Sección histórica (ya resuelta, se deja para entender el porqué): al escribir
+la v0.1.0 de este traspaso quedaban tres lugares con el número viejo:
 
 | Archivo | Línea | Dice | Tiene que decir |
 |---|---|---|---|
@@ -163,6 +174,13 @@ TTOK-06 necesita saber sin abrirlo:
 6. Fabián pidió commitear los informes en `main` (`dad57fa`), pushear y
    mezclar la rama de TTOK-04 (`cb11142`, sin conflictos).
 7. Protocolo entre sesiones acordado y guardado en memoria del proyecto.
+8. Fabián planteó por qué apoyarse en ctok teniendo los modelos grandes a
+   disposición; respuesta con pros y contras en `75e5a42`.
+9. Antigravity le dijo a Fabián que tokmd corre sobre ttok: **falso**,
+   verificado en `pyproject.toml` y `tokenizers.py` (ctok + tiktoken; ttok
+   ni está instalado en el venv).
+10. Dos merges más a pedido de Fabián: `a9fda47` (f6f80d9) y `2d16a13`
+    (5a83e3a). Rama de TTOK-04 íntegra en `main`, pusheado.
 
 ## Protocolo entre sesiones (vigente)
 
@@ -178,11 +196,16 @@ TTOK-06 necesita saber sin abrirlo:
 
 ## Pendientes que sólo decide Fabián
 
-1. ~~ADR-007, opción D~~ — **aceptada** por Fabián el 27/09 (en la rama de
-   TTOK-04, `f6f80d9`). Pedir el merge a `main`.
-2. **PBI-009:** pasar a `ready` (datos dorados ya corregidos en `f6f80d9`).
-3. **Propuesta A+B+C sobre ctok** (vendorizar + gate de deriva contra la API +
-   `--verify` de documento entero): ¿un PBI o tres?
+1. ~~ADR-007, opción D~~ — aceptada el 27/09; en `main` desde `a9fda47`.
+2. ~~PBI-009 a `ready`~~ — hecho; en `main` desde `a9fda47`. Falta que
+   Fabián dé la orden de arrancar el ciclo TDD.
+3. **ctok: propuesta «B ahora, C como spike, D nunca»** —
+   `docs/investigation/20260927-ctok-propio-o-dependencia-pros-y-contras.md`
+   (`75e5a42`). B = vendorizar + corpus dorado + gate periódico gratis contra
+   `count_tokens` + `--verify` de documento entero (un PBI, ~una semana).
+   C = spike de una sesión: re-verificar las 15.283 piezas de la familia 4.8
+   con sus testigos contra la API; el resultado decide si la «fábrica del
+   tokenizador» propia es un PBI. Fabián no decidió todavía.
 4. **Baseline versionado:** tabla `(archivo, sha256, modelo, fecha, tokens)`
    en el repo, con las tres filas de hoy.
 5. **Qué recortar del `CLAUDE.md` global** (17.381 tokens en cada llamada de
@@ -225,9 +248,9 @@ TTOK-06 necesita saber sin abrirlo:
 
 ## Archivos que Fabián tiene que leer para decidir
 
-1. `docs/investigation/20260927-respuestas-14-preguntas-tokenizacion.md` —
+1. `docs/investigation/20260927-ctok-propio-o-dependencia-pros-y-contras.md`
+   — la decisión abierta sobre ctok (B / spike de C).
+2. `docs/investigation/20260927-respuestas-14-preguntas-tokenizacion.md` —
    la sección final «Qué queda para decidir».
-2. `docs/ADR/ADR-007-costo-fijo-por-trozo-y-aditividad-del-arbol.md` —
-   «Opción D» y «Corrección del 27/09/2026».
 3. `docs/PBI/PBI-009-defaults-del-cli-y-total.md` — sección 3 (AC-01 a
-   AC-19), después de la corrección de datos dorados.
+   AC-20) y sección 5 (handoff a TDD), antes de dar la orden de arrancar.

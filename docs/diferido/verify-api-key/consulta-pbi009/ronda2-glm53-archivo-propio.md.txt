@@ -1,0 +1,263 @@
+---
+title: "Opinión PBI-009 ronda 2 (planteo v2) — GLM-5.3"
+aliases:
+  - "Opinión PBI-009 ronda 2 GLM"
+project: tokmd
+document_type: opinion
+status: active
+version: 0.1.0
+created: 2026-09-27
+updated: 2026-09-27
+language: es
+owners:
+  - project-founder
+author_human: "none"
+created_by: "llm"
+llm_provider: "Z.ai"
+llm_model: "glm-5.3"
+llm_harness: "OpenCode"
+llm_channel: "api (NVIDIA, clave al proceso, no persistida)"
+reasoning_mode: "no expuesto"
+last_modified_by: "Z.ai / glm-5.3 / OpenCode / api"
+modified_by: "Z.ai / glm-5.3 / OpenCode / api"
+reviewed_by: "pending"
+review_status: "pending"
+tags:
+  - project/tokmd
+  - consulta-pbi009
+  - ronda-2
+related_documents:
+  - "[[CONSULTA-PBI-009-api-key-opcional-20260926]]"
+  - "[[ADR-001-eleccion-de-motores-de-tokenizacion]]"
+  - "[[ADR-002-manejo-del-marco-y-la-deriva-de-ctok]]"
+---
+
+# Opinión PBI-009, ronda 2 (planteo v2 de Fabián) — GLM-5.3
+
+## Historial de modificaciones
+
+| Fecha | Versión | Modificado por | Descripción |
+|---|---|---|---|
+| 2026-09-27 | 0.1.0 | Z.ai / glm-5.3 / OpenCode / api | Creación. Opinión sobre el planteo v2 de Fabián (ronda 2 de la consulta PBI-009), con relevamiento del código de la copia y verificación web de la documentación oficial de Anthropic del mismo día. |
+
+## 1. Qué releé antes de opinar (y una aclaración de honestidad)
+
+Sobre esta copia del repositorio:
+
+- `src/tokmd/verify.py` (líneas 40 a 48): `get_client()` sólo lee `ANTHROPIC_API_KEY` del entorno; `anthropic` se importa lazy en la línea 46.
+- `src/tokmd/cli.py`: `FILE` obligatorio (línea 87), `--platform` requerido (línea 88), `--version` ya corre sin archivo (línea 86, patrón de flag de acción), y en `main` sólo se atrapa `MissingApiKeyError` (líneas 143-144): el `ModuleNotFoundError` del import lazy queda crudo.
+- `README.md` y `README.es.md`: cero apariciones de `--verify` (grep, verificado hoy en esta copia).
+- `docs/ADR/ADR-001`: opción 3 aceptada (offline por defecto, `--verify` opt-in), "exacta y gratis".
+- `docs/handoff/consulta-pbi009/planteo-v2-fabian-20260927.txt`: el texto v2, idéntico al que me llegó.
+
+Verificación web del día (27/09/2026):
+[documentación oficial de token counting de Anthropic](https://platform.claude.com/docs/en/build-with-claude/token-counting),
+consultada hoy en esta sesión.
+
+Aclaración de honestidad: esta copia incluye el consolidado de la ronda 1
+(`docs/CONSULTA-PBI-009-api-key-opcional-20260926.md`) con las opiniones de
+los seis motores, y lo leí durante el relevamiento. No puedo desleerlo. Digo
+igual la mía con sus argumentos: relevar el código y la documentación oficial
+por mi cuenta me lleva a la misma recomendación que di en ronda 1, y los datos
+nuevos de esta ronda (sección 6) la refuerzan.
+
+## 2. Veredicto en una línea
+
+El diagnóstico del planteo v2 es correcto (falta un mecanismo de usuario para
+la funcionalidad optativa, y no puede exigirle infraestructura de seguridad a
+nadie); la única parte que cambiaría es el medio de guardado: "variable de
+estado del sistema según el SO" es el mecanismo que más depende del SO, no el
+que menos, y no gana nada de seguridad. El mínimo real es un archivo de
+configuración en la carpeta del usuario con permisos restringidos, con la
+variable de entorno como prioridad para quien ya la tiene.
+
+## 3. Dónde coincide el planteo v2
+
+1. **El hueco es real y es del owner.** Hoy `--verify` existe y funciona, pero
+   `get_client()` sólo mira el entorno (`verify.py:40`): quien no sabe exportar
+   `ANTHROPIC_API_KEY` en su shell no tiene la funcionalidad. Para el usuario
+   de PyPI, la función hoy no existe.
+2. **Sin DPAPI ni bóvedas para el usuario final.** Correcto y sin matiz: un
+   CLI público no puede pedirle a nadie montar una bóveda. Mi recomendación
+   tampoco lo hace: un archivo con permisos 0600 es todo lo que se le pide.
+3. **La teoría de adopción es correcta y ya está diseñada.** "Los nerds
+   puristas lo van a adoptar, los comunes no" es exactamente la opción 3 de
+   ADR-001, aceptada: el producto es el conteo offline; `--verify` es un extra
+   que nadie necesita para usar tokmd. El PBI-009 sólo formaliza el acceso al
+   extra.
+4. **`tokmd --config` como punto único de configuración.** Bien elegido: un
+   solo comando, interactivo, que no exige archivo ni plataforma.
+
+## 4. La única disidencia: la "variable de estado del sistema"
+
+Lo que persiste una variable de entorno desde un programa, en cada SO:
+
+| SO | Qué implica en la práctica |
+|---|---|
+| Windows | `setx` o registro `HKCU\Environment`. La consola que el usuario ya tiene abierta **no la ve**: sólo los procesos nuevos. Resultado predecible: corre `tokmd --config`, y en la misma terminal `tokmd --verify` sigue diciendo "key is not set". Es la trampa documentada en tu propio `CLAUDE.md` global ("las variables de entorno nuevas no las ven los procesos ya corriendo"), verificada en tu máquina. |
+| Linux | No existe tal variable persistente sin editar los archivos de arranque del shell del usuario (`.bashrc`, `.zshrc`, fish, nushell, `direnv`): adivinar cuál usa cada persona es el pozo clásico de todo CLI que toca rc-files. |
+| macOS | Igual que Linux; `launchctl setenv` no sobrevive un reinicio sin armar un LaunchAgent. |
+
+Y el punto que desarma la razón de ser de la propuesta: **no gana seguridad.**
+Una variable User de Windows la lee cualquier proceso del usuario; un
+rc-file es texto plano en disco. Es exactamente la misma exposición que un
+archivo de configuración con permisos 0600, pero con tres caminos de código,
+tres juegos de tests, y la trampa de la terminal abierta.
+
+Dicho al revés, porque es el argumento decisivo: **el mecanismo que "guarda
+según el sistema operativo" es el que más depende del sistema operativo.** El
+archivo de configuración es el único que implementa una sola vez y anda igual
+en los tres (sólo cambia la ruta base, cinco líneas con la biblioteca
+estándar).
+
+## 5. El mecanismo que recomiendo (opción B de la ronda 1, sin cambios)
+
+**Archivo de configuración en la carpeta del usuario + variable de entorno
+como prioridad.** Sin dependencias nuevas: `pathlib`, `json` y `getpass`,
+todo biblioteca estándar.
+
+Rutas (el estándar de los CLIs publicados, lo mismo que `aws`, `gcloud`,
+`vercel`, `fly`):
+
+| SO | Ruta | Protección |
+|---|---|---|
+| Windows | `%APPDATA%\tokmd\config.json` | ACL del perfil (ya restrictivo por defecto) |
+| Linux | `$XDG_CONFIG_HOME/tokmd/config.json` (defecto: `~/.config/tokmd/config.json`) | `chmod 0600` |
+| macOS | `~/Library/Application Support/tokmd/config.json` (o `~/.config/tokmd`) | `chmod 0600` |
+
+Cadena de resolución en `get_client()`:
+
+1. `ANTHROPIC_API_KEY` del entorno **gana**: CI, pipelines, power users, y tu
+   flujo actual (bóveda DPAPI a la variable de la consola) siguen andando
+   idénticos, sin ningún cambio en tu máquina.
+2. Si no está: el archivo de configuración que creó `tokmd --config`.
+3. Si no hay nada: mensaje legible con los dos caminos ("run `tokmd --config`,
+   or set `ANTHROPIC_API_KEY` in your environment"), nunca un traceback.
+
+UX de `tokmd --config` (flag de acción, no subcomando; `--version` ya probó en
+`cli.py:86` que un flag puede correr sin `FILE`; hay que hacer `FILE` opcional
+y que sin archivo ni `--config` el error sea claro):
+
+- Pide la key con **entrada oculta** (`getpass`): no se ve en pantalla, no
+  queda en historial ni scrollback.
+- Confirma mostrándola **enmascarada** (`sk-ant-...abcd`), nunca completa.
+- `tokmd --config --clear` para borrarla; `tokmd --config` a secas muestra si
+  hay una guardada y de dónde viene (env o archivo), sin mostrarla.
+- **Nunca** se acepta la key como argumento (`tokmd --config sk-ant-...`
+  caería al historial del shell; `verify.py:43` ya lo advierte hoy).
+- Sin TTY (CI, script): fallar limpio de entrada, no colgarse esperando input.
+- Al guardar, chequear formato `sk-ant-` mínimo; "guardada" y "válida" son
+  estados distintos.
+
+## 6. La comunicación: los tres mensajes, con datos verificados hoy
+
+Lo que pediste: explicar que es opcional, ventajas reales, qué pasa si no se
+usa, sin amedrentar. Los tres mensajes, cada uno con su dato:
+
+**1. Es opcional.** tokmd funciona 100% offline, sin cuenta, sin key, sin
+red. El conteo por secciones es el producto; `--verify` es un extra.
+
+**2. La ventaja real, dicha sin sobreprometer.** Hoy pude verificar contra la
+documentación oficial (27/09/2026) tres cosas que cambian la redacción:
+
+- El endpoint es **gratis**, con límites generosos: 5.000 pedidos por minuto
+  en el tier inicial (10.000 en Build, 20.000 en Scale), y además los límites
+  de conteo son **separados** de los de mensajes: contar no le come cuota a
+  nada. tokmd hace una llamada por sección más una de marco: rozar 5.000 RPM
+  es materialmente imposible en uso manual. Cerrado el punto abierto que dejé
+  en ronda 1.
+- Anthropic **lo describe como estimación**: "The token count is an estimate.
+  In some cases, the actual number of input tokens used when creating a
+  message might differ by a small amount". Entonces la ventaja honesta no es
+  "exactitud certificada" (ni la API promete eso): es que es **la referencia
+  del proveedor**, contada con el tokenizador vigente del modelo que le
+  pases, contra la que se miden límites y facturación. Nota interna: ADR-001
+  dice "exacta y gratis"; lo de "gratis" quedó verificado hoy, lo de "exacta"
+  conviene matizarlo en la redacción del README con el lenguaje del propio
+  Anthropic.
+- Anthropic publicó que **Claude 4.7 en adelante usa un tokenizador nuevo**:
+  el mismo texto produce ~30% más tokens que en modelos anteriores. Este es
+  el argumento real y no amedrentador a favor de `--verify`: `ctok` es una
+  reconstrucción de terceros (ADR-001 lo declara); cuando el tokenizador del
+  proveedor cambia, toda reconstrucción queda vieja hasta que alguien la
+  actualice. `--verify` no puede quedar viejo: le pregunta al que fabrica el
+  número real.
+
+**3. Si no la usás:** no se rompe nada, mismos números de siempre, y el
+usuario común no necesita enterarse de que el extra existe. Dos honestidades
+para el PBI:
+
+- La deriva offline ya está medida por el proyecto (ADR-002, PBI-002) para
+  archivos chicos; no repetir el "0,5% a 1%" de Antigravity, que nunca fue
+  medido acá.
+- El Δ offline-vs-API sobre un archivo real grande **todavía no existe**:
+  PBI-008 midió `--verify` (15877) y OpenAI (9852), nunca `ctok` sobre ese
+  mismo archivo. Propongo como criterio del PBI-009 medirlo una vez sobre el
+  `CLAUDE.md` global y publicar el número real en el README: si es chico, es
+  el dato tranquilizador perfecto; si es grande, es la mejor propaganda de
+  `--verify`. Hoy no se sabe, y eso es razón suficiente para medirlo.
+
+Un mensaje que hay que dar sí o sí, porque es honestidad con el usuario:
+`--verify` **envía el texto de las secciones a Anthropic**. Para un
+`CLAUDE.md` es irrelevante, pero el README tiene que decirlo.
+
+## 7. Gaps verificados que el PBI-009 tiene que cubrir
+
+Reverificados hoy en esta copia (ronda 1 los encontró, siguen ahí):
+
+1. **El README no documenta `--verify`** (cero apariciones en ambos README):
+   la "explicación de que es opcional" es además la primera documentación de
+   usuario de la función completa. El PBI incluye la sección "Optional:
+   verification" en ambos idiomas.
+2. **Sin `tokmd[verify]` instalado, `--verify` da un traceback crudo**:
+   `cli.py:143` sólo atrapa `MissingApiKeyError`; el `import anthropic` lazy
+   de `verify.py:46` no lo convierte nadie. Mensaje esperado: "install with
+   `pip install tokmd[verify]`".
+3. **Archivo de configuración corrupto**: degradar con mensaje claro, no
+   traceback.
+4. **La key nunca** en argv, ni en logs, ni impresa (regla de PBI-006 que se
+   mantiene).
+5. **Tests sin red y sin key real** (ADR-006): `tmp_path` y `monkeypatch`, más
+   un test de que la key no aparece en ninguna salida.
+6. **Nombre correcto**: `ANTHROPIC_API_KEY` (en el planteo quedó
+   `API_KEY_ANTHROPIC` otra vez; el PBI y los README usan el nombre del
+   código y del SDK).
+
+## 8. `keyring` (la opción C): por qué no para esta versión
+
+Sigo recomendándolo para el roadmap (v1.2), no para v1.0.x. La objeción no es
+la de Antigravity (no pude reverificar hoy qué instala `keyring` en cada
+plataforma; PyPI no cargó en el fetch): mi objeción es de runtime y es
+suficiente sola: en Linux sin escritorio y en buena parte de WSL no hay
+servicio de secretos corriendo, `keyring` falla al usarlo, y entonces
+necesitarías el fallback al archivo igual. Dos caminos de código y una
+dependencia nueva en el extra, para un "mecanismo mínimo". Si algún día se
+agrega, es transparente para el usuario: la cadena de resolución de la
+sección 5 no cambia, sólo el paso 2.
+
+## 9. Adopción: nerds, usuarios comunes, y el tercero que nadie nombra
+
+Tu lectura es correcta. El diseño la respeta por construcción: el usuario
+común ni se entera (no lo necesita, nada se lo pregunta), el nerd purista
+tiene `--config` en 30 segundos. Y hay un tercer público que el planteo no
+nombra y que sale gratis con la cadena de resolución: **CI y pipelines**, que
+ya usan la variable de entorno y jamás tocarían `--config`. La variable como
+prioridad los cubre sin una línea de código nueva.
+
+## 10. Qué decide Fabi y dónde se registra
+
+La decisión es una sola y tuya: **dónde se guarda la key.** Las opciones
+sobre la mesa: A (variable de entorno persistente por SO, tu planteo), B
+(archivo de configuración 0600, mi recomendación, la de 4 de 6 en ronda 1), C
+(`keyring`, Codex y Claude en ronda 1, roadmap para mí).
+
+Si se decide por B, el registro que ya propuse en ronda 1 se mantiene:
+
+- PBI-009 en `docs/PBI/` con los criterios de las secciones 5, 6 y 7 (se
+  escribe después de tu decisión, no antes).
+- ADR-007 para la decisión de almacenamiento: hay alternativas rechazadas
+  con argumentos (A y C) y un trade-off de seguridad que hay que dejar
+  escrito sin eufemismos (la key queda en texto plano protegida por
+  permisos de archivo; es el nivel `aws`/`gcloud`, no DPAPI, y para una tool
+  pública es el estándar aceptado).
+- README.md y README.es.md como entregable del propio PBI, más CHANGELOG.

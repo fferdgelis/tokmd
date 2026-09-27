@@ -1,0 +1,213 @@
+MOTOR: Claude (Anthropic) / claude-opus-5 / Claude Code / subscription
+COPIA: el propio repo, worktree C:\IA\Projects\Claude-Tokenizer\.claude\worktrees\ttok04-pbi009-ronda2 (HEAD 808b009)
+MENSAJE: planteo v2 de Fabian
+FECHA: 2026-09-27
+
+ADVERTENCIA DE ORDEN (honestidad, no excusa)
+El traspaso pedia que mi opinion se escribiera ANTES de leer la de los demas.
+Se cumplio con cuatro de cinco: cuando escribi esto no habia leido a Kimi K3,
+GLM-5.3, Nemotron 3 ni Codex. SI habia leido la de Antigravity, porque su
+consulta va por una herramienta que devuelve la respuesta en la misma llamada
+y no hay forma de lanzarla sin verla. Ademas mi posicion de la ronda 1
+(almacen de credenciales del sistema via `keyring`) ya estaba registrada y es
+anterior a todo esto. Donde abajo me aparto de esa posicion de la ronda 1, lo
+digo explicitamente y con el motivo, para que se pueda juzgar si es
+razonamiento propio o eco de Antigravity.
+
+---RESPUESTA---
+
+# Opinion de Claude sobre PBI-009
+
+## 0. Lo que verifique en el codigo antes de opinar
+
+No son suposiciones; esto es lo que hay hoy en HEAD 808b009:
+
+- `src/tokmd/verify.py`, `get_client()`: la key sale **solo** de
+  `os.environ["ANTHROPIC_API_KEY"]`. No hay ninguna otra fuente. Si no esta,
+  levanta `MissingApiKeyError` con un mensaje legible.
+- `src/tokmd/cli.py`: `--verify` es un flag del comando principal. **No existe
+  `--config`.** El comando es un `@click.command()` con `file` como
+  `@click.argument` obligatorio (`exists=True`), asi que hoy `tokmd --config`
+  ni podria invocarse sin pasarle un archivo.
+- `import anthropic` esta adentro de `get_client()` (lazy). El `try/except` del
+  CLI atrapa `MissingApiKeyError`, **no** `ImportError`. Consecuencia real: si
+  el usuario instalo `tokmd` sin el extra, `--verify` termina con un
+  `ModuleNotFoundError` crudo de Python. Confirmado.
+- `pyproject.toml`: el extra se llama `verify` y trae `anthropic>=0.40`.
+- `README.md`: **cero menciones de `--verify`**. Verificado con grep. La
+  funcionalidad no esta documentada para nadie.
+- Costo de llamadas: `--verify` hace **una llamada por seccion mas una** (la de
+  `measure_frame`). Un `CLAUDE.md` con 60 secciones son 61 pedidos a la API en
+  una sola corrida. Eso importa para el limite de pedidos por minuto y hay que
+  decirlo.
+
+## 1. Sobre el mecanismo: donde coincido con Fabian y donde no
+
+**Coincido con el 90% del planteo y con su motivo de fondo:** la herramienta
+tiene que resolverle el problema al usuario comun sin pedirle que monte una
+boveda. Todo lo que sea "instalá 1Password, aprendé DPAPI" mata la adopcion de
+la funcion opcional, y la funcion opcional no vale lo suficiente para
+justificar ese costo.
+
+**No coincido con "guardarlo en una variable de estado del sistema", y el
+motivo es tecnico, no de gusto.** Una variable de entorno persistente tiene un
+defecto que se nota en el primer minuto de uso: **la terminal que el usuario ya
+tiene abierta no la ve.** El usuario corre `tokmd --config`, pega la key, ve
+"guardado", corre `tokmd CLAUDE.md --verify` y le dice que falta la key. Eso no
+es un detalle de implementacion: es el peor primer contacto posible con la
+funcion que estamos tratando de que adopte. Y en Linux/macOS el problema es
+peor, porque ahi "variable de estado del sistema" **no existe**: habria que
+editarle los archivos de arranque del shell (`~/.bashrc`, `~/.zshrc`,
+`~/.profile`), adivinando cual usa, y aun asi tendria que abrir otra terminal.
+Una herramienta que le edita el `.bashrc` al usuario sin avisar es exactamente
+el tipo de cosa que hace que la desinstalen.
+
+## 2. Mi propuesta concreta: guardar **como obtener** la key, no solo la key
+
+Esto es lo que aporto y es donde me aparto de mi voto de la ronda 1.
+
+En la ronda 1 vote por `keyring` (Credential Manager de Windows, Llavero de
+macOS, Secret Service en Linux). **Me corrijo en parte, por dos razones que
+mire mejor:**
+
+1. **La ganancia de seguridad real es casi nula en 2 de 3 plataformas.** En
+   Windows, cualquier proceso corriendo como ese usuario lee el Credential
+   Manager sin pedir permiso — igual que leeria un archivo con permisos de
+   usuario. El modelo de amenaza es el mismo. La diferencia real esta solo en
+   macOS, donde el Llavero pide autorizacion por aplicacion.
+2. **Se rompe justo donde estan los usuarios de una CLI.** En Linux headless,
+   en WSL, en contenedores y en CI no hay Secret Service: `keyring` falla o cae
+   a un backend de texto plano. Poner una dependencia que se rompe en la mitad
+   de los entornos de tu publico, para comprar seguridad que solo existe en una
+   plataforma, es un mal negocio.
+
+**Lo que propongo en su lugar:** que `tokmd config` guarde **una de dos cosas, a
+eleccion del usuario**:
+
+| Opcion | Que guarda | Para quien |
+|---|---|---|
+| **(a) la key** | la key, en un archivo de config del usuario con permisos restringidos | el usuario comun, que quiere que funcione y listo |
+| **(b) un comando** | la **linea de comando** que produce la key en stdout | el que ya tiene boveda: Fabian, y cualquiera con 1Password, `pass`, Vault, DPAPI |
+
+La opcion (b) es la que nadie planteo en la ronda 1 y es la que hace que el
+flujo propio de Fabian sea un **ciudadano de primera clase** sin que `tokmd`
+sepa una palabra de DPAPI. En su caso la linea seria algo como
+`pwsh -c "Unprotect-IADpapiSecret -Application multi-modelos-ai -Name anthropic.api-key"`;
+para un usuario de 1Password, `op read "op://API Keys/Anthropic/credential"`.
+`tokmd` corre el comando, toma stdout, lo usa en memoria y **nunca lo escribe a
+disco**. Es el mismo patron que usan `git` con `credential.helper` y `docker`
+con `credsStore`: la herramienta no guarda secretos, guarda **quien se los da**.
+
+Beneficio lateral que importa: con (b), **la regla de secretos de Fabian
+—"nada de secretos en archivos sin cifrar"— se puede cumplir usando la
+herramienta tal como viene**, sin excepciones ni parches. Hoy no se puede.
+
+**Riesgo de (b), dicho de frente:** un archivo de config que contiene un
+comando que se ejecuta es una superficie de ataque nueva. Si alguien puede
+escribir en el config del usuario, puede ejecutar codigo como ese usuario. La
+mitigacion honesta es doble: (1) el archivo vive en el perfil del usuario, que
+ya tiene los mismos permisos que su `.bashrc` —o sea, quien puede escribirlo ya
+podia ejecutar codigo suyo de todos modos—; y (2) `tokmd config --show` tiene
+que **mostrar el comando en claro**, para que nadie tenga un comando
+ejecutandose a sus espaldas sin saberlo.
+
+**Donde va el archivo** (solo biblioteca estandar de Python, sin dependencias
+nuevas):
+
+- Windows: `%APPDATA%\tokmd\config.json` (ACL del perfil)
+- Linux: `${XDG_CONFIG_HOME:-~/.config}/tokmd/config.json`, `chmod 0600`
+- macOS: `~/Library/Application Support/tokmd/config.json`, `chmod 0600`
+
+**Orden de resolucion, tres escalones:**
+
+1. `ANTHROPIC_API_KEY` en el entorno del proceso — maxima prioridad. No rompe
+   el flujo actual de Fabian ni CI.
+2. El comando de la opcion (b), si esta configurado.
+3. La key de la opcion (a), si esta guardada.
+
+Y si no hay ninguna, un mensaje que ensena en vez de un error.
+
+## 3. Sobre la forma del comando: `tokmd config`, no `--config`
+
+Detalle chico pero decide el diseno. Hoy `file` es un argumento **obligatorio**
+del unico comando. `--config` como opcion tendria que ser "eager" (como
+`--version`) para poder ignorar ese argumento, y eso se pone incomodo cuando
+despues querés `--config --show` y `--config --unset`: son subcomandos
+disfrazados de flags.
+
+Recomiendo un subcomando: `tokmd config set` / `tokmd config show` /
+`tokmd config unset`. Cuesta convertir el `@click.command()` en un
+`@click.group()` y **es un cambio que rompe compatibilidad** si no se hace con
+cuidado (hay que mantener `tokmd archivo.md --platform X` funcionando como
+hoy). Click lo resuelve con un grupo de invocacion default, o —mas simple y mas
+honesto— aceptando ambas formas y documentando una.
+
+Si Fabian prefiere `--config` porque es lo que escribio, funciona igual; solo
+va a quedar mas apretado cuando haga falta `--show` y `--unset`.
+
+## 4. Como comunicarlo sin amedrentar (que es lo que Fabian pidio primero)
+
+Tres frases, no tres parrafos. Lo que **no** hay que hacer es prometer un
+numero exacto: el propio endpoint de conteo de Anthropic esta descrito como una
+estimacion de la solicitud (esto lo trajo Codex en la ronda 1 con fuente
+oficial; no lo estoy afirmando de memoria).
+
+Texto propuesto para el README, en la seccion de `--verify`:
+
+> **`--verify` es opcional.** `tokmd` funciona entero sin red, sin cuenta y sin
+> clave: ese es el modo normal y el que vas a usar el 95% de las veces.
+>
+> **Que te da activarlo.** El numero que informa el proveedor mismo, en vez de
+> el que calcula el tokenizador local. Sirve cuando el numero va a un
+> presupuesto, a un informe o a una decision de recorte que otro va a revisar.
+>
+> **Que pasa si no lo usas.** Nada que te rompa el dia: el conteo local te
+> ordena las secciones, te dice cual pesa mas y te sirve para recortar igual.
+> La diferencia entre los dos numeros es chica, pero **todavia no la medimos en
+> este proyecto** — cuando la midamos, el numero va a estar aca.
+>
+> **Lo que si conviene saber:** con `--verify`, el texto de tus secciones viaja
+> a la API de Anthropic para que las cuente. Sin `--verify`, nada sale de tu
+> maquina. Y hace una llamada por seccion, asi que en un archivo grande podes
+> tocar el limite de pedidos por minuto.
+
+Ese cuarto punto (privacidad + una llamada por seccion) es el que hace que el
+texto sea honesto y no marketing. Es tambien el que un usuario prudente
+agradece.
+
+## 5. Un hueco que hay que tapar igual, decida lo que decida
+
+Independiente del mecanismo de la key, hay dos cosas rotas hoy que valen por si
+solas:
+
+1. **`README.md` no menciona `--verify`.** La funcionalidad existe, esta
+   testeada, tiene su PBI cerrado, y ningun usuario tiene forma de enterarse de
+   que existe. Es el hueco mas grande de los dos.
+2. **Sin el extra instalado, `--verify` explota con `ModuleNotFoundError`.** El
+   `try/except` del CLI atrapa `MissingApiKeyError` pero no `ImportError`.
+   Deberia decir "para usar --verify instala `tokmd[verify]`".
+
+## 6. Lo que NO haria
+
+- **No medir la deriva offline-vs-API antes de escribir el README.** El texto
+  de arriba dice "todavia no la medimos" a proposito. Si vamos a afirmar un
+  porcentaje, hay que medirlo primero; si no lo medimos, no se afirma. PBI-008
+  no lo midio.
+- **No agregar `keyring`.** Ver seccion 2.
+- **No tocarle archivos de shell al usuario.** Nunca.
+- **No hacer que `--verify` sea el default ni sugerirlo en pantalla cada vez.**
+  Un aviso repetido que el usuario no puede apagar es la forma mas rapida de
+  que deje de leer los avisos.
+
+## 7. Resumen en cuatro lineas
+
+1. El diagnostico de Fabian es correcto; el medio ("variable de estado del
+   sistema") es el que falla, y falla en el primer minuto de uso.
+2. Archivo de config del usuario con permisos restringidos, y
+   `ANTHROPIC_API_KEY` del entorno siempre con prioridad.
+3. **El aporte propio: que el config pueda guardar un comando en vez de la
+   key.** Eso le sirve al usuario comun (opcion a) y al que ya tiene boveda
+   (opcion b), y es lo que permite cumplir la regla de secretos de Fabian sin
+   parches.
+4. Corregir README y `ModuleNotFoundError` de todas formas; y no prometer
+   precision con un numero que no medimos.

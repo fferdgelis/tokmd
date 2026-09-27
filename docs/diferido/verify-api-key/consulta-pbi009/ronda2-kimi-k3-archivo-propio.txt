@@ -1,0 +1,107 @@
+Opinión de OpenCode / Kimi K3 — ronda 2, planteo v2 de Fabián (2026-09-27)
+=========================================================================
+
+Contexto de esta corrida: copia del repo en C:\IA\tmp-ronda2\kimi. El texto
+v2 refina el v1: deja explícito que el destino del conteo exacto es la API de
+Anthropic y que el guardado sería "una variable de estado del sistema" según
+el SO.
+
+Mi opinión
+----------
+
+1. El diagnóstico sigue siendo correcto y el v2 lo precisa bien.
+
+   PBI-009 existe como hueco real: `--verify` funciona (src\tokmd\verify.py)
+   pero hoy la única vía es `ANTHROPIC_API_KEY` en el entorno, y el README ni
+   menciona el flag. O sea que el PBI no es sólo "guardar la key": es la
+   primera documentación pública de la función completa. El v2 acierta al
+   nombrar el destino (la API de Anthropic como árbitro) y al pedir que se
+   explique como optativo.
+
+2. La comunicación: sí, con la materia prima que ya está medida.
+
+   - "Es opcional": tokmd resuelve el 100% de su valor offline, sin cuenta,
+     sin red, sin key. Eso no se negocia y es el primer mensaje.
+   - "Ventaja real": el contador offline (`ctok`) es una reconstrucción de
+     terceros del tokenizador de Anthropic (ADR-001). `--verify` le pregunta
+     a Anthropic directamente, y el endpoint `count_tokens` no cobra por
+     llamada. Eso es lo que hay que decir; no "resultado muy superior" como
+     promesa abierta.
+   - "Qué pasa si no la usás": nada. La deriva del modo offline es acotada,
+     está medida en el proyecto (ADR-002) y se reporta al usuario en vez de
+     ocultarse. Ese es el tono: informar el número, no agitar consecuencias.
+   - La barrera real que hay que decir sin vergüenza: hace falta una key de
+     Anthropic con facturación habilitada. Eso, y no otra cosa, es lo que
+     va a filtrar solito a los "nerds puristas" que mencionás.
+
+3. El mecanismo: acá disiento del v2. Variable de estado del sistema, no.
+
+   Es la opción más frágil de las posibles en los tres sistemas, y una de las
+   trampas está verificada en tu propia máquina:
+
+   - Windows: una variable User escrita por un programa (setx / registro
+     HKCU\Environment) NO la ve la consola actual, sólo procesos nuevos
+     (trampa documentada en tu CLAUDE.md global). Resultado garantizado:
+     "hice tokmd --config y --verify sigue diciendo que falta la key" hasta
+     que abre otra terminal. Es exactamente la fricción que el PBI quiere
+     eliminar.
+   - Linux: no existe "variable de estado del sistema" persistente que un
+     programa pueda setear. Hay que editar ~/.bashrc, ~/.zshrc u otro rc que
+     depende del shell de cada uno: intrusivo y adivinatorio.
+   - macOS: igual que Linux; `launchctl setenv` no sobrevive un reinicio.
+
+   Y la seguridad sería idéntica a la alternativa simple (texto plano legible
+   por procesos del mismo usuario), o sea que no compra nada a cambio de la
+   fragilidad.
+
+   Lo que recomiendo — patrón de aws, gcloud, gh, npm:
+
+   - `tokmd --config` pide la key con entrada oculta (nunca como argumento,
+     que caería al historial del shell) y la guarda en un archivo del perfil:
+       Windows: %APPDATA%\tokmd\config.json
+       Linux:   ~/.config/tokmd/config.json  (XDG, chmod 600)
+       macOS:   ~/Library/Application Support/tokmd/config.json (600)
+   - Precedencia: la variable de entorno ANTHROPIC_API_KEY manda sobre el
+     archivo. Así CI y tu flujo con DPAPI quedan idénticos a hoy; el archivo
+     es para el usuario común.
+   - Funciona en la consola actual, en el acto, con UN solo camino de código
+     para los tres SO.
+   - Nivel de protección: el de ~/.aws/credentials. No es DPAPI, y el README
+     debe decirlo sin eufemismos: texto plano protegido sólo por permisos de
+     archivo. Si en el futuro se quiere subir un escalón, la librería keyring
+     (Credential Manager / Keychain / Secret Service) es la vía — para v1 no
+     la metería: en Linux headless y WSL falla y exigiría fallback al archivo
+     de todos modos.
+
+4. Reglas que el PBI-009 tiene que fijar sí o sí:
+
+   1. La key nunca entra como argumento ni se imprime jamás (ni logs, ni
+      --show: como mucho "configurada: sí, origen: env|archivo", enmascarada
+      sk-ant-...abcd).
+   2. `tokmd --config` no exige FILE (hoy FILE es obligatorio en cli.py):
+      flag de acción estilo --version, o subcomando. Cualquiera de las dos,
+      pero el PBI tiene que elegir una.
+   3. Marcha atrás documentada: `tokmd --config --unset` / borrar el archivo.
+   4. Guardar la key NO activa conexiones: sólo `--verify` llama a la API.
+   5. Tests sin red y sin key real (ADR-006), incluido un test que verifique
+      que la key no aparece en ninguna salida, y el caso config.json corrupto
+      (mensaje claro, no traceback).
+   6. Nombre correcto: ANTHROPIC_API_KEY (en el planteo quedó escrito
+      API_KEY_ANTROPHIC).
+
+5. Sobre la adopción: tu lectura es correcta y el diseño la respeta.
+
+   El flujo offline queda intocable y el usuario común ni se entera de que
+   `--verify` existe. Por eso el grueso de este PBI es documentación y UX
+   (README.md, README.es.md, help del CLI), no código. Estimo 80/20.
+
+Resumen
+-------
+
+La comunicación tal como la planteás en el v2, sí. El mecanismo, cambiaría
+"variable de estado del sistema según el SO" por "archivo de config en el
+perfil del usuario, con la variable de entorno como override": más simple,
+igual de seguro que el estándar de la industria, visible en el acto, y sin
+las tres trampas por sistema operativo (la de Windows, verificada en tu
+propia máquina). La decisión de almacenamiento tiene alternativas descartadas
+con argumentos, así que merece además un ADR (sería ADR-007), no sólo el PBI.

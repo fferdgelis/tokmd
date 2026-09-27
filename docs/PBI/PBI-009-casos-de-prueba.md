@@ -73,15 +73,21 @@ registrados como Bug `pk=9`, `pk=10` y `pk=11`.
 
 ## Datos dorados (los números de referencia)
 
+> **Actualizado el 2026-09-27, después de la aceptación del ADR-007.** El costo
+> fijo por trozo (`ADR-002` lo llamaba `FRAME`) es **5**, no 6, y el total **no**
+> lo resta — se cuenta crudo, de una sola pasada, y coincide exacto con lo que
+> cobra la API de Anthropic (medido por TTOK-05: **17.381**, no 17.375/17.376).
+
 Medidos el 2026-09-27 sobre `C:\Users\fferdgelis\.claude\CLAUDE.md`
-(38.185 bytes) con tokenizador de Claude familia `4.8`, `FRAME=6`:
+(38.185 bytes) con tokenizador de Claude familia `4.8`:
 
 | Dato | Valor |
 |---|---|
-| Archivo contado **de una sola pasada** (el valor real) | **17.375** |
-| Suma de las 44 filas **con** el título, marco restado una vez | **17.590** |
-| Suma de las 44 filas **sin** el título (lo que hace hoy) | **15.903** |
-| Deriva de borde real entre las dos primeras | **−215 (1,24 %)** |
+| **El total** — archivo crudo de una sola pasada, igual a lo que cobra la API | **17.381** |
+| Suma de las 44 filas (`Own`, con el título, marco restado una vez por fila) | 17.376 |
+| … más el marco del mensaje, una vez (renglón propio, no restado del total) | + 5 = **17.381** ✓ |
+| Suma de las 44 filas **sin** el título (lo que hace hoy, el bug) | 15.903 |
+| Deriva del total contra la suma de `Own`, con el costo fijo correcto | **0** |
 | Encabezados en el archivo | 44 (20 de nivel 1) |
 | Secciones que hoy salen `0` teniendo encabezado con texto | 18 |
 
@@ -112,7 +118,7 @@ Medidos el 2026-09-27 sobre `C:\Users\fferdgelis\.claude\CLAUDE.md`
 
 | Caso | Título | Precondición | Pasos | Resultado esperado | Qué falla caza |
 |---|---|---|---|---|---|
-| **TOK-009-C05** | El total es el del archivo de una pasada, no la suma de filas | El `CLAUDE.md` global sin editar desde la medición | `tokmd CLAUDE.md` | **17.375** exacto | Calcular el total sumando filas: daría 17.590 o 15.903 |
+| **TOK-009-C05** | El total es el del archivo de una pasada y coincide con la API | El `CLAUDE.md` global sin editar desde la medición | `tokmd CLAUDE.md` | **17.381** exacto (lo que cobra la API; no restar el marco) | Calcular el total sumando filas: daría 17.590 o 15.903; restar el marco del total: daría 17.376 |
 | **TOK-009-C06** | Archivo vacío | `empty.md.fixture` | `tokmd empty.md.fixture` | Informa `0`, código de salida 0, **sin traceback** | Que el camino del total no maneje texto vacío |
 | **TOK-009-C07** | Archivo sin ningún encabezado | `no_headings.md.fixture` | `tokmd no_headings.md.fixture` | Informa el total sin fallar | Que el total dependa de que exista al menos un encabezado |
 

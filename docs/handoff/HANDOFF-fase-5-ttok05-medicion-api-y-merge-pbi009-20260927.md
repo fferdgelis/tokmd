@@ -42,6 +42,7 @@ related_documents:
 | Fecha | Versión | Modificado por | Descripción |
 |---|---|---|---|
 | 2026-09-27 | 0.1.0 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | Creación, a pedido de Fabián, para abrir TTOK-06. TTOK-05 corrió en paralelo con TTOK-04 (Opus 5, rama `worktree-ttok04-pbi009-ronda2`); las dos sesiones se coordinaron por mensaje y acordaron un protocolo. |
+| 2026-09-27 | 0.1.1 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | TTOK-04 respondió: datos dorados corregidos, ADR-007 aceptado (opción D) y ADR-002 corregido, en `f6f80d9` de su rama. El primer paso pasa a ser el merge de ese commit. |
 
 ## En una línea
 
@@ -63,11 +64,20 @@ traspaso. La rama de TTOK-04 sigue viva en
 `.claude/worktrees/ttok04-pbi009-ronda2`; TTOK-04 sigue trabajando ahí y avisa
 antes de pedir otro merge.
 
-## Primer paso concreto: los datos dorados de PBI-009 dicen 17.375 y tienen que decir 17.381
+## Primer paso concreto: mezclar `f6f80d9` de TTOK-04 a `main` (lo pide Fabián)
 
-ADR-007 v0.3.0 (corregido hoy por TTOK-04 con el dato de la API) dice que el
-**total que muestra tokmd es 17.381, marco incluido** (`Own 17.376 + marco 5`).
-Pero quedaron tres lugares con el número viejo:
+**Resuelto por TTOK-04 antes de cerrar TTOK-05, en su rama, todavía sin
+mezclar a `main`.** Commit `f6f80d9` de `worktree-ttok04-pbi009-ronda2`:
+datos dorados de PBI-009 corregidos a 17.381 (incluido TOK-009-C05, Kiwi
+id=391), **ADR-007 aceptado por Fabián (opción D)**, y **ADR-002 corregido en
+consecuencia** (el costo fijo por trozo pasa a ser 5, no 6, y el total no lo
+resta). Los dos ADR están `accepted`. Lo que le queda a TTOK-06 es verificar
+que Fabián haya pedido ese merge y que `main` lo tenga; hasta entonces, `main`
+sigue con lo de abajo.
+
+Estado que tenía `main` al escribir este traspaso (`cb11142`): ADR-007 v0.3.0
+decía ya que el **total es 17.381, marco incluido** (`Own 17.376 + marco 5`),
+pero quedaban tres lugares con el número viejo:
 
 | Archivo | Línea | Dice | Tiene que decir |
 |---|---|---|---|
@@ -77,10 +87,13 @@ Pero quedaron tres lugares con el número viejo:
 
 Si un desarrollador implementa contra 17.375, C05 falla contra el ADR y
 contra la API. Las secciones «no-aditividad medida» de PBI-009 llevan un
-cartel de «superado» y pueden quedar, pero el dato dorado y el caso no. **Se le
-avisó a TTOK-04 por mensaje al cerrar TTOK-05**; TTOK-06 verifica que esté
-corregido (en `main` o en la rama) antes de que PBI-009 pase a Desarrollo. Y el
-caso de Kiwi correspondiente a C05 (ids 376–391) también.
+cartel de «superado» y pueden quedar. Corregido en `f6f80d9` (rama de
+TTOK-04) tras el aviso de TTOK-05; falta sólo el merge.
+
+Nota de `docs/investigation/20260927-count-tokens-api-vs-tokmd-ctok-ttok.md`:
+su tabla de ctok cita `FRAME` = 6 para la familia 4.8, que era lo que decía
+ADR-002 al medirse. Con ADR-002 corregido el costo por trozo es 5; el dato
+crudo (17.381) no cambia.
 
 ## El número, y de dónde sale
 
@@ -165,9 +178,9 @@ TTOK-06 necesita saber sin abrirlo:
 
 ## Pendientes que sólo decide Fabián
 
-1. **ADR-007, opción D:** aceptarla. Bloquea PBI-009.
-2. **PBI-009:** pasar a `ready` una vez corregidos los datos dorados (primer
-   paso de arriba).
+1. ~~ADR-007, opción D~~ — **aceptada** por Fabián el 27/09 (en la rama de
+   TTOK-04, `f6f80d9`). Pedir el merge a `main`.
+2. **PBI-009:** pasar a `ready` (datos dorados ya corregidos en `f6f80d9`).
 3. **Propuesta A+B+C sobre ctok** (vendorizar + gate de deriva contra la API +
    `--verify` de documento entero): ¿un PBI o tres?
 4. **Baseline versionado:** tabla `(archivo, sha256, modelo, fecha, tokens)`

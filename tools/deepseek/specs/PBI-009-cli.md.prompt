@@ -1,0 +1,189 @@
+You are writing an independent pytest test file for a CLI you have never seen
+the implementation of. Write tests strictly from the public contract and the
+behavior described below. Do not guess internal helpers.
+
+## Public contract (this is all you get — no implementation source)
+
+The CLI is invoked with `click.testing.CliRunner` against `tokmd.cli.main`,
+exactly like these two existing tests (already in the suite, already
+passing — shown so you know the invocation style, do not repeat them):
+
+```python
+from click.testing import CliRunner
+from tokmd.cli import main
+
+def test_codex_platform_succeeds(tmp_path):
+    file = tmp_path / "sample.txt"
+    file.write_text("Hello world, this is a test file with some text content.")
+    runner = CliRunner()
+    result = runner.invoke(main, [str(file), "--platform", "codex"])
+    assert result.exit_code == 0
+    assert result.output.strip() != ""
+
+def test_opencode_platform_without_model_fails_cleanly(tmp_path):
+    file = tmp_path / "sample.txt"
+    file.write_text("Hello world, this is a test file with some text content.")
+    runner = CliRunner()
+    result = runner.invoke(main, [str(file), "--platform", "opencode"])
+    assert result.exit_code != 0
+    assert "Traceback" not in result.output
+```
+
+Three things about the CLI's default behavior are changing in this PBI, and
+one existing bug (nothing to do with defaults) is being fixed at the same
+time.
+
+### 1. `--platform` gets a default: `"claude-code"`
+
+Previously `--platform` was a required option — omitting it failed with a
+"Missing option" usage error. Now it defaults to `"claude-code"` when
+omitted, and every other value (`"codex"`, `"opencode"`, `"antigravity"`)
+still works exactly as before when passed explicitly.
+
+### 2. The default output is now just the total — no section breakdown
+
+Previously the only output was the full section-by-section table/tree.
+Now, **without** a new flag `--sections`, the command prints exactly the
+document's total token count as a single line (whitespace around the
+number is fine, but no section titles, no tree, nothing else) and exits 0.
+**With** `--sections`, the old behavior returns: the full breakdown is
+printed (in whatever `--format` was chosen), **and** the total is included
+too (this module now renders a root row with the real total as part of
+that breakdown — you don't need to know how, only that both the breakdown
+and a total are present in the output when `--sections` is passed).
+
+The total, in both modes, is the whole file's **raw, un-adjusted** token
+count for the resolved tokenizer — not a sum of section-by-section counts.
+For the OpenAI path this coincides with the old sum (that path was already
+exactly additive), but you cannot assert an exact number without knowing
+the tokenizer's internals, so don't try — assert presence, shape, and
+consistency instead (see the AC list).
+
+### 3. `--format json` without `--sections`
+
+When `--format json` is combined with the new default (no `--sections`),
+the JSON output still has the total as its own field (e.g. `{"total":
+<int>}` — the exact key name is `"total"`; you may find other keys present
+too, don't assert their absence, only that `"total"` is there and is an
+int) and parses without error.
+
+### 4. Existing behavior with no regression
+
+`--depth`, `--sort`, `--format md`/`--format csv`, `--tokenizer`,
+`--claude-family`, `--encoding`, and `--verify` are **all unchanged** and
+only apply meaningfully together with `--sections` (a section breakdown is
+what they modify) — passing them without `--sections` should not error.
+
+## Test cases to write, one test (or more) per item
+
+- **AC-01**: `runner.invoke(main, [str(file)])` (no `--platform` at all) —
+  exit code `0`, and the output contains **no** occurrence of the string
+  `"Missing option"`.
+
+- **AC-02**: `runner.invoke(main, [str(file)])` (no `--platform`) produces
+  output that, when stripped of leading/trailing whitespace, is a single
+  line consisting **only** of digits (i.e. `result.output.strip().isdigit()`
+  is `True`) — this is "just the total", nothing else. Compare this against
+  `runner.invoke(main, [str(file), "--platform", "claude-code"])` and
+  assert the two outputs are **identical** — the default resolves to
+  exactly `--platform claude-code`.
+
+- **AC-03**: same as AC-02's second half — restated as its own test for
+  clarity: omitting `--platform` and passing `--platform claude-code`
+  explicitly must produce byte-identical output.
+
+- **AC-04**: `runner.invoke(main, [str(file), "--platform", "codex"])`
+  (explicit, non-default platform) still exits `0` and its output is
+  **not** required to equal the `claude-code` output (a different
+  tokenizer) — this is a non-regression check that explicit `--platform`
+  values are never overridden by the new default.
+
+- **AC-05**: `runner.invoke(main, [str(file), "--sections"])` — exit code
+  `0`, and the output contains **more than one line** (the breakdown), and
+  somewhere in it a line whose stripped content is only digits also
+  appears (the total, alongside the breakdown) — build the test file with
+  at least one Markdown heading so there's a real section to show
+  (e.g. `file.write_text("# Title\nSome body text here.\n")`).
+
+- **AC-06**: `runner.invoke(main, [str(file), "--format", "json"])` (no
+  `--sections`) — `result.exit_code == 0`, and `json.loads(result.output)`
+  succeeds and the parsed value has a `"total"` key whose value is an
+  `int`.
+
+- **AC-07**: `runner.invoke(main, ["/no/such/file.md"])` — non-zero exit
+  code, `"Traceback"` not in `result.output` (regression: unchanged from
+  before this PBI). Also test a path that is a directory, not a file
+  (`tmp_path` itself): same assertions.
+
+- **AC-08**: a Markdown file with **no heading at all** (plain prose, e.g.
+  `file.write_text("Just a paragraph, no headings here at all.\n")`) —
+  `runner.invoke(main, [str(file)])` exits `0` and its stripped output is
+  digits-only (the total, same shape as AC-02) — no crash from the
+  no-headings case.
+
+- **AC-09**: an **empty** file (`file.write_text("")`) — `runner.invoke(main,
+  [str(file)])` exits `0`, `"Traceback" not in result.output`, and the
+  stripped output is exactly `"0"`.
+
+### Regression of BUG-011 — Windows encoding
+
+These two need a **real subprocess**, not `CliRunner` — `CliRunner` captures
+output through an in-memory buffer and does not reproduce the platform
+encoding bug this project measured on Windows (writing to a real
+non-console `stdout`, e.g. a redirected file or pipe, opens it with the
+Windows ANSI code page, `cp1252` on this project's machine, `errors="strict"`
+— which raises `UnicodeEncodeError` on any character outside that code
+page unless the program explicitly reconfigures its output to UTF-8).
+
+Skip these two tests outright on any platform other than Windows (`import
+sys; pytest.mark.skipif(sys.platform != "win32", reason="...")`), and run
+them via `subprocess.run`, capturing output as **raw bytes**
+(`capture_output=True`, do **not** pass `text=True`/`encoding=...` — you
+want the untouched bytes the process actually wrote), with the environment
+variable `PYTHONIOENCODING` explicitly **unset** so the process falls back
+to the real platform default (delete it from a copy of `os.environ` if
+present before passing `env=` to `subprocess.run`, rather than assuming
+it's already unset in the test runner's own environment).
+
+Invoke the installed console script, `["tokmd", str(file), "--platform",
+"claude-code", "--sections"]`, redirecting stdout to the subprocess pipe
+(never a real console) — this alone is what triggers the bug when it's
+present, on Windows, without needing to force cp1252 explicitly.
+
+- **AC-18**: write a fixture file with a heading containing all four of
+  the characters this project found triggered the bug:
+  `file.write_text("## Flecha → « comillas » — guion\nBody text.\n")`
+  (that's `→ «comillas» — guion`, escaped as unicode so this test file
+  itself stays ASCII-safe). Run it once per `--format` value (`table`,
+  `md`, `csv`, `json`), and for each: assert `result.returncode == 0` and
+  the decoded stderr (`result.stderr.decode("utf-8", errors="replace")`)
+  does **not** contain `"UnicodeEncodeError"`.
+
+- **AC-19**: same subprocess run as AC-18 with `--format table` (pick one
+  format, this AC is about content, not format): decode `result.stdout`
+  as UTF-8 (`result.stdout.decode("utf-8")` — this must succeed without
+  raising, which is itself part of the assertion: if the tool wrote in
+  some other encoding this decode will fail or produce mojibake) and
+  assert the literal substring `"→"` (the arrow, `→`) appears in the
+  decoded text — the character survived unmangled, not replaced by `"?"`
+  or dropped.
+
+## Output format
+
+Return exactly one fenced Python code block, nothing else: no prose before
+or after it. The file must be self-contained pytest. Start with:
+
+```python
+import json
+import os
+import subprocess
+import sys
+
+import pytest
+from click.testing import CliRunner
+
+from tokmd.cli import main
+```
+
+Test function names must start with `test_` and should reference the AC id
+they check in a comment, e.g. `# AC-01`.

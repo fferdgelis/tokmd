@@ -1,0 +1,251 @@
+You are writing an independent pytest test file for a Python module you have
+never seen the implementation of. Write tests strictly from the public
+contract and the acceptance criteria below. Do not guess internal helpers.
+
+## Public contract (this is all you get — no implementation source)
+
+```python
+from dataclasses import dataclass, field
+from typing import Callable
+
+@dataclass
+class Section:
+    title: str
+    level: int          # 0 for the document root and special rows; 1-6 for
+                         # a real Markdown heading (H1-H6).
+    own_text: str        # this section's own content, excluding children's
+    children: list["Section"] = field(default_factory=list)
+
+
+@dataclass
+class Row:
+    """One visible line, other than the root row: a section's title, its
+    nesting level, its OWN token count (its own_text alone), and its TOTAL
+    token count (own plus every descendant's, accumulated bottom-up)."""
+    title: str
+    level: int
+    own: int
+    total: int
+
+
+def render(
+    root: Section,
+    count_fn: Callable[[str], int],
+    total: int,
+    fmt: str = "table",
+    depth: int | None = None,
+    sort: str = "document",
+) -> str:
+    """Render root's children as fmt, PLUS a root row for `root` itself.
+
+    count_fn(text) -> int counts one section's own text (its `own` value).
+    Every non-root row's `total` is the bottom-up accumulation: its own
+    `own` plus every descendant's `total`, exactly as before — this is a
+    subtree-relative weight, not guaranteed to be byte-exact against any
+    external oracle for an interior node.
+
+    `total` (the parameter): the caller supplies the REAL, authoritative
+    total for the whole document (e.g. from a raw, un-subtracted count of
+    the full source text) — the root row's `total` field is set to exactly
+    this value, NOT derived by summing children (summing children would
+    reintroduce a small, fixed, subtractive error — this parameter exists
+    precisely so the root row is always exact regardless of that error).
+
+    fmt: "table" (default) — the root row and every section row, WITH
+    tree-drawing connectors (see below), followed by a blank line and a
+    `boundary drift: ±N` line (see the drift formula below).
+    "md" — an indented Markdown bullet list, root row first, each line
+    showing both numbers, e.g. `f"{'  ' * level}- {title}: own={own}
+    total={total}"` (root row: `"- {title}: own=0 total={total}"`, always
+    `own=0` for the root since a Section's own `own_text` is never set to
+    real root content by this parser).
+    "csv" — header row `"level,title,own,total"`, then one data row for
+    the root (level 0) followed by one row per section, in the same order
+    "table"/"md" would visit them (root first, then depth-first,
+    document order unless `sort="tokens"`. No drift line in csv — it stays
+    strictly tabular.
+    "json" — a single JSON OBJECT (not a bare array, unlike this module's
+    previous version), parseable, shaped exactly:
+    `{"total": <int>, "drift": <int>, "rows": [{"title":.., "level":..,
+    "own":.., "total":..}, ...]}` — `rows` holds the non-root sections
+    only (root's total is already the top-level `"total"` key); `drift`
+    is computed with the same formula as the table/md footer line, see
+    below.
+
+    depth: if given, only rows with level <= depth are shown (root is
+    always shown regardless of `depth`, since it's level 0 and depth is
+    never negative) — their totals still include everything below the
+    cutoff (rollup, never lost). This applies to json's `"rows"` and to
+    csv's data rows too.
+    sort: "document" (default, original order) or "tokens" (siblings
+    reordered by their own accumulated `total`, descending — reorders
+    each parent's children among themselves, never flattens/reorders
+    across different parents).
+
+    Tree-drawing connectors (fmt="table" only — "md"/"csv"/"json" keep
+    their own existing conventions, described above, unchanged by this):
+    a section that is the LAST child among its siblings is prefixed with
+    `"└─ "`; every other child is prefixed with `"├─ "`. A line's ancestor
+    chain contributes a vertical bar `"│  "` for each ancestor that still
+    has later siblings of its own (i.e. that ancestor was NOT the last
+    child at its own level), or three spaces `"   "` for an ancestor that
+    was the last child at its level. The root row itself has no prefix.
+
+    Boundary drift (applies to "table" — printed as a trailing line after
+    a blank line —, "md" — same trailing line convention — and "json" —
+    as the `"drift"` key; NOT "csv"):
+    `drift = total - sum(row.own for row in <every non-root row>) - FRAME`
+    where `FRAME` is the same fixed per-chunk cost the caller's `count_fn`
+    already subtracts once per section internally (you don't need to know
+    its numeric value to test this — see the fixed test setup below, which
+    gives you a `count_fn` where you know `FRAME` exactly). When the total
+    and the sections agree exactly (the healthy, expected case for this
+    project), `drift == 0`.
+    """
+```
+
+## Why the root row and the drift formula work the way they do
+
+This project measured, against a real oracle, that a whole document's true
+token count is **not** exactly the sum of its section's own counts (each
+counted with a fixed per-chunk cost subtracted) — it's that sum **plus
+exactly one more instance of the fixed cost**. So a caller that wants the
+root row to show the real, oracle-matching total has to pass it in directly
+(computed by the caller from the raw, unsplit document) rather than trust
+`render` to derive it by summing — summing would come out exactly `FRAME`
+tokens short. The `drift` figure exists to make this checkable at a
+glance: it should always land on `0` for a healthy document, and a nonzero
+value is a real signal that something is wrong (a section was skipped, the
+document doesn't reconstruct cleanly, etc.), not an expected property of
+the tool.
+
+## Fixed test tree and count_fn (build/use this in every test that needs one)
+
+```python
+def make_tree():
+    return Section(
+        title="(document)",
+        level=0,
+        own_text="",
+        children=[
+            Section(title="Intro", level=1, own_text="intro text", children=[
+                Section(title="Background", level=2, own_text="background text", children=[]),
+            ]),
+            Section(title="Conclusion", level=1, own_text="conclusion text", children=[]),
+        ],
+    )
+
+FRAME = 2
+
+def count_fn(text: str) -> int:
+    # word count minus a fixed per-chunk cost, floor at 0 — deterministic
+    # and easy to reason about by hand, and it lets FRAME be non-trivial
+    # (not zero), same shape as the real Claude tokenizer's per-chunk cost.
+    return max(len(text.split()) - FRAME, 0)
+```
+
+With this tree and this `count_fn`: `"intro text"` (2 words) → `own = max(2-2, 0) = 0`.
+`"background text"` (2 words) → `own = 0`. `"conclusion text"` (2 words) →
+`own = 0`. So `Intro.total = 0 + Background.total(0) = 0`,
+`Conclusion.total = 0`. Sum of every non-root row's `own` = `0`.
+
+For a nonzero, realistic `total`, use `total = 5` in the tests below (an
+arbitrary but fixed "real" total the caller is asserting — you are not
+computing it from the tree, you are supplying it, exactly as a real caller
+would supply an externally-measured value).
+
+With `total = 5`: `drift = 5 - 0 - FRAME(2) = 3` — **not** zero, on
+purpose, for tests that check the drift formula is applied correctly
+(AC-15). For tests that need drift to land on `0` (AC-16), use
+`total = FRAME` (i.e. `total = 2`): `drift = 2 - 0 - 2 = 0`.
+
+## Test cases to write, one test (or more) per item
+
+- **AC-05 / AC-12**: `render(tree, count_fn, total=5, fmt="table")` (also
+  check `fmt` truly defaults to `"table"` — a call with no `fmt` produces
+  identical output) — the output contains a line for the root (its title,
+  `"(document)"`, and the total `"5"` somewhere on that line) AND separate
+  lines for `"Intro"`, `"Background"`, `"Conclusion"` — assert each
+  non-root section's line shows **two distinguishable numbers** (its `own`
+  and its `total` both appear, and they are not the same rendered
+  substring when they differ — for this tree they're all `0` for both, so
+  additionally build a second tree where a parent has short own text and a
+  child has long own text, and assert that parent's line shows a smaller
+  `own` figure than its `total` figure, both present in the line).
+
+- **AC-13**: `render(tree, count_fn, total=5, fmt="table")` — a root row is
+  present, and its total is exactly `5` (the value passed in), NOT `0`
+  (which is what summing the children would give with this `count_fn`) —
+  this is the key assertion: root's shown total equals the injected
+  `total` parameter, not the sum of the tree.
+
+- **AC-14**: Build a tree where a parent section has short `own_text` (few
+  words) and one child has long `own_text` (many more words) — using the
+  `count_fn` above, pick word counts so the parent's own `own` is smaller
+  than its `total` (own + child's total). Assert the parent's row shows
+  `own < total` (two different numbers, in that order of magnitude).
+
+- **AC-15**: `render(tree, count_fn, total=5, fmt="table")` — the output
+  contains a line with the text `"boundary drift"` and the value `3`
+  appears in that line (per the worked example above: `5 - 0 - 2 = 3`).
+  The sign must be visible when negative too: repeat with `total=-3` (an
+  edge case) and assert the drift line shows a negative number
+  (`-3 - 0 - 2 = -5`).
+
+- **AC-16**: `render(tree, count_fn, total=2, fmt="table")` — the drift
+  line shows exactly `0` (per the worked example: `2 - 0 - 2 = 0`) — the
+  output must not omit this line or claim a nonzero drift when it's
+  actually zero.
+
+- **AC-06**: `render(tree, count_fn, total=5, fmt="json")` — `json.loads`
+  parses it into a `dict` (not a `list`, unlike the old contract), with a
+  top-level `"total"` key equal to `5`, a `"drift"` key equal to `3` (same
+  formula as AC-15), and a `"rows"` key that is a list containing entries
+  for `"Intro"`, `"Background"`, `"Conclusion"` (root is NOT in `"rows"` —
+  it's already represented by the top-level `"total"`), each with `"own"`
+  and `"total"` fields.
+
+- **csv regression**: `render(tree, count_fn, total=5, fmt="csv")` —
+  parseable with `csv.reader`, header row is exactly
+  `["level", "title", "own", "total"]`, the first data row is the root
+  (`level="0"`, and its `total` column is `"5"`), followed by one row per
+  section. No line containing `"drift"` appears anywhere in the csv output.
+
+- **depth regression**: `render(tree, count_fn, total=5, depth=1)` — the
+  output does NOT contain `"Background"` (level 2, cut off), but DOES
+  contain the root row and `"Intro"` with its full accumulated `total`
+  (rollup unaffected by depth, same as before this PBI).
+
+- **sort regression**: build a tree where a third top-level sibling has a
+  larger own-text word count than `"Intro"`'s subtree total, and assert
+  with `sort="tokens"` that sibling appears before `"Intro"` in the
+  output, and `"Intro"` before `"Conclusion"` (only reordering within the
+  same parent, same as before this PBI).
+
+- **AC-20**: build a tree with at least two levels of nesting and at least
+  two children at the top level (e.g. reuse `make_tree()`), and render
+  with `fmt="table"` (default): assert the output contains the connector
+  characters `"├─"`, `"└─"`, and `"│"` somewhere (the exact layout is not
+  asserted character-by-character — only that tree-drawing connectors are
+  present, replacing plain space indentation). Also assert that `"md"` and
+  `"csv"` output do NOT contain `"├─"` or `"└─"` — connectors are a
+  `"table"`-only presentation choice.
+
+## Output format
+
+Return exactly one fenced Python code block, nothing else: no prose before
+or after it. The file must be self-contained pytest — define `make_tree`,
+`FRAME`, and `count_fn` as helpers inside the file (or inline per test).
+Start with:
+
+```python
+import csv
+import io
+import json
+
+from tokmd.render import render
+from tokmd.sections import Section
+```
+
+Test function names must start with `test_` and should reference the AC id
+they check in a comment, e.g. `# AC-13`.

@@ -1,0 +1,114 @@
+You are writing an independent pytest test file for a Python module you have
+never seen the implementation of. Write tests strictly from the public
+contract and the acceptance criteria below. Do not guess internal helpers.
+
+## Public contract (this is all you get — no implementation source)
+
+```python
+FRAME: dict[str, int]
+# FRAME["3.0"] == 8      (unchanged by this PBI)
+# FRAME["4.7"] == 12     (unchanged by this PBI)
+# FRAME["4.8"] == 5      (CHANGED by this PBI — was 6 before)
+
+
+def count_claude(text: str, family: str) -> int:
+    """Count `text`'s Claude tokens for `family`, net of that family's
+    fixed per-chunk cost (FRAME[family]).
+
+    `family` must be one of FRAME's keys ("3.0", "4.7", "4.8"). Raises an
+    exception for any other value.
+    """
+
+
+def count_claude_total(text: str, family: str) -> int:
+    """Count `text`'s Claude tokens for `family` as a RAW total — the exact
+    number Anthropic's API would bill for `text` as a whole. Unlike
+    `count_claude`, this does NOT subtract FRAME[family]: the per-chunk
+    cost only applies when a document has been split into pieces (one
+    subtraction per extra piece), never to a single whole-document count.
+
+    `family` must be one of FRAME's keys, same validation as `count_claude`.
+    """
+
+
+def count_openai(text: str, encoding: str) -> int:
+    """Unchanged by this PBI. Count `text`'s OpenAI tokens for `encoding`
+    (a tiktoken encoding name, e.g. "o200k_base", "cl100k_base"). No frame
+    to subtract — this is already an exact, additive partition."""
+```
+
+## Why `FRAME["4.8"]` changed, and why `count_claude_total` exists
+
+This project measured, against Anthropic's real token-counting API, that
+the fixed cost of an *additional* chunk when a document is split into N
+pieces is **5** tokens for the `"4.8"` family — not the 6 you'd get from
+naively counting an empty string. Restated: if you take a whole document,
+split it into N non-overlapping pieces at line boundaries, and sum each
+piece's raw (un-subtracted) token count, that sum equals the whole
+document's raw token count plus `5 * (N - 1)`. So subtracting `5` once per
+piece (via `count_claude`) makes per-piece counts additive, but the raw
+count of the **whole, unsplit** document is never adjusted by this at all —
+`count_claude_total` exists precisely to expose that unadjusted number,
+because it is the number that matches what the API actually bills for the
+document as a single request.
+
+**A direct, testable consequence of the new `FRAME["4.8"] == 5`:**
+`count_claude("", "4.8")` is **no longer 0**. It is
+`count_claude_total("", "4.8") - 5`, and this project has verified that
+`count_claude_total("", "4.8") == 6` (the empty string still raw-counts to
+6 tokens for this family — that number itself didn't change, only how much
+gets subtracted per chunk). So `count_claude("", "4.8")` now equals
+**exactly 1**. This is intentional, not a bug — assert it directly.
+
+For the other two families, nothing changed: `count_claude("", "3.0")` and
+`count_claude("", "4.7")` are still exactly `0` (their FRAME values are
+still defined as the raw count of the empty string for that family, and
+this PBI does not touch them).
+
+## Test cases to write, one test (or more) per item
+
+- **AC-01**: `FRAME["4.8"] == 5`. Also assert `FRAME["3.0"] == 8` and
+  `FRAME["4.7"] == 12` (unchanged — regression guard).
+
+- **AC-02**: `count_claude("", "4.8") == 1` (the changed behavior described
+  above — not 0 any more, for this family specifically).
+
+- **AC-03**: `count_claude("", "3.0") == 0` and `count_claude("", "4.7")
+  == 0` (unchanged for the other two families).
+
+- **AC-04**: `count_claude_total("", "4.8") == 6` (the raw empty-string
+  count for this family, unrelated to the per-chunk FRAME value).
+
+- **AC-05**: For any non-empty text (pick something concrete, e.g.
+  `"Hello, this is a test sentence for tokenization."`),
+  `count_claude_total(text, "4.8") == count_claude(text, "4.8") +
+  FRAME["4.8"]` — i.e. the raw total is always exactly the net count plus
+  the per-chunk cost that was subtracted, for every family (loop over all
+  three keys of `FRAME`, not just `"4.8"`).
+
+- **AC-06**: `count_claude_total` raises an exception for an unknown family
+  (e.g. `"5.0"`), same as `count_claude` already does — a regression guard,
+  since both functions share the same family-validation contract.
+
+- **AC-07**: `count_claude_total` is deterministic and grows with text
+  length: for a `short_text` and `repeated_text = short_text * 5` (same
+  family, e.g. `"4.8"`), `count_claude_total(short_text, "4.8") <
+  count_claude_total(repeated_text, "4.8")`, and calling it twice on the
+  same input returns the same value both times.
+
+- **AC-08**: `count_openai` is unchanged — pick any non-empty text and
+  encoding (e.g. `"o200k_base"`) and assert `count_openai(text, encoding)
+  > 0` for non-empty text, and `count_openai("", encoding) == 0` (a
+  regression guard that this PBI did not touch the OpenAI path).
+
+## Output format
+
+Return exactly one fenced Python code block, nothing else: no prose before
+or after it. The file must be self-contained pytest. Start with:
+
+```python
+from tokmd.tokenizers import FRAME, count_claude, count_claude_total, count_openai
+```
+
+Test function names must start with `test_` and should reference the AC id
+they check in a comment, e.g. `# AC-01`.

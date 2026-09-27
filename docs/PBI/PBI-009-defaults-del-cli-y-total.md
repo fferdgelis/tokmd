@@ -215,6 +215,18 @@ decidió que entra en este PBI, porque ya toca `cli.py`/`render.py` y sube a
       ningún carácter de repuesto. Una herramienta de medición que mutila
       silenciosamente el texto miente peor que si revienta.
 
+### Presentación — variante B (conectores de árbol)
+
+Aprobada por Fabián el 27/09/2026. La sección 2 ya la lista como incluida; el
+párrafo de «Lo que Fabián preguntó sobre `--tree`» decía «queda fuera de este
+PBI» porque se escribió **antes** de esa aprobación — corregido, esta sección
+manda.
+
+- [ ] **AC-20:** Dado `--sections` sobre un archivo con al menos dos niveles de
+      anidamiento, cuando se corre, entonces las filas anidadas se dibujan con
+      conectores de árbol (`├─`, `└─`, `│` para continuar la rama de un ancestro
+      que todavía tiene más hermanos) en vez de indentación por espacios.
+
 ## 4. Contrato técnico
 
 - **Workspace:** `C:\IA\Projects\Claude-Tokenizer`.
@@ -350,16 +362,18 @@ cada sección, el total por sección, y la raíz con el total del archivo.
 **Eso no es un flag aparte: es el desglose bien hecho.** Todo lo que describió es
 literalmente lo que `[[ADR-003-parseo-de-secciones]]` ya decidió y el código no
 cumple (`[[BUG-009-adr-003-arbol-sin-own-ni-total]]`). Así que no hacen falta dos
-flags: `--sections` tiene que devolver **eso**. El único agregado opcional serían
-los conectores de dibujo (`├─`, `└─`) en vez de la indentación por espacios, que
-es presentación y queda fuera de este PBI.
+flags: `--sections` tiene que devolver **eso**. Los conectores de dibujo
+(`├─`, `└─`) en vez de la indentación por espacios eran, al escribir este
+párrafo, un agregado opcional fuera de alcance — **Fabián los aprobó el mismo
+día** (variante B) y pasaron a **AC-20**, adentro del PBI. Ver la sección de
+Criterios de aceptación.
 
 ## 5. Handoffs
 
 ### Definition of Ready
 
 - [x] Valor, alcance y fuera de alcance claros.
-- [x] Criterios observables y testeables — dieciséis, en la sección 3.
+- [x] Criterios observables y testeables — veinte, en la sección 3.
 - [x] **Las tres decisiones del owner tomadas** (27/09/2026): `--sections`,
       `2.0.0`, y parser + total convergentes al valor real.
 - [x] **ADR-007 aceptado por Fabián el 2026-09-27**, opción D: costo fijo 5
@@ -384,17 +398,45 @@ cumplidas. Queda para el handoff a TDD (abajo).
 
 ### Handoff a TDD
 
-- **AC a convertir en pruebas:** los dieciséis, mapeados uno a uno a los casos
-  `TOK-009-C01` a `C13` de `docs/PBI/PBI-009-casos-de-prueba.md`, que trae además
-  la columna «qué falla caza» de cada uno.
-- **Los que importan:** **AC-02** (el total es el del archivo de una pasada, no
-  la suma) y **AC-10** (una sección con encabezado no vacío no puede dar `Own=0`).
-  Ese último es el que cierra BUG-008 y el que ningún AC de PBI-001 ni PBI-005
-  tenía.
-- **Fixtures:** falta crear `tests/fixtures/headings_sin_cuerpo.md.fixture` —
-  varios `#` seguidos sin texto entre ellos, replicando el bloque de comentarios
-  de estilo shell del `CLAUDE.md` de Fabián. `empty`, `no_headings` y `sample` ya
-  existen; **los datos dorados de `sample` hay que remedirlos.**
+**Las cuatro specs para DeepSeek ya están escritas**, siguiendo el patrón de
+`[[ADR-006-separacion-tdd-desarrollo-qa-por-motor]]` (contrato público, nunca
+la implementación; AC en Dado/cuando/entonces; un solo bloque de código
+`pytest` de vuelta):
+
+| Spec | Módulo destino | AC que cubre |
+|---|---|---|
+| `tools/deepseek/specs/PBI-009-sections.md.prompt` | `tests/test_sections.py` | AC-10, AC-11 (más una regresión general vía el invariante de reconstrucción byte a byte) |
+| `tools/deepseek/specs/PBI-009-tokenizers.md.prompt` | `tests/test_tokenizers.py` | El `FRAME["4.8"]=5` y la función nueva `count_claude_total` (sostienen AC-01, AC-02, AC-08, AC-09 desde abajo) |
+| `tools/deepseek/specs/PBI-009-render.md.prompt` | `tests/test_render.py` | AC-05, AC-06, AC-12, AC-13, AC-14, AC-15, AC-16, AC-20 |
+| `tools/deepseek/specs/PBI-009-cli.md.prompt` | `tests/test_cli.py` | AC-01, AC-02, AC-03, AC-04, AC-05, AC-06, AC-07, AC-08, AC-09, AC-18, AC-19 |
+
+**Tres decisiones de contrato que quedaron fijadas al escribir las specs**, y
+que Desarrollo tiene que implementar exactamente así (no son negociables sin
+volver a tocar las cuatro specs a la vez, porque se referencian entre sí):
+
+1. **`tokenizers.py` gana una función nueva: `count_claude_total(text, family)`**
+   — el conteo crudo, sin restar `FRAME`, para el total del documento completo.
+   `count_claude` (la que ya existe) se sigue usando para el `Own` de cada
+   sección, con `FRAME["4.8"]` corregido a `5`. Consecuencia directa y buscada:
+   `count_claude("", "4.8")` pasa a dar **`1`**, no `0` — es la fórmula
+   funcionando, no una regresión.
+2. **`render.py`: `Row` gana dos campos (`own`, `total`) en vez de uno**, y
+   `render()` gana un parámetro nuevo y obligatorio, `total: int` — el valor
+   real que el llamador (la CLI) calculó con `count_claude_total` sobre el
+   archivo entero. La fila raíz usa ese valor directo, **nunca** la suma de
+   sus hijos (sumar da exactamente un `FRAME` menos — es la causa de fondo de
+   BUG-009). La fórmula de la deriva, verificada antes de escribir la spec
+   porque la primera versión que anoté en `ADR-002` estaba mal:
+   **`drift = total − Σ Own − FRAME`** (restar el costo fijo **una sola vez**;
+   sin ese término da `FRAME`, no `0`, en el caso sano).
+3. **`--format json` cambia de forma:** de un array plano a un objeto
+   `{"total": ..., "drift": ..., "rows": [...]}`. Es un cambio incompatible
+   más, justificado por venir en la misma versión `2.0.0`.
+
+- **Fixtures que faltan crear:** `tests/fixtures/headings_sin_cuerpo.md.fixture`
+  (varios `#` seguidos sin texto entre ellos, el caso real del `CLAUDE.md` de
+  Fabián). `empty`, `no_headings` y `sample` ya existen; **los datos dorados de
+  `sample` hay que remedirlos** contra el `FRAME` nuevo.
 - **Los datos dorados se remiden contra el tokenizador, nunca se escriben a
   mano.** Los del `CLAUDE.md` global están en la sección «Datos dorados» del
   documento de casos, y valen sólo para ese archivo sin editar.

@@ -45,6 +45,7 @@ related_documents:
 | 2026-09-27 | 0.1.0 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | Creación, a pedido de Fabián, para abrir TTOK-06. TTOK-05 corrió en paralelo con TTOK-04 (Opus 5, rama `worktree-ttok04-pbi009-ronda2`); las dos sesiones se coordinaron por mensaje y acordaron un protocolo. |
 | 2026-09-27 | 0.1.1 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | TTOK-04 respondió: datos dorados corregidos, ADR-007 aceptado (opción D) y ADR-002 corregido, en `f6f80d9` de su rama. El primer paso pasa a ser el merge de ese commit. |
 | 2026-09-27 | 0.2.0 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | Merges hechos a pedido de Fabián: `a9fda47` (f6f80d9) y `2d16a13` (5a83e3a, PBI-009 listo para TDD). La rama de TTOK-04 quedó íntegra en `main`, pusheado. Se suma el informe sobre ctok propio (`75e5a42`). El primer paso de TTOK-06 pasa a ser el ciclo TDD de PBI-009. |
+| 2026-09-27 | 0.3.0 | Anthropic / claude-sonnet-5 / Claude Code / subscription | **PBI-009 cerrado de punta a punta.** TTOK-04 corrió el ciclo completo (TDD → Desarrollo → QA independiente → bump 2.0.0 → README → aceptación del owner) y pidió el merge final; hecho en `b3e58ed`, pusheado. `tokmd 2.0.0` verificado en el árbol real: `tokmd CLAUDE.md` sin flags da `17381`. Cambio de modelo en esta sesión: Fable 5.1 → Sonnet 5, a mitad de traspaso. |
 
 ## En una línea
 
@@ -60,32 +61,43 @@ dorados de PBI-009 (17.375 vs 17.381), abajo.**
 ## Repositorio y commit actual
 
 `C:\IA\Projects\Claude-Tokenizer`, rama `main`, remoto
-`https://github.com/fferdgelis/tokmd`. `main` == `origin/main` en `2d16a13`
-más el commit de este traspaso. **La rama `worktree-ttok04-pbi009-ronda2` está
-íntegramente mezclada en `main`** (tres merges `--no-ff`: `cb11142`,
-`a9fda47`, `2d16a13`); nada pendiente. El worktree sigue en
-`.claude/worktrees/ttok04-pbi009-ronda2` por si TTOK-04 sigue; avisa antes de
-pedir otro merge.
+`https://github.com/fferdgelis/tokmd`. `main` == `origin/main` en `b3e58ed`
+más el commit de este traspaso. **`worktree-ttok04-pbi009-ronda2` está
+íntegramente mezclada en `main`** (cuatro merges `--no-ff`: `cb11142`,
+`a9fda47`, `2d16a13`, `b3e58ed`); nada pendiente. **PBI-009 está cerrado**, no
+sólo `ready`. Tag/release de `2.0.0` en PyPI: **todavía no hecho** — es lo que
+sigue (ver «Primer paso»).
 
 Últimos commits de `main`, para orientarse:
 
 | Commit | Qué |
 |---|---|
-| `2d16a13` | merge `5a83e3a`: PBI-009 listo para TDD (AC-20, fórmula de deriva de ADR-002 corregida, cuatro specs para DeepSeek en `tools/deepseek/specs/PBI-009-{sections,tokenizers,render,cli}.md.prompt`) |
-| `a9fda47` | merge `f6f80d9`: **ADR-007 aceptado (opción D), ADR-002 corregido, PBI-009 `ready`**, datos dorados en 17.381 |
+| `b3e58ed` | merge `f163df2`: **PBI-009 cerrado y aprobado**. Ciclo completo: TDD (DeepSeek, rojo real) → Desarrollo (77 passed) → QA independiente (Kimi K3/OpenCode, 17/17, Kiwi Test Run 70) → bump a **2.0.0** → README/README.es → aceptación del owner |
+| `2d16a13` | merge `5a83e3a`: PBI-009 listo para TDD (AC-20, fórmula de deriva de ADR-002 corregida, cuatro specs para DeepSeek) |
+| `a9fda47` | merge `f6f80d9`: ADR-007 aceptado (opción D), ADR-002 corregido, PBI-009 `ready`, datos dorados en 17.381 |
 | `75e5a42` | informe «ctok propio o dependencia» (ver abajo) |
 | `cb11142` | merge de la rama de TTOK-04: PBI-009, ADR-007, BUG-008–011, Kiwi |
 | `dad57fa` | los dos informes de medición y las catorce respuestas |
 
-## Primer paso concreto: PBI-009 está `ready`; sigue el ciclo TDD → Desarrollo → QA
+## Primer paso concreto: publicar tokmd 2.0.0
 
-Con `2d16a13` en `main`, PBI-009 tiene ADR-007 y ADR-002 aceptados, 20 AC,
-17 casos en Kiwi (plan 30) y cuatro specs escritas para el rol TDD (DeepSeek,
-según ADR-006). Lo que sigue es el ciclo de siempre: TDD escribe los tests
-desde las specs, Desarrollo implementa hasta verde, QA corre los casos de
-Kiwi. **Los datos dorados son 17.381 (total, marco incluido) y 17.376 (suma
-de `Own`)**; cualquier número distinto en un test o en un caso es un error a
-reportar, no a acomodar.
+`main` tiene el código de la 2.0.0 (verificado: `tokmd CLAUDE.md` sin flags
+da `17381`, exacto contra la API), **pero no está tageado ni publicado en
+PyPI.** La v1.0.0 sigue siendo lo que instala `pip install tokmd` /
+`uvx tokmd`. Falta, en orden:
+
+1. `git tag v2.0.0` sobre `b3e58ed` (o el commit de este handoff) y push del
+   tag.
+2. Build y publish a PyPI (ver `docs/ADR/ADR-004-empaquetado-y-publicacion.md`
+   para el procedimiento verificado en `v1.0.0`).
+3. Avisar en el `CHANGELOG.md` — TTOK-04 dijo haber declarado el cambio
+   incompatible; verificar que quedó en el archivo, no sólo en el commit.
+4. Confirmar con Fabián antes del paso 2: publicar a PyPI es una acción hacia
+   afuera, no reversible una vez que alguien instala esa versión.
+
+Segundo, más chico: **CHANGELOG.md y el AC de documentar `--verify` en el
+README** quedaron fuera del alcance de PBI-009 (lo dice su sección 2, «No
+incluye»); confirmar si siguen pendientes.
 
 Sección histórica (ya resuelta, se deja para entender el porqué): al escribir
 la v0.1.0 de este traspaso quedaban tres lugares con el número viejo:
@@ -181,6 +193,13 @@ TTOK-06 necesita saber sin abrirlo:
    ni está instalado en el venv).
 10. Dos merges más a pedido de Fabián: `a9fda47` (f6f80d9) y `2d16a13`
     (5a83e3a). Rama de TTOK-04 íntegra en `main`, pusheado.
+11. TTOK-04 corrió el ciclo completo de PBI-009 en su rama (TDD con
+    DeepSeek → Desarrollo → QA independiente con Kimi K3 → bump 2.0.0 →
+    README → aceptación de Fabián), avisando en cada paso. Fabián confirmó
+    el bump de versión y pidió el merge final; hecho en `b3e58ed`. Nota de
+    coordinación: cuando Fabián le dijo a TTOK-04 «mergeá vos» y a esta
+    sesión «hacelo vos», se paró y se confirmó con él antes de actuar, en
+    vez de asumir en base a lo que la otra sesión relataba.
 
 ## Protocolo entre sesiones (vigente)
 
@@ -197,8 +216,9 @@ TTOK-06 necesita saber sin abrirlo:
 ## Pendientes que sólo decide Fabián
 
 1. ~~ADR-007, opción D~~ — aceptada el 27/09; en `main` desde `a9fda47`.
-2. ~~PBI-009 a `ready`~~ — hecho; en `main` desde `a9fda47`. Falta que
-   Fabián dé la orden de arrancar el ciclo TDD.
+2. ~~PBI-009 a `ready`~~ y ~~PBI-009: ciclo completo~~ — **cerrado y
+   aprobado**, en `main` desde `b3e58ed`. Falta publicar 2.0.0 (ver «Primer
+   paso»).
 3. **ctok: propuesta «B ahora, C como spike, D nunca»** —
    `docs/investigation/20260927-ctok-propio-o-dependencia-pros-y-contras.md`
    (`75e5a42`). B = vendorizar + corpus dorado + gate periódico gratis contra
@@ -252,5 +272,5 @@ TTOK-06 necesita saber sin abrirlo:
    — la decisión abierta sobre ctok (B / spike de C).
 2. `docs/investigation/20260927-respuestas-14-preguntas-tokenizacion.md` —
    la sección final «Qué queda para decidir».
-3. `docs/PBI/PBI-009-defaults-del-cli-y-total.md` — sección 3 (AC-01 a
-   AC-20) y sección 5 (handoff a TDD), antes de dar la orden de arrancar.
+3. `docs/PBI/PBI-009-defaults-del-cli-y-total.md` — sección 6 (cierre), para
+   confirmar que la publicación a PyPI es el único paso que falta.

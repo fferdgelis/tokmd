@@ -51,9 +51,10 @@ modificación concreta del código que tiene que hacerlo fallar. Un caso que no
 puede fallar no prueba nada — es el paso 10 de los doce pasos, y es lo que faltó
 en PBI-001 y PBI-005 y dejó pasar los tres bugs.
 
-**Estado: CARGADOS en Kiwi el 2026-09-27**, los quince como `PROPOSED`, en el plan
-**30** «PBI-009 - Defaults del CLI y total», ids **376 a 391** (sin el 380: fue
-`TOK-009-C05` con un texto que se corrigió después, y quedó dado de baja — el id
+**Estado: CARGADOS en Kiwi el 2026-09-27**, los diecisiete como `PROPOSED`, en el
+plan **30** «PBI-009 - Defaults del CLI y total», ids **376–379 y 381–393** (sin
+el 380: fue `TOK-009-C05` con un texto que se corrigió después, y quedó dado de
+baja — el id
 vigente de `TOK-009-C05` es **391**, ver la nota de idempotencia más abajo).
 Script:
 `tools/kiwi/cargar_pbi009_y_bugs.py` (idempotente). Los tres bugs quedaron
@@ -170,7 +171,7 @@ No son nuevos, pero el cambio los toca y tienen que seguir en verde:
 | **TOK-009-C14** | La suma de `Own` es **exactamente** el total, en cualquier archivo | Cualquiera de los 17 archivos medidos, con y sin front matter | `tokmd <archivo> --sections` | `boundary drift` = **`+0`** exacto | Restar el costo fijo por sección en vez de por corte; usar 6 en vez de 5; no absorber las líneas en blanco al front matter |
 | **TOK-009-C15** | El desglose usa conectores de árbol | `sample.md.fixture` | `tokmd <fixture> --sections` | Las filas anidadas se dibujan con `├─`, `└─` y `│`, no con espacios | Volver a la indentación por espacios |
 
-**C14 es el caso más importante de los quince**, porque es el único que verifica
+**C14 es el caso más importante de los diecisiete**, porque es el único que verifica
 el requisito del owner de punta a punta y porque **ya está medido que pasa**: 17
 archivos, residuo 0 en todos, antes de escribir una línea de código.
 
@@ -186,7 +187,7 @@ decidió que entra en el alcance del PBI-009.
 | **TOK-009-C16** | La salida no revienta por encoding en Windows | Fixture con un título `## Flecha → «comillas» — guion`; salida redirigida a archivo (no consola), sin `PYTHONUTF8` en el entorno | `tokmd <fixture> --sections > salida.txt` en cada `--format` | Código de salida 0, `salida.txt` completo, sin `UnicodeEncodeError` | Dejar `click.echo`/`sys.stdout` sin `reconfigure(encoding="utf-8")` al arrancar el CLI |
 | **TOK-009-C17** | El carácter no se reemplaza, se preserva | Mismo fixture que C16 | `tokmd <fixture> --sections > salida.txt` | `salida.txt` contiene `→ «comillas» —` **tal cual**, no `?` ni ningún carácter de repuesto | Usar `errors="replace"` en vez de UTF-8 real |
 
-Dieciséis casos ahora, no quince.
+Diecisiete casos ahora, no quince.
 
 ## Registro en Kiwi — hecho el 2026-09-27
 

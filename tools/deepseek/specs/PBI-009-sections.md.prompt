@@ -1,0 +1,174 @@
+You are writing an independent pytest test file for a Python module you have
+never seen the implementation of. Write tests strictly from the public
+contract and the acceptance criteria below. Do not guess internal helpers.
+
+## Public contract (this is all you get — no implementation source)
+
+```python
+from dataclasses import dataclass, field
+
+@dataclass
+class Section:
+    """One row of the section tree.
+
+    `level` is 0 for the document root and for the special `(front matter)`
+    and `(preamble)` rows, and 1-6 for real Markdown headings (H1-H6).
+    `own_text` is the section's own content, excluding its children's text.
+    """
+    title: str
+    level: int
+    own_text: str
+    children: list["Section"] = field(default_factory=list)
+
+
+def parse_sections(text: str) -> Section:
+    """Parse `text` (a full Markdown document) into a Section tree.
+
+    Returns the document root (title="(document)", level=0, own_text="").
+    Its children, in document order, are: an optional `(front matter)` row
+    (if `text` starts with a `---`-delimited YAML block), an optional
+    `(preamble)` row (text between the front matter, or the start of the
+    file, and the first heading), and then the real heading sections,
+    nested by level (a heading's children are the headings that follow it
+    at a deeper level, until a heading at the same or a shallower level
+    ends it).
+    """
+```
+
+## The behavior that changed (this PBI's whole point)
+
+Two things about `own_text` changed from an earlier version of this module,
+and both are being fixed **at the same time**, verified by one strong
+invariant:
+
+**The invariant every test should lean on:** walk the tree in a pre-order,
+document-order traversal (front matter first if present, then preamble if
+present, then each heading section before its own children, children before
+following siblings) and concatenate every visited node's `own_text`
+(including the root's, which is always `""`). That concatenation must
+reconstruct the **original source text byte-for-byte** — nothing missing,
+nothing duplicated, nothing added.
+
+This single invariant is what catches both fixes:
+
+1. **A heading section's `own_text` now includes its own heading line**
+   (e.g. for `"## Title\ncontent\n"`, that section's `own_text` is the
+   whole thing, `"## Title\ncontent\n"` — starting at the `#`, not at the
+   line after it). Previously the heading line itself belonged to no
+   section's `own_text` anywhere in the tree, so the full-document
+   concatenation was short by exactly the heading lines' text.
+2. **The front matter's `own_text` now absorbs the blank line(s) that
+   immediately follow its closing `---`** (so `"---\nk: v\n---\n\n# H1\n"`
+   puts `"---\nk: v\n---\n\n"` — including that blank line — in the front
+   matter section, not in a separate `(preamble)` node holding just
+   `"\n"`). Previously that blank line ended up in its own `(preamble)`
+   node, which is a second way the tree failed to line up with the raw
+   text when read section-by-section in isolation (the concatenation
+   invariant above still reconstructs the text either way, but a
+   `(preamble)` node that is nothing but whitespace should no longer
+   appear at all when it would only ever hold that absorbed blank line —
+   see AC-04 below).
+
+## Test cases to write, one test (or more) per item
+
+- **AC-01**: Parse `"# Only Title\nSome body text.\n"` (a single heading, no
+  front matter, no preamble). Find the section with `title == "Only Title"`
+  and assert its `own_text` **starts with** `"# Only Title"` (the heading
+  line is included), and that the invariant holds: concatenating the root's
+  `own_text` plus every child's `own_text` in document order equals the
+  original string exactly.
+
+- **AC-02**: Parse a document with **several headings that have no body at
+  all between them** — this is the real-world case that motivated this fix
+  (a Markdown file where `#` lines are used like shell comments, each
+  followed immediately by another `#` line):
+
+  ```
+  # First comment line
+  # Second comment line
+  # Third comment line
+  # Real heading with body
+  Some actual content here.
+  ```
+
+  Assert that **none** of the four resulting H1 sections has an empty or
+  whitespace-only `own_text` — each one's `own_text` is at minimum its own
+  heading line, so `section.own_text.strip()` is non-empty for all four,
+  even the three that have no body content of their own.
+
+- **AC-03**: Parse a document with YAML front matter followed by a heading,
+  with **one blank line** between the closing `---` and the heading:
+
+  ```
+  ---
+  key: value
+  ---
+
+  # Heading
+  Body text.
+  ```
+
+  (as a Python string:
+  `"---\nkey: value\n---\n\n# Heading\nBody text.\n"`). Assert the
+  concatenation invariant holds (front matter `own_text` + heading
+  `own_text`, in order, equals the original string exactly) — this passes
+  whether the blank line ends up inside the front matter node or in a
+  separate `(preamble)` node, **but** also assert directly: there is
+  **no** child of the root with `level == 0` and `title == "(preamble)"`
+  whose `own_text.strip() == ""` — a preamble row that holds nothing but
+  whitespace must not exist as a separate node when that whitespace was
+  only the gap after the front matter's closing `---`.
+
+- **AC-04**: Parse a longer document with front matter, a preamble
+  paragraph with **real, non-blank text**, and two headings at different
+  levels:
+
+  ```
+  ---
+  title: "x"
+  ---
+  This is a real preamble paragraph, not blank.
+
+  # H1
+  H1 body.
+
+  ## H2
+  H2 body.
+  ```
+
+  Assert: a `(preamble)` section exists and its `own_text` contains the
+  real preamble sentence (`"real preamble paragraph"` appears in it); the
+  `H1` section's `own_text` starts with `"# H1"`; the `H2` section's
+  `own_text` starts with `"## H2"` and `H2` is a child of `H1` (nested, per
+  the existing level-nesting rule — this part of the contract is
+  unchanged); and the full concatenation invariant holds for the whole
+  document.
+
+- **AC-05**: Parse a document with **no** front matter and **no** blank
+  line issue at all — just two sibling H1 headings, each with body text —
+  and assert the concatenation invariant holds. This is the plain,
+  unremarkable case: it must keep working exactly as before.
+
+  ```
+  # First
+  First body.
+
+  # Second
+  Second body.
+  ```
+
+## Output format
+
+Return exactly one fenced Python code block, nothing else: no prose before
+or after it. The file must be self-contained pytest. Include a helper that
+walks the tree in the documented pre-order (front matter, preamble, then
+headings before children before following siblings) and concatenates every
+node's `own_text` — you will need it for the invariant in every test. Start
+with:
+
+```python
+from tokmd.sections import Section, parse_sections
+```
+
+Test function names must start with `test_` and should reference the AC id
+they check in a comment, e.g. `# AC-01`.

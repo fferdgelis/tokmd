@@ -95,10 +95,16 @@ total. Restarlo del total —lo que hacía la implementación hasta el 2026-09-2
 daba un número por debajo de lo que la API cobra.
 
 **Línea de deriva, redefinida como control:** `tokmd` imprime siempre una línea
-`boundary drift: ±N` con `N = token_count(archivo) − Σ Own`. Con el costo fijo
-correcto y cortando en saltos de línea (que es como corta el parser), **`N` es
-siempre `0`.** Ya no es una limitación conocida que se documenta: es un chequeo
-de sanidad — si algún día no da `0`, hay un defecto nuevo que investigar, no una
+`boundary drift: ±N` con `N = token_count(archivo) − Σ Own − FRAME[familia]`
+— se resta el costo fijo **una sola vez**, porque `Σ Own` ya lo restó una vez
+por trozo y `token_count(archivo)` no lo resta ninguna (es el total crudo);
+la diferencia entre ambos caminos es exactamente un costo fijo, no cero, y
+hay que descontarlo para que la comparación tenga sentido. **Verificado sobre
+el `CLAUDE.md` global:** `total − Σ Own = 5` (no 0) sin el término del
+`FRAME`; con él, `17.381 − 17.376 − 5 = 0`. Con el costo fijo correcto y
+cortando en saltos de línea (que es como corta el parser), **`N` es siempre
+`0`.** Ya no es una limitación conocida que se documenta: es un chequeo de
+sanidad — si algún día no da `0`, hay un defecto nuevo que investigar, no una
 propiedad esperada de la herramienta.
 
 ## Consecuencias

@@ -44,7 +44,7 @@ related_documents:
 ## 1. Clasificación
 
 - **Título:** El render tiene una sola columna numérica (el acumulado) y descarta la fila raíz, cuando ADR-003 decidió `Own` **y** `Total` por nodo, más subtotales.
-- **Estado:** `confirmed`
+- **Estado:** `verified` (arreglado y confirmado por QA independiente el 2026-09-27)
 - **Tipo:** `product-defect`
 - **Severidad:** `2-high` — es una decisión arquitectónica aceptada por el owner que nunca llegó al código, y su ausencia es la que dejó pasar `[[BUG-008-texto-de-los-encabezados-no-se-cuenta]]`.
 - **PBI relacionado:** `[[PBI-001-parser-de-secciones]]` y `[[PBI-005-render-de-salida]]` (ninguno lo pidió) · se corrige en `[[PBI-009-defaults-del-cli-y-total]]`
@@ -186,6 +186,11 @@ existía.
 
 ## 7. Corrección
 
+> **Implementada el 2026-09-27, commit `421b8cb`.** `Row` gana `own`/`total`
+> y `render()` gana `total`/`frame`, tal como se decide abajo. Detalle
+> completo en el PBI-009 y su dev-log.
+
+
 **Sin implementar.** Se corrige junto con
 `[[BUG-008-texto-de-los-encabezados-no-se-cuenta]]` y
 `[[BUG-010-boundary-drift-prometido-por-adr-002-no-existe]]` dentro de
@@ -213,7 +218,11 @@ tokens de deriva de borde real, 1,24 %. Esa decisión es del owner y necesita AD
   y las de la sección 4 literales de `[[ADR-003-parseo-de-secciones]]`.
 - **Registrado en Kiwi el 2026-09-27** (Bug `pk=10`), con los casos cargados como
   `PROPOSED` **antes** de arreglar nada.
-- **Pendiente:** que los tests los escriba TDD y no Desarrollo
-  (`[[ADR-006-separacion-tdd-desarrollo-qa-por-motor]]`), que QA los corra
-  independiente, y linkear este Bug a la Test Execution con `Bug.add_execution`
-  cuando exista el Test Run.
+- **Arreglado el 2026-09-27**, por Desarrollo (Claude), contra los tests que
+  escribió TDD (DeepSeek) sin ver `render.py`.
+- **QA independiente: `PASSED`.** Kimi K3/OpenCode, read-only, sobre el commit
+  `421b8cb`. Test Run **70**, casos `TOK-009-C10/C11/C12` (ids 385–387),
+  Test Execution **268–270**, linkeadas a este Bug. Log crudo:
+  `docs/handoff/qa/fase-6-pbi009-kimi-k3.txt`.
+- **Estado del registro Bug:** sigue `abierto` en Kiwi — `Bug.update` no
+  existe en la API. Cierre formal, si Fabián lo quiere, manual en `/admin`.

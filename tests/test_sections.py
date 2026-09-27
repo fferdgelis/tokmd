@@ -155,3 +155,124 @@ def test_two_headings_at_the_same_level_are_siblings():
 
     assert "Body of two." not in one.own_text
     assert "Body of one." not in two.own_text
+
+
+# --- PBI-009 (28/09/2026): el heading pasa a contar dentro de su propia
+# sección, y el front matter absorbe las líneas en blanco que le siguen.
+#
+# Autoría (ADR-006): escrito por DeepSeek (deepseek-v4-pro), rol TDD, a
+# partir de tools/deepseek/specs/PBI-009-sections.md.prompt — el contrato
+# público actualizado de Section/parse_sections y los AC-01..05 de esa
+# spec, SIN ver sections.py. Corrida real: 27/09/2026, costo USD 0,0015,
+# thinking deshabilitado. Desarrollo (Claude) revisó el archivo generado
+# y no lo editó.
+
+
+def _concat_own_text(root: Section) -> str:
+    """Walk the tree in pre-order, document order, concatenating own_text."""
+    parts = [root.own_text]
+    for child in root.children:
+        parts.append(_concat_own_text(child))
+    return "".join(parts)
+
+
+def _find_section(root: Section, title: str) -> Section | None:
+    for child in root.children:
+        if child.title == title:
+            return child
+        found = _find_section(child, title)
+        if found is not None:
+            return found
+    return None
+
+
+# AC-01
+def test_heading_own_text_includes_heading_line_and_invariant_holds():
+    text = "# Only Title\nSome body text.\n"
+    root = parse_sections(text)
+
+    section = _find_section(root, "Only Title")
+    assert section is not None
+    assert section.own_text.startswith("# Only Title")
+
+    assert _concat_own_text(root) == text
+
+
+# AC-02
+def test_heading_only_sections_have_nonempty_own_text():
+    text = (
+        "# First comment line\n"
+        "# Second comment line\n"
+        "# Third comment line\n"
+        "# Real heading with body\n"
+        "Some actual content here.\n"
+    )
+    root = parse_sections(text)
+
+    headings = [
+        child
+        for child in root.children
+        if child.level > 0
+    ]
+    assert len(headings) == 4
+
+    for heading in headings:
+        assert heading.own_text.strip() != ""
+
+
+# AC-03
+def test_front_matter_blank_line_not_in_whitespace_only_preamble():
+    text = "---\nkey: value\n---\n\n# Heading\nBody text.\n"
+    root = parse_sections(text)
+
+    assert _concat_own_text(root) == text
+
+    for child in root.children:
+        if child.level == 0 and child.title == "(preamble)":
+            assert child.own_text.strip() != ""
+
+
+# AC-04
+def test_front_matter_real_preamble_and_nested_headings():
+    text = (
+        "---\n"
+        'title: "x"\n'
+        "---\n"
+        "This is a real preamble paragraph, not blank.\n"
+        "\n"
+        "# H1\n"
+        "H1 body.\n"
+        "\n"
+        "## H2\n"
+        "H2 body.\n"
+    )
+    root = parse_sections(text)
+
+    preamble = _find_section(root, "(preamble)")
+    assert preamble is not None
+    assert "real preamble paragraph" in preamble.own_text
+
+    h1 = _find_section(root, "H1")
+    assert h1 is not None
+    assert h1.own_text.startswith("# H1")
+
+    h2 = _find_section(root, "H2")
+    assert h2 is not None
+    assert h2.own_text.startswith("## H2")
+    assert h2 in h1.children
+
+    assert _concat_own_text(root) == text
+
+
+# AC-05
+def test_plain_two_sibling_headings_invariant_holds():
+    text = (
+        "# First\n"
+        "First body.\n"
+        "\n"
+        "# Second\n"
+        "Second body.\n"
+    )
+    root = parse_sections(text)
+
+    assert _concat_own_text(root) == text

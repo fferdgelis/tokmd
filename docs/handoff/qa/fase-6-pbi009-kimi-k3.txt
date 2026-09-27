@@ -1,0 +1,265 @@
+[0m
+> build · moonshotai/kimi-k3
+[0m
+[0m→ [0mRead tools/qa/brief-qa-pbi009.md.prompt
+[0m
+[0m$ [0muv sync
+Resolved 35 packages in 1ms
+Checked 20 packages in 2ms
+[0m
+[0m$ [0muv run pytest -v
+============================= test session starts =============================
+platform win32 -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- C:\IA\tmp-qa-pbi009\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\IA\tmp-qa-pbi009
+configfile: pyproject.toml
+testpaths: tests
+plugins: cov-7.1.0
+collecting ... collected 77 items
+
+tests/test_cli.py::test_claude_code_platform_succeeds PASSED             [  1%]
+tests/test_cli.py::test_codex_platform_succeeds PASSED                   [  2%]
+tests/test_cli.py::test_opencode_platform_without_model_fails_cleanly PASSED [  3%]
+tests/test_cli.py::test_opencode_platform_with_claude_model_succeeds PASSED [  5%]
+tests/test_cli.py::test_antigravity_platform_fails_with_planned_message PASSED [  6%]
+tests/test_cli.py::test_tokenizer_override_wins_over_antigravity PASSED  [  7%]
+tests/test_cli.py::test_tokenizer_override_openai_succeeds PASSED        [  9%]
+tests/test_cli.py::test_opencode_platform_with_gpt_model_succeeds PASSED [ 10%]
+tests/test_cli.py::test_opencode_platform_with_unrecognized_model_fails_cleanly PASSED [ 11%]
+tests/test_cli.py::test_version_flag_succeeds PASSED                     [ 12%]
+tests/test_cli.py::test_default_platform_no_missing_option PASSED        [ 14%]
+tests/test_cli.py::test_default_output_is_digits_only_and_matches_claude_code PASSED [ 15%]
+tests/test_cli.py::test_omitting_platform_equals_explicit_claude_code PASSED [ 16%]
+tests/test_cli.py::test_explicit_codex_platform_not_overridden PASSED    [ 18%]
+tests/test_cli.py::test_sections_output_has_breakdown_and_total PASSED   [ 19%]
+tests/test_cli.py::test_json_format_without_sections_has_total_int PASSED [ 20%]
+tests/test_cli.py::test_nonexistent_file_fails_cleanly PASSED            [ 22%]
+tests/test_cli.py::test_directory_path_fails_cleanly PASSED              [ 23%]
+tests/test_cli.py::test_no_headings_file_outputs_digits_only PASSED      [ 24%]
+tests/test_cli.py::test_empty_file_outputs_zero PASSED                   [ 25%]
+tests/test_cli.py::test_windows_encoding_no_unicode_encode_error[table] PASSED [ 27%]
+tests/test_cli.py::test_windows_encoding_no_unicode_encode_error[md] PASSED [ 28%]
+tests/test_cli.py::test_windows_encoding_no_unicode_encode_error[csv] PASSED [ 29%]
+tests/test_cli.py::test_windows_encoding_no_unicode_encode_error[json] PASSED [ 31%]
+tests/test_cli.py::test_windows_encoding_arrow_survives PASSED           [ 32%]
+tests/test_cli_verify.py::test_codex_verify_fails_cleanly PASSED         [ 33%]
+tests/test_cli_verify.py::test_claude_code_verify_missing_api_key_fails_cleanly PASSED [ 35%]
+tests/test_cli_verify.py::test_claude_code_verify_default_model_measure_frame PASSED [ 36%]
+tests/test_cli_verify.py::test_opencode_claude_model_verify_measure_frame PASSED [ 37%]
+tests/test_cli_verify.py::test_claude_code_verify_count_verified_all_calls_default_model PASSED [ 38%]
+tests/test_cli_verify_gap01.py::test_claude_code_verify_skips_count_verified_for_whitespace_only_section PASSED [ 40%]
+tests/test_package.py::test_version_is_exposed PASSED                    [ 41%]
+tests/test_render.py::test_json_output_is_object_with_rows_and_totals PASSED [ 42%]
+tests/test_render.py::test_table_indentation_and_default_fmt PASSED      [ 44%]
+tests/test_render.py::test_depth_cutoff_keeps_parent_total PASSED        [ 45%]
+tests/test_render.py::test_sort_tokens_reorders_top_level_siblings PASSED [ 46%]
+tests/test_render.py::test_table_shows_root_and_section_rows_and_uneven_own_total PASSED [ 48%]
+tests/test_render.py::test_root_total_is_injected_value_not_summed PASSED [ 49%]
+tests/test_render.py::test_uneven_parent_own_less_than_total PASSED      [ 50%]
+tests/test_render.py::test_drift_positive_and_negative PASSED            [ 51%]
+tests/test_render.py::test_drift_zero PASSED                             [ 53%]
+tests/test_render.py::test_json_drift_and_rows_exclude_root PASSED       [ 54%]
+tests/test_render.py::test_csv_format_no_drift PASSED                    [ 55%]
+tests/test_render.py::test_tree_connectors_table_only PASSED             [ 57%]
+tests/test_sections.py::test_front_matter_becomes_root_child_with_content PASSED [ 58%]
+tests/test_sections.py::test_preamble_text_does_not_leak_into_first_heading PASSED [ 59%]
+tests/test_sections.py::test_heading_level_skip_attaches_to_nearest_ancestor PASSED [ 61%]
+tests/test_sections.py::test_hash_inside_fenced_code_block_is_not_heading PASSED [ 62%]
+tests/test_sections.py::test_empty_string_does_not_raise PASSED          [ 63%]
+tests/test_sections.py::test_no_headings_but_text_creates_preamble PASSED [ 64%]
+tests/test_sections.py::test_two_headings_at_the_same_level_are_siblings PASSED [ 66%]
+tests/test_sections.py::test_heading_own_text_includes_heading_line_and_invariant_holds PASSED [ 67%]
+tests/test_sections.py::test_heading_only_sections_have_nonempty_own_text PASSED [ 68%]
+tests/test_sections.py::test_front_matter_blank_line_not_in_whitespace_only_preamble PASSED [ 70%]
+tests/test_sections.py::test_front_matter_real_preamble_and_nested_headings PASSED [ 71%]
+tests/test_sections.py::test_plain_two_sibling_headings_invariant_holds PASSED [ 72%]
+tests/test_tokenizers.py::test_count_claude_empty_3_0_and_4_7_are_zero PASSED [ 74%]
+tests/test_tokenizers.py::test_count_claude_empty_4_8_is_one PASSED      [ 75%]
+tests/test_tokenizers.py::test_count_claude_deterministic PASSED         [ 76%]
+tests/test_tokenizers.py::test_count_claude_4_7_greater_than_3_0_for_non_empty_text PASSED [ 77%]
+tests/test_tokenizers.py::test_count_claude_unknown_family_raises PASSED [ 79%]
+tests/test_tokenizers.py::test_count_claude_positive_and_grows_with_length PASSED [ 80%]
+tests/test_tokenizers.py::test_frame_golden_values PASSED                [ 81%]
+tests/test_tokenizers.py::test_count_claude_total_empty_4_8_is_six PASSED [ 83%]
+tests/test_tokenizers.py::test_count_claude_total_equals_net_plus_frame_for_all_families PASSED [ 84%]
+tests/test_tokenizers.py::test_count_claude_total_unknown_family_raises PASSED [ 85%]
+tests/test_tokenizers.py::test_count_claude_total_deterministic_and_grows_with_length PASSED [ 87%]
+tests/test_tokenizers.py::test_count_openai_unchanged PASSED             [ 88%]
+tests/test_tokenizers_openai.py::test_count_openai_o200k_matches_tiktoken_exactly PASSED [ 89%]
+tests/test_tokenizers_openai.py::test_count_openai_additivity_is_not_guaranteed PASSED [ 90%]
+tests/test_tokenizers_openai.py::test_count_openai_cl100k_matches_encoding_for_model_gpt4 PASSED [ 92%]
+tests/test_tokenizers_openai.py::test_count_openai_invalid_encoding_raises PASSED [ 93%]
+tests/test_tokenizers_openai.py::test_count_openai_empty_text_returns_zero PASSED [ 94%]
+tests/test_verify.py::test_get_client_raises_missing_api_key_error PASSED [ 96%]
+tests/test_verify.py::test_measure_frame_returns_minimal_content_tokens PASSED [ 97%]
+tests/test_verify.py::test_count_verified_returns_real_tokens_minus_frame PASSED [ 98%]
+tests/test_verify.py::test_no_real_anthropic_import_in_this_module PASSED [100%]
+
+============================= 77 passed in 7.04s ==============================
+[0m
+Suite completa: 77 passed. Ahora las tres corridas manuales:
+[0m$ [0muv run tokmd local/qa-fixtures/claude-md-global.md --platform codex
+10742
+[0m
+[0m$ [0muv run tokmd local/qa-fixtures/claude-md-global.md
+17381
+[0m
+[0m$ [0muv run tokmd local/qa-fixtures/claude-md-global.md --sections
+(document): total=17381
+  ├─ REGLA CERO — SILENCIO OPERATIVO (23/09/2026, REGLA ESTRICTA): own=43 total=43
+  ├─ Mientras ejecutás, no narrás. Por cada paso, UNA sola línea y nada más:: own=36 total=36
+  ├─ salió bien  → «OK, seguimos.»: own=19 total=19
+  ├─ falló       → «ERROR en <paso>: <una línea>. Reintento.» (máximo 2 reintentos;: own=42 total=42
+  ├─ al tercero parar, decir qué falló y qué se necesita): own=25 total=25
+  ├─ El diagnóstico, el razonamiento, los mutantes, qué test cazó qué: NO van al chat.: own=39 total=39
+  ├─ Van al archivo o al log del proyecto, y ahí se leen si hace falta.: own=30 total=30
+  ├─ Se escribe más que esa línea SÓLO cuando es imprescindible: una decisión que es: own=34 total=34
+  ├─ de Fabián, un bloqueo que no se resuelve solo, algo que toca producción o datos: own=34 total=34
+  ├─ vivos, o el cierre del encargo.: own=16 total=16
+  ├─ El cierre es una sola cosa: estado global (VERDE / PARCIAL / ROJO), qué quedó: own=40 total=40
+  ├─ hecho en una línea, y el archivo donde está el detalle. Nunca repetir su contenido.: own=35 total=35
+  ├─ Esta regla pisa cualquier instrucción de estilo que pida «brief updates while: own=31 total=31
+  ├─ you work»: el arnés pide narrar; Fabián pidió no narrar.: own=108 total=108
+  ├─ REGLA CRÍTICA DE SECRETOS: todas las API keys, tokens, passwords y credenciales: own=41 total=41
+  ├─ deben guardarse y obtenerse mediante la bóveda central DPAPI de: own=29 total=29
+  ├─ C:\ProgramData\IA\Secrets\DPAPI\<SID>. Está prohibido persistir secretos en: own=43 total=43
+  ├─ .env, variables de entorno User/Machine, archivos sin cifrar, argumentos o logs.: own=35 total=35
+  ├─ Antes de usar una credencial, verificar el módulo IA.DpapiSecrets y el ADR vigente.: own=40 total=40
+  └─ Configuración global — Fabián Ferdgelis: own=230 total=16656
+       ├─ NO SE USA HEREDOC. SE USA `Write`. — regla básica, 06/09/2026: own=764 total=764
+       ├─ NADA SE DEJA EN EL CHAT. SE GUARDA. — regla básica, 06/09/2026: own=429 total=429
+       ├─ Todo archivo se nombra con su ruta completa (25/09/2026 — REGLA ESTRICTA): own=588 total=588
+       ├─ Windows vs Linux: rutas y nombres de archivo — LECTURA OBLIGATORIA (verificado 16/08/2026): own=1320 total=1320
+       ├─ Escritura de archivos: Write o Edit, nunca por consola (06/09/2026 — REGLA ESTRICTA): own=697 total=1496
+         │  └─ Los tres agujeros que se taparon el 21/09/2026: own=799 total=799
+       ├─ PowerShell de varios pasos: numerar cada uno (22/09/2026 — REGLA ESTRICTA): own=366 total=366
+       ├─ Motores de IA disponibles para delegar trabajo: own=561 total=4902
+         │  ├─ 1. DeepSeek Cloud (API paga — el más capaz para depurar): own=717 total=717
+         │  ├─ 2. Agente autónomo con motor DeepSeek (no consume la ventana de Claude): own=724 total=724
+         │  ├─ 3. Alpha — GLM-5.3-Flash de Z.ai, por OpenRouter (el más barato de los cloud): own=1553 total=1553
+         │  ├─ 4. Modelos locales por Ollama (gratis, lentos, sin internet): own=162 total=162
+         │  └─ 5. La suscripción de Google que Fabián YA PAGA (06/09/2026): own=1185 total=1185
+       ├─ Regla de delegación (medida empíricamente, no es opinión): own=525 total=525
+       ├─ Segunda vez, no tercera: se para y se pide ayuda (23/09/2026 — REGLA ESTRICTA): own=520 total=2214
+         │  ├─ Costo del arnés: ~300x para una consulta suelta, 21x–48x para trabajo real: own=600 total=600
+         │  └─ El número para trabajo real: 21x a 48x (medido 03/09/2026): own=1094 total=1094
+       ├─ Trampas de esta máquina (Windows) — verificadas, cuestan horas: own=424 total=424
+       ├─ Cómo trabajo con Fabián: own=331 total=1907
+         │  ├─ Cómo se le presenta algo nuevo o un cambio (16/08/2026 — pedido dos veces): own=511 total=511
+         │  ├─ Nada de jerga interna sin traducir: own=306 total=306
+         │  ├─ Comandos poco conocidos: nombre y, entre paréntesis, qué es (23/09/2026): own=260 total=260
+         │  └─ Desarrollador y QA son roles separados, y el bug se reporta (16/08/2026): own=499 total=499
+       └─ Los doce pasos antes de tocar cualquier cosa (14/08/2026 — REGLA ESTRICTA): own=1491 total=1491
+
+boundary drift: +0
+17381
+[0m
+```
+============================= test session starts =============================
+platform win32 -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- C:\IA\tmp-qa-pbi009\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\IA\tmp-qa-pbi009
+configfile: pyproject.toml
+testpaths: tests
+plugins: cov-7.1.0
+collecting ... collected 77 items
+
+tests/test_cli.py::test_claude_code_platform_succeeds PASSED             [  1%]
+tests/test_cli.py::test_codex_platform_succeeds PASSED                   [  2%]
+tests/test_cli.py::test_opencode_platform_without_model_fails_cleanly PASSED [  3%]
+tests/test_cli.py::test_opencode_platform_with_claude_model_succeeds PASSED [  5%]
+tests/test_cli.py::test_antigravity_platform_fails_with_planned_message PASSED [  6%]
+tests/test_cli.py::test_tokenizer_override_wins_over_antigravity PASSED  [  7%]
+tests/test_cli.py::test_tokenizer_override_openai_succeeds PASSED        [  9%]
+tests/test_cli.py::test_opencode_platform_with_gpt_model_succeeds PASSED [ 10%]
+tests/test_cli.py::test_opencode_platform_with_unrecognized_model_fails_cleanly PASSED [ 11%]
+tests/test_cli.py::test_version_flag_succeeds PASSED                     [ 12%]
+tests/test_cli.py::test_default_platform_no_missing_option PASSED        [ 14%]
+tests/test_cli.py::test_default_output_is_digits_only_and_matches_claude_code PASSED [ 15%]
+tests/test_cli.py::test_omitting_platform_equals_explicit_claude_code PASSED [ 16%]
+tests/test_cli.py::test_explicit_codex_platform_not_overridden PASSED    [ 18%]
+tests/test_cli.py::test_sections_output_has_breakdown_and_total PASSED   [ 19%]
+tests/test_cli.py::test_json_format_without_sections_has_total_int PASSED [ 20%]
+tests/test_cli.py::test_nonexistent_file_fails_cleanly PASSED            [ 22%]
+tests/test_cli.py::test_directory_path_fails_cleanly PASSED              [ 23%]
+tests/test_cli.py::test_no_headings_file_outputs_digits_only PASSED      [ 24%]
+tests/test_cli.py::test_empty_file_outputs_zero PASSED                   [ 25%]
+tests/test_cli.py::test_windows_encoding_no_unicode_encode_error[table] PASSED [ 27%]
+tests/test_cli.py::test_windows_encoding_no_unicode_encode_error[md] PASSED [ 28%]
+tests/test_cli.py::test_windows_encoding_no_unicode_encode_error[csv] PASSED [ 29%]
+tests/test_cli.py::test_windows_encoding_no_unicode_encode_error[json] PASSED [ 31%]
+tests/test_cli.py::test_windows_encoding_arrow_survives PASSED           [ 32%]
+tests/test_cli_verify.py::test_codex_verify_fails_cleanly PASSED         [ 33%]
+tests/test_cli_verify.py::test_claude_code_verify_missing_api_key_fails_cleanly PASSED [ 35%]
+tests/test_cli_verify.py::test_claude_code_verify_default_model_measure_frame PASSED [ 36%]
+tests/test_cli_verify.py::test_opencode_claude_model_verify_measure_frame PASSED [ 37%]
+tests/test_cli_verify.py::test_claude_code_verify_count_verified_all_calls_default_model PASSED [ 38%]
+tests/test_cli_verify_gap01.py::test_claude_code_verify_skips_count_verified_for_whitespace_only_section PASSED [ 40%]
+tests/test_package.py::test_version_is_exposed PASSED                    [ 41%]
+tests/test_render.py::test_json_output_is_object_with_rows_and_totals PASSED [ 42%]
+tests/test_render.py::test_table_indentation_and_default_fmt PASSED      [ 44%]
+tests/test_render.py::test_depth_cutoff_keeps_parent_total PASSED        [ 45%]
+tests/test_render.py::test_sort_tokens_reorders_top_level_siblings PASSED [ 46%]
+tests/test_render.py::test_table_shows_root_and_section_rows_and_uneven_own_total PASSED [ 48%]
+tests/test_render.py::test_root_total_is_injected_value_not_summed PASSED [ 49%]
+tests/test_render.py::test_uneven_parent_own_less_than_total PASSED      [ 50%]
+tests/test_render.py::test_drift_positive_and_negative PASSED            [ 51%]
+tests/test_render.py::test_drift_zero PASSED                             [ 53%]
+tests/test_render.py::test_json_drift_and_rows_exclude_root PASSED       [ 54%]
+tests/test_render.py::test_csv_format_no_drift PASSED                    [ 55%]
+tests/test_render.py::test_tree_connectors_table_only PASSED             [ 57%]
+tests/test_sections.py::test_front_matter_becomes_root_child_with_content PASSED [ 58%]
+tests/test_sections.py::test_preamble_text_does_not_leak_into_first_heading PASSED [ 59%]
+tests/test_sections.py::test_heading_level_skip_attaches_to_nearest_ancestor PASSED [ 61%]
+tests/test_sections.py::test_hash_inside_fenced_code_block_is_not_heading PASSED [ 62%]
+tests/test_sections.py::test_empty_string_does_not_raise PASSED          [ 63%]
+tests/test_sections.py::test_no_headings_but_text_creates_preamble PASSED [ 64%]
+tests/test_sections.py::test_two_headings_at_the_same_level_are_siblings PASSED [ 66%]
+tests/test_sections.py::test_heading_own_text_includes_heading_line_and_invariant_holds PASSED [ 67%]
+tests/test_sections.py::test_heading_only_sections_have_nonempty_own_text PASSED [ 68%]
+tests/test_sections.py::test_front_matter_blank_line_not_in_whitespace_only_preamble PASSED [ 70%]
+tests/test_sections.py::test_front_matter_real_preamble_and_nested_headings PASSED [ 71%]
+tests/test_sections.py::test_plain_two_sibling_headings_invariant_holds PASSED [ 72%]
+tests/test_tokenizers.py::test_count_claude_empty_3_0_and_4_7_are_zero PASSED [ 74%]
+tests/test_tokenizers.py::test_count_claude_empty_4_8_is_one PASSED      [ 75%]
+tests/test_tokenizers.py::test_count_claude_deterministic PASSED         [ 76%]
+tests/test_tokenizers.py::test_count_claude_4_7_greater_than_3_0_for_non_empty_text PASSED [ 77%]
+tests/test_tokenizers.py::test_count_claude_unknown_family_raises PASSED [ 79%]
+tests/test_tokenizers.py::test_count_claude_positive_and_grows_with_length PASSED [ 80%]
+tests/test_tokenizers.py::test_frame_golden_values PASSED                [ 81%]
+tests/test_tokenizers.py::test_count_claude_total_empty_4_8_is_six PASSED [ 83%]
+tests/test_tokenizers.py::test_count_claude_total_equals_net_plus_frame_for_all_families PASSED [ 84%]
+tests/test_tokenizers.py::test_count_claude_total_unknown_family_raises PASSED [ 85%]
+tests/test_tokenizers.py::test_count_claude_total_deterministic_and_grows_with_length PASSED [ 87%]
+tests/test_tokenizers.py::test_count_openai_unchanged PASSED             [ 88%]
+tests/test_tokenizers_openai.py::test_count_openai_o200k_matches_tiktoken_exactly PASSED [ 89%]
+tests/test_tokenizers_openai.py::test_count_openai_additivity_is_not_guaranteed PASSED [ 90%]
+tests/test_tokenizers_openai.py::test_count_openai_cl100k_matches_encoding_for_model_gpt4 PASSED [ 92%]
+tests/test_tokenizers_openai.py::test_count_openai_invalid_encoding_raises PASSED [ 93%]
+tests/test_tokenizers_openai.py::test_count_openai_empty_text_returns_zero PASSED [ 94%]
+tests/test_verify.py::test_get_client_raises_missing_api_key_error PASSED [ 96%]
+tests/test_verify.py::test_measure_frame_returns_minimal_content_tokens PASSED [ 97%]
+tests/test_verify.py::test_count_verified_returns_real_tokens_minus_frame PASSED [ 98%]
+tests/test_verify.py::test_no_real_anthropic_import_in_this_module PASSED [100%]
+
+============================= 77 passed in 7.04s ==============================
+```
+
+VEREDICTO: TOK-009-C01 | PASSED | tests/test_cli.py::test_default_platform_no_missing_option PASSED en corrida completa (77 passed)
+VEREDICTO: TOK-009-C02 | PASSED | tests/test_cli.py::test_omitting_platform_equals_explicit_claude_code PASSED
+VEREDICTO: TOK-009-C03 | PASSED | tests/test_cli.py::test_default_output_is_digits_only_and_matches_claude_code PASSED
+VEREDICTO: TOK-009-C04 | PASSED | tests/test_cli.py::test_explicit_codex_platform_not_overridden PASSED
+VEREDICTO: TOK-009-C05 | PASSED | `uv run tokmd local/qa-fixtures/claude-md-global.md` devolvió exactamente `17381`
+VEREDICTO: TOK-009-C06 | PASSED | tests/test_cli.py::test_empty_file_outputs_zero PASSED
+VEREDICTO: TOK-009-C07 | PASSED | tests/test_cli.py::test_no_headings_file_outputs_digits_only PASSED
+VEREDICTO: TOK-009-C08 | PASSED | tests/test_sections.py::test_heading_only_sections_have_nonempty_own_text PASSED
+VEREDICTO: TOK-009-C09 | PASSED | tests/test_sections.py::test_heading_own_text_includes_heading_line_and_invariant_holds PASSED
+VEREDICTO: TOK-009-C10 | PASSED | tests/test_render.py::test_table_shows_root_and_section_rows_and_uneven_own_total PASSED
+VEREDICTO: TOK-009-C11 | PASSED | tests/test_render.py::test_root_total_is_injected_value_not_summed PASSED
+VEREDICTO: TOK-009-C12 | PASSED | tests/test_render.py::test_uneven_parent_own_less_than_total PASSED
+VEREDICTO: TOK-009-C13 | PASSED | tests/test_render.py::test_drift_positive_and_negative PASSED y tests/test_render.py::test_drift_zero PASSED
+VEREDICTO: TOK-009-C14 | PASSED | `uv run tokmd local/qa-fixtures/claude-md-global.md --sections`: la última línea antes del total final dice exactamente `boundary drift: +0`
+VEREDICTO: TOK-009-C15 | PASSED | tests/test_render.py::test_tree_connectors_table_only PASSED
+VEREDICTO: TOK-009-C16 | PASSED | tests/test_cli.py::test_windows_encoding_no_unicode_encode_error PASSED en las 4 parametrizaciones: [table], [md], [csv], [json]
+VEREDICTO: TOK-009-C17 | PASSED | tests/test_cli.py::test_windows_encoding_arrow_survives PASSED
+VEREDICTO: TOK-009-C05b | PASSED | `uv run tokmd local/qa-fixtures/claude-md-global.md --platform codex` devolvió exactamente `10742`

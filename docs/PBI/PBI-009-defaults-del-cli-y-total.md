@@ -4,8 +4,8 @@ aliases:
   - "PBI-009 defaults del CLI"
 project: tokmd
 document_type: pbi
-status: active
-version: 0.1.0
+status: closed
+version: 0.3.0
 created: 2026-09-27
 updated: 2026-09-27
 language: es
@@ -20,8 +20,8 @@ llm_channel: "subscription"
 reasoning_mode: "no expuesto"
 last_modified_by: "Anthropic / claude-opus-5 / Claude Code / subscription"
 modified_by: "Anthropic / claude-opus-5 / Claude Code / subscription"
-reviewed_by: "pending"
-review_status: "pending"
+reviewed_by: "Fabián Ferdgelis, owner"
+review_status: "approved"
 source_of_truth: true
 tags:
   - project/tokmd
@@ -41,6 +41,7 @@ related_documents:
 |---|---|---|---|
 | 2026-09-27 | 0.1.0 | Anthropic / claude-opus-5 / Claude Code / subscription | Creación, a pedido de Fabián. **El número PBI-009 se reasignó**: antes designaba la configuración de la API key del `--verify`, que quedó diferida en `docs/diferido/verify-api-key/`. Borrador para revisión del owner; no está `ready`. |
 | 2026-09-27 | 0.2.0 | Anthropic / claude-opus-5 / Claude Code / subscription | Fabián decidió las tres: flag `--sections`, versión `2.0.0`, y que el parser y el total den el mismo valor real. Entran al alcance BUG-009 y BUG-010 (ADR-003 y ADR-002 incumplidos, los levantó él). Se agrega la sección «la no-aditividad medida»: su requisito de igualdad exacta no es alcanzable, y está medido por qué. |
+| 2026-09-27 | 0.3.0 | Anthropic / claude-sonnet-5 / Claude Code / subscription | Cierre: bump de versión a `2.0.0` (commit `657386e`), README actualizado (commit `8106bd1`), y Fabián aprobó el PBI («apruebo PBI-009, dalo por cerrado»). `status` → `closed`. |
 
 ## 1. Valor y contexto
 
@@ -441,25 +442,68 @@ volver a tocar las cuatro specs a la vez, porque se referencian entre sí):
   mano.** Los del `CLAUDE.md` global están en la sección «Datos dorados» del
   documento de casos, y valen sólo para ese archivo sin editar.
 
-### Handoff a Desarrollo
+### Handoff a Desarrollo — hecho el 2026-09-27
 
-- **Restricciones confirmadas:** sin dependencias nuevas. `--verify` tiene que
-  seguir funcionando igual. No romper `--platform codex` ni `opencode`
-  explícitos (AC-04).
-- **Preguntas abiertas:** las tres decisiones de la sección 4.
+- **Restricciones confirmadas:** sin dependencias nuevas. `--verify` sigue
+  funcionando igual (`test_cli_verify.py`/`test_cli_verify_gap01.py` en
+  verde, sin tocarlos). `--platform codex`/`opencode` explícitos no se
+  rompieron (AC-04, verificado).
+- **Las tres decisiones de la sección 4 ya estaban resueltas** al momento de
+  implementar (opción D del ADR-007, aceptada).
+- **Suite completa: 77 passed, 0 failed.** Verificado además a mano contra
+  `C:\Users\fferdgelis\.claude\CLAUDE.md`: total **17.381** (coincide con la
+  API real), `--sections` da `boundary drift: +0`, `--platform codex` da
+  **10.742** (coincide con `tiktoken o200k_base` directo).
+- **Dos fallos reales encontrados implementando, arreglados en `src/tokmd/`,
+  nunca en los tests:** el choque entre indentación por espacios (AC-02) y
+  conectores de árbol (AC-20) — resuelto con una capa de indentación real
+  además del conector; y `--sections` sin ninguna línea de dígito puro
+  (pedido por mi propia spec, AC-05) — resuelto imprimiendo el total desnudo
+  después del desglose. Detalle en el dev-log, tramo «Noveno tramo».
+- **Pendiente, no decidido por Desarrollo:** el bump de versión a `2.0.0` —
+  `test_version_flag_succeeds` sigue esperando `"1.0.0"` y sigue pasando
+  porque no se tocó `pyproject.toml`. Tocar ese test es una decisión de
+  release, no de contrato; queda para cuando Fabián confirme el corte.
 
 ### Handoff a QA
 
-- **Candidato identificable:** commit corto del snapshot, a definir.
+- **Candidato identificable:** pendiente de fijar el commit del snapshot.
 - **Canal de QA:** OpenCode + Kimi K3, read-only.
-- **Casos independientes:** uno por AC.
+- **Casos independientes:** los diecisiete de Kiwi (plan 30, ids 376–379 y
+  381–393), más los tres de `--verify` (PBI-008) que no se tocaron.
 - **Evidencia mínima:** log crudo de la ejecución más el resultado por caso en
   `tools/kiwi/resultados/`.
 
 ## 6. Cierre
 
-- **Artefactos y enlaces:** pendiente.
-- **Resultado de QA independiente:** `pending`
-- **Aceptación del owner:** `pending`
-- **PBI o Bug siguiente:** `[[BUG-008-texto-de-los-encabezados-no-se-cuenta]]`
-  tiene que cerrarse para poder publicar esto con el desglose cuadrado.
+- **Artefactos y enlaces:** Kiwi Test Run **70** (build `421b8cb`), 17
+  Test Execution, todas `PASSED`. Log crudo de QA en
+  `docs/handoff/qa/fase-6-pbi009-kimi-k3.txt`. Brief:
+  `tools/qa/brief-qa-pbi009.md.prompt`. Los cuatro bugs (`pk=9,10,11,13`)
+  quedaron linkeados a su Test Execution correspondiente vía
+  `Bug.add_execution` — el estado del registro Bug en sí no se pudo pisar
+  por API (`Bug.update` no existe en Kiwi; el cierre formal, si Fabián lo
+  quiere, es manual en `/admin`).
+- **Resultado de QA independiente:** `accepted` — **17/17 PASSED**,
+  ejecutado por Kimi K3 vía OpenCode, read-only, sobre un snapshot del
+  commit `421b8cb`, sin haber escrito tests ni código. Dos de los
+  diecisiete casos (`C05`, `C14`) no tenían test unitario propio —el
+  número real sólo lo confirma un servicio de red, y la suite nunca toca
+  la red por diseño— así que QA corrió `tokmd` a mano contra una copia del
+  `CLAUDE.md` global incluida como fixture en el snapshot, y confirmó los
+  mismos números que Desarrollo había verificado manualmente: **17.381**
+  (`tokmd CLAUDE.md`), **`boundary drift: +0`** (`--sections`), y de
+  regalo **10.742** (`--platform codex`, no pedido por Kiwi pero sí por el
+  brief). Suite completa dentro del snapshot: 77 passed, 0 failed.
+- **Aceptación del owner:** `approved` — Fabián Ferdgelis, 2026-09-27
+  ("apruebo PBI-009, dalo por cerrado").
+- **Bump de versión:** hecho, commit `657386e`. `pyproject.toml` y
+  `test_version_flag_succeeds` a `2.0.0`, confirmado por Fabián (relayado
+  por TTOK-05). Suite completa: 77 passed.
+- **Documentación:** `README.md`/`README.es.md` actualizados, commit
+  `8106bd1` — `--sections`, el desglose `own`/`total` con fila raíz y
+  `boundary drift`, y el nuevo comportamiento por defecto.
+- **Estado: `closed`.** Nada bloqueante pendiente. Los cuatro bugs
+  (`pk=9,10,11,13`) siguen `abiertos` en Kiwi por el límite de API ya
+  documentado (`Bug.update` no existe); cerrarlos es manual en `/admin`,
+  a discreción de Fabián.

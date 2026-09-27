@@ -3,15 +3,24 @@
 ADR-001: `ctok` (offline reconstruction) is the default Claude engine, no
 network or API key required; `tiktoken` covers OpenAI/Codex.
 
-Claude (`count_claude`): ADR-002: `ctok.token_count` includes Anthropic's
-message frame (roles and delimiters), which breaks additivity across
-sections — a document's total is not the sum of its parts' raw counts.
-`FRAME` is measured once per family (`ctok.token_count("", version)`,
-pinned to ctok 1.3.0) and subtracted from every call, so section counts
-stay approximately additive. This is a subtractive approximation, not an
-exact partition: for a section small enough that its raw count is below
-`FRAME`, the result goes negative. That is the documented cost of ADR-002's
-option 2, not a bug — callers that need a non-negative display should clamp.
+Claude (`count_claude`): ADR-002/ADR-007: `ctok.token_count` includes
+Anthropic's message frame, which breaks additivity across sections — a
+document's total is not the sum of its parts' raw counts. `FRAME` is the
+fixed cost of one additional chunk when a document is split into pieces —
+**not** `ctok.token_count("", version)`, which over-counts by one token for
+family `"4.8"` (ADR-007, verified against Anthropic's real API on 17
+real documents: the per-chunk cost is 5, not 6). `3.0` and `4.7` keep
+their `token_count("")` values — this project has only verified `4.8`
+against a real oracle so far. `count_claude` subtracts `FRAME[family]`
+once per call, so section counts stay additive when summed **plus one
+more `FRAME`** (see `count_claude_total`, and `render.py`'s `frame`
+parameter, which does that addition back for the caller).
+
+`count_claude_total`: the raw, un-subtracted whole-document count — the
+exact number Anthropic's API bills for a document taken as a single
+request. Unlike `count_claude`, never subtracts `FRAME`: the per-chunk
+cost only applies when a document has been split into pieces summed
+together, never to a single whole-document count.
 
 OpenAI (`count_openai`): `tiktoken` counts raw content tokens with no
 per-message frame to subtract, so section counts are exactly additive
@@ -26,8 +35,14 @@ import tiktoken
 FRAME: dict[str, int] = {
     "3.0": 8,
     "4.7": 12,
-    "4.8": 6,
+    "4.8": 5,
 }
+
+
+def _raw_claude(text: str, family: str) -> int:
+    if family not in FRAME:
+        raise ValueError(f"Unknown Claude family: {family!r}, expected one of {sorted(FRAME)}")
+    return ctok.token_count(text, family)
 
 
 def count_claude(text: str, family: str) -> int:
@@ -36,9 +51,17 @@ def count_claude(text: str, family: str) -> int:
     `family` must be one of `FRAME`'s keys ("3.0", "4.7", "4.8"), matching
     `ctok.token_count`'s `version` parameter directly.
     """
-    if family not in FRAME:
-        raise ValueError(f"Unknown Claude family: {family!r}, expected one of {sorted(FRAME)}")
-    return ctok.token_count(text, family) - FRAME[family]
+    return _raw_claude(text, family) - FRAME[family]
+
+
+def count_claude_total(text: str, family: str) -> int:
+    """Count `text`'s Claude tokens for `family` as a RAW total — the exact
+    number Anthropic's API would bill for `text` as a whole. Unlike
+    `count_claude`, this does NOT subtract `FRAME[family]`.
+
+    `family` must be one of `FRAME`'s keys, same validation as `count_claude`.
+    """
+    return _raw_claude(text, family)
 
 
 OPENAI_ENCODINGS: dict[str, str] = {

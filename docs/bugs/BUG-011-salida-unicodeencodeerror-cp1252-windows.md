@@ -44,7 +44,7 @@ related_documents:
 ## 1. Clasificación
 
 - **Título:** En Windows, si la salida de `tokmd` va a un archivo o a otro proceso (no a una consola) y algún título de sección tiene un carácter fuera de cp1252 (`→`, `«`, `»`, `—`), el programa termina con traceback en los formatos `table`, `md` y `csv`. `json` no falla porque escapa a ASCII.
-- **Estado:** `confirmed`
+- **Estado:** `verified` (arreglado y confirmado por QA independiente el 2026-09-27)
 - **Tipo:** `product-defect`
 - **Severidad:** `2-high` — el archivo real del owner lo dispara; y redirigir la salida (`> medicion.txt`, un pipe, un script, CI) es uso normal de una herramienta de línea de comandos.
 - **PBI relacionado:** `[[PBI-005-render-de-salida]]` (origen: `click.echo` sin codificación fijada). Propuesto para entrar en `[[PBI-009-defaults-del-cli-y-total]]`, que ya toca `cli.py` y `render.py` y sube a `2.0.0`; lo decide Fabián.
@@ -131,6 +131,11 @@ defecto y convierte todo lo no ASCII a `\uXXXX` antes de que llegue a `stdout`.
 
 ## 7. Corrección
 
+> **Implementada el 2026-09-27, commit `421b8cb`.** `sys.stdout`/`sys.stderr`
+> reconfigurados a UTF-8 al importar `cli.py` (la opción propuesta abajo, sin
+> `errors="replace"`). Detalle completo en el PBI-009 y su dev-log.
+
+
 **Sin implementar.** Propuesta, para decidir dónde entra (PBI-009 o PBI
 propio):
 
@@ -161,11 +166,15 @@ de 11.660 sin ningún error — está en
 
 ## 8. Verificación independiente
 
-- **Verificado por:** pendiente (QA)
-- **Evidencia:** pendiente
+- **Arreglado el 2026-09-27**, por Desarrollo (Claude): `sys.stdout`/`stderr`
+  reconfigurados a UTF-8 al importar `cli.py`.
 - **Registrado en Kiwi el 2026-09-27** (Bug `pk=13`), con los casos de regresión
   `TOK-009-C16` y `TOK-009-C17` cargados como `PROPOSED` **antes** de arreglar
   nada.
-- **Pendiente:** que el test lo escriba TDD y no Desarrollo
-  (`[[ADR-006-separacion-tdd-desarrollo-qa-por-motor]]`), y linkear este Bug a la
-  Test Execution con `Bug.add_execution` cuando exista el Test Run.
+- **QA independiente: `PASSED`.** Kimi K3/OpenCode, read-only, sobre el commit
+  `421b8cb`. Test Run **70**, Test Execution **275** y **276**, linkeadas a
+  este Bug. Las cuatro variantes de `--format` (`table`/`md`/`csv`/`json`)
+  corrieron en verde. Log crudo:
+  `docs/handoff/qa/fase-6-pbi009-kimi-k3.txt`.
+- **Estado del registro Bug:** sigue `abierto` en Kiwi — `Bug.update` no
+  existe en la API. Cierre formal, si Fabián lo quiere, manual en `/admin`.

@@ -1,6 +1,6 @@
 [project]
 name = "tokmd"
-version = "1.0.0"
+version = "2.0.0"
 description = "Count tokens per section of a Markdown file, with the right tokenizer for your target platform (Claude, OpenAI, and more)."
 readme = "README.md"
 license = "Apache-2.0"

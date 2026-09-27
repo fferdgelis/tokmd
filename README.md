@@ -42,23 +42,35 @@ uv run tokmd --help
 
 ## Quick Example (Real Output)
 
-Given a Markdown document (in this example, `docs/ADR/ADR-004-empaquetado-y-publicacion.md` from this repository), running `tokmd` with the Claude tokenizer:
+By default, `tokmd` prints just the whole document's token total — one line, no setup required (`--platform` defaults to `claude-code`):
 
 ```bash
-$ tokmd docs/ADR/ADR-004-empaquetado-y-publicacion.md --platform claude-code
-(front matter): 368
-  ADR-004 — Empaquetado y publicación: nombre, licencia y canal: 868
-    Historial de modificaciones: 172
-    Estado: 44
-    Contexto: 130
-    Decisiones: 394
-    Consecuencias: 64
-    Verificación y reversibilidad: 64
+$ tokmd docs/ADR/ADR-004-empaquetado-y-publicacion.md
+1322
+```
+
+Pass `--sections` for the section-by-section breakdown (in this example, `docs/ADR/ADR-004-empaquetado-y-publicacion.md` from this repository):
+
+```bash
+$ tokmd docs/ADR/ADR-004-empaquetado-y-publicacion.md --sections
+(document): total=1322
+├─ (front matter): own=369 total=369
+  └─ ADR-004 — Empaquetado y publicación: nombre, licencia y canal: own=30 total=948
+       ├─ Historial de modificaciones: own=183 total=183
+       ├─ Estado: own=49 total=49
+       ├─ Contexto: own=136 total=136
+       ├─ Decisiones: own=401 total=401
+       ├─ Consecuencias: own=72 total=72
+       └─ Verificación y reversibilidad: own=77 total=77
+
+boundary drift: +0
+1322
 ```
 
 Notice that:
-- Each section's token count includes its own text plus all nested subsections beneath it (e.g. `ADR-004` accumulates 868 tokens total).
-- Front matter is identified and measured as its own block (368 tokens).
+- Every row shows two numbers: `own` (its own text alone) and `total` (own plus every descendant's). A section whose heading has content but whose body is empty is no longer indistinguishable from a genuinely empty section — the old single-column output couldn't tell them apart.
+- The root row (`(document)`) carries the whole file's real total, computed directly from the raw source — never by summing the tree, which would undercount.
+- `boundary drift` reports any mismatch between the tree and the real total. It reads `+0` on a healthy document; if it doesn't, something in the parser or tokenizer disagrees with the whole-file count.
 
 ---
 
@@ -70,29 +82,31 @@ tokmd [OPTIONS] FILE
 
 ### Platforms
 
-The `--platform` option automatically selects the appropriate tokenizer and encoding for your target environment:
+The `--platform` option automatically selects the appropriate tokenizer and encoding for your target environment. It defaults to `claude-code`, since `tokmd` exists for Claude Code users first.
 
 | Platform | Tokenizer engine | Default model / encoding |
 |---|---|---|
-| `claude-code` | Anthropic Claude (`ctok`) | Claude 3.5 / 4.x family (`4.8`) |
+| `claude-code` (default) | Anthropic Claude (`ctok`) | Claude 3.5 / 4.x family (`4.8`) |
 | `codex` | OpenAI (`tiktoken`) | `o200k_base` (GPT-4o, GPT-5) |
 | `opencode` | Dynamically resolved | Requires `--model` (e.g. `--model claude-opus-5` or `--model gpt-5`) |
 | `antigravity` | *Planned for v1.1* | Can be overridden using `--tokenizer` |
 
 ### Command Options
 
-- `--platform [claude-code|codex|opencode|antigravity]` *(required)*: Target platform.
+- `--platform [claude-code|codex|opencode|antigravity]`: Target platform (default: `claude-code`).
+- `--sections`: Print the section-by-section breakdown (root row, `own`/`total` columns, `boundary drift`) instead of just the total.
 - `--model TEXT`: Model identifier, required when `--platform opencode` is selected.
 - `--tokenizer [claude|openai]`: Override the platform's default tokenizer.
-- `--format [table|md|json|csv]`: Output format (default: `table`).
-  - `table`: Indented plain text hierarchy.
-  - `md`: Indented Markdown bullet list.
-  - `json`: JSON array with `title`, `level`, and accumulated `tokens`.
-  - `csv`: CSV format with headers `level,title,tokens`.
-- `--depth INTEGER`: Limit output to sections up to this heading level. Deeper sections are rolled up into their parent totals.
+- `--format [table|md|json|csv]`: Output format for `--sections` (default: `table`).
+  - `table`: Tree with connectors (`├─`/`└─`) and a `boundary drift` footer.
+  - `md`: Indented Markdown bullet list, root row included.
+  - `json`: A single object `{"total", "drift", "rows"}`, each row with `title`, `level`, `own`, `total`.
+  - `csv`: CSV with headers `level,title,own,total`, root row first.
+- `--depth INTEGER`: Limit the `--sections` breakdown to sections up to this heading level. Deeper sections are rolled up into their parent totals (the root row always shows regardless of depth).
 - `--sort [document|tokens]`: Order rows by original document order (`document`, default) or sort sibling sections by descending accumulated tokens (`tokens`).
 - `--claude-family TEXT`: Override Claude tokenizer family (`"3.0"`, `"4.7"`, `"4.8"`).
 - `--encoding TEXT`: Override `tiktoken` encoding (e.g. `"o200k_base"`, `"cl100k_base"`).
+- `--verify`: Cross-check the total against Anthropic's real API instead of `ctok`'s offline reconstruction. Needs `ANTHROPIC_API_KEY` in the environment. Only valid when the resolved tokenizer is Claude.
 - `--version`: Show version and exit.
 - `--help`: Show CLI help and options.
 
@@ -103,37 +117,46 @@ The `--platform` option automatically selects the appropriate tokenizer and enco
 ### Limiting depth (`--depth`)
 
 ```bash
-$ tokmd docs/ADR/ADR-004-empaquetado-y-publicacion.md --platform claude-code --depth 1
-(front matter): 368
-  ADR-004 — Empaquetado y publicación: nombre, licencia y canal: 868
+$ tokmd docs/ADR/ADR-004-empaquetado-y-publicacion.md --sections --depth 1
+(document): total=1322
+├─ (front matter): own=369 total=369
+  └─ ADR-004 — Empaquetado y publicación: nombre, licencia y canal: own=30 total=948
+
+boundary drift: +0
+1322
 ```
 
 ### Sorting by token count (`--sort tokens`)
 
 ```bash
-$ tokmd docs/ADR/ADR-004-empaquetado-y-publicacion.md --platform claude-code --sort tokens
-  ADR-004 — Empaquetado y publicación: nombre, licencia y canal: 868
-    Decisiones: 394
-    Historial de modificaciones: 172
-    Contexto: 130
-    Consecuencias: 64
-    Verificación y reversibilidad: 64
-    Estado: 44
-(front matter): 368
+$ tokmd docs/ADR/ADR-004-empaquetado-y-publicacion.md --sections --sort tokens
+(document): total=1322
+  ├─ ADR-004 — Empaquetado y publicación: nombre, licencia y canal: own=30 total=948
+    │  ├─ Decisiones: own=401 total=401
+    │  ├─ Historial de modificaciones: own=183 total=183
+    │  ├─ Contexto: own=136 total=136
+    │  ├─ Verificación y reversibilidad: own=77 total=77
+    │  ├─ Consecuencias: own=72 total=72
+    │  └─ Estado: own=49 total=49
+└─ (front matter): own=369 total=369
+
+boundary drift: +0
+1322
 ```
 
 ### Markdown list output (`--format md`)
 
 ```bash
-$ tokmd docs/ADR/ADR-004-empaquetado-y-publicacion.md --platform claude-code --format md
-- (front matter): 368
-  - ADR-004 — Empaquetado y publicación: nombre, licencia y canal: 868
-    - Historial de modificaciones: 172
-    - Estado: 44
-    - Contexto: 130
-    - Decisiones: 394
-    - Consecuencias: 64
-    - Verificación y reversibilidad: 64
+$ tokmd docs/ADR/ADR-004-empaquetado-y-publicacion.md --sections --format md
+- (document): own=0 total=1322
+- (front matter): own=369 total=369
+  - ADR-004 — Empaquetado y publicación: nombre, licencia y canal: own=30 total=948
+    - Historial de modificaciones: own=183 total=183
+    - Estado: own=49 total=49
+    - Contexto: own=136 total=136
+    - Decisiones: own=401 total=401
+    - Consecuencias: own=72 total=72
+    - Verificación y reversibilidad: own=77 total=77
 ```
 
 ---

@@ -1,0 +1,131 @@
+You are writing an independent pytest test file for a Python module you have
+never seen the implementation of. Write tests strictly from the public
+contract and the acceptance criteria below. Do not guess internal helpers.
+
+**This replaces the entire test file for this module.** An earlier PBI
+(PBI-002) already tested an older version of the same module's contract.
+That contract changed in one specific way (described below); every
+acceptance criterion below — the ones carried over from PBI-002 and the
+new ones from PBI-009 — is current and must be covered by this one file.
+Do not omit any of them, including the ones that look unchanged from
+before.
+
+## Public contract (this is all you get — no implementation source)
+
+```python
+FRAME: dict[str, int] = {
+    "3.0": 8,
+    "4.7": 12,
+    "4.8": 5,
+}
+
+
+def count_claude(text: str, family: str) -> int:
+    """Count `text`'s Claude tokens for `family`, net of that family's FRAME.
+
+    `family` must be one of `FRAME`'s keys ("3.0", "4.7", "4.8"), matching
+    `ctok.token_count`'s `version` parameter directly. It calls
+    `ctok.token_count(text, family)` internally and subtracts
+    `FRAME[family]` from the result.
+    """
+
+
+def count_claude_total(text: str, family: str) -> int:
+    """Count `text`'s Claude tokens for `family` as a RAW total — the exact
+    number Anthropic's API would bill for `text` as a whole. Unlike
+    `count_claude`, this does NOT subtract FRAME[family]: the per-chunk
+    cost only applies when a document has been split into pieces (one
+    subtraction per extra piece), never to a single whole-document count.
+
+    `family` must be one of FRAME's keys, same validation as `count_claude`.
+    """
+
+
+def count_openai(text: str, encoding: str) -> int:
+    """Count `text`'s OpenAI tokens for `encoding` (a tiktoken encoding
+    name, e.g. "o200k_base", "cl100k_base"). No frame to subtract — this
+    is an exact, additive partition. Unchanged by any PBI."""
+```
+
+## What changed, and why some numbers below look surprising
+
+`FRAME["4.8"]` used to be `6` (PBI-002's golden value, measured as
+`ctok.token_count("", "4.8")` — the raw token count of an empty string).
+This project later measured, against Anthropic's real token-counting API,
+that the true fixed cost of an *additional* chunk when a document is split
+into pieces is **5** for this family, not `6` — so `FRAME["4.8"]` is now
+`5`. `FRAME["3.0"]` (`8`) and `FRAME["4.7"]` (`12`) are **unchanged** — this
+correction only applies to `"4.8"`.
+
+**A direct, testable consequence:** `count_claude("", "4.8")` is now
+**`1`**, not `0` — this is a deliberate, verified change, not a bug.
+Restated: `count_claude_total("", "4.8") == 6` (the empty string's raw
+count for this family did not change — only how much gets subtracted per
+chunk did), so `count_claude("", "4.8") == 6 - 5 == 1`.
+
+For the other two families, nothing changed: `count_claude("", "3.0")`
+and `count_claude("", "4.7")` are still exactly `0` (their `FRAME` values
+are still defined as the raw count of the empty string for that family).
+
+`count_claude_total` is a brand-new function this PBI adds: the raw,
+un-subtracted whole-document count, used when a caller needs the exact
+number the API would bill for a document taken as a whole (as opposed to
+`count_claude`, which is for counting one piece of a document that will be
+summed together with other pieces).
+
+## Test cases to write, one test (or more) per item
+
+### Carried over from the previous version of this module's tests (still valid, now split by family because family "4.8" behaves differently)
+
+- **AC-01a**: `count_claude("", "3.0") == 0` and `count_claude("", "4.7")
+  == 0` (unchanged from before).
+- **AC-01b**: `count_claude("", "4.8") == 1` (the corrected value — not `0`
+  any more, for this family specifically).
+- **AC-02**: `count_claude` is deterministic — calling it twice with the
+  same text and family returns the same value both times.
+- **AC-03**: for the same non-empty text of at least a few sentences,
+  `count_claude(text, "4.7")` is strictly greater than
+  `count_claude(text, "3.0")` (Claude 4.7+ tokenizes more finely — ~30%
+  more tokens for the same content, per Anthropic's own documentation).
+- **AC-04**: calling `count_claude(text, family)` with a `family` string
+  that is not a key of `FRAME` (e.g. `"5.0"`, `"claude-3"`, `""`) raises an
+  exception (any exception type — do not assert on a specific one).
+- **AC-05**: for a short non-empty text, `count_claude(text, "3.0")` is a
+  positive integer strictly less than `count_claude` on that same text
+  repeated 5 times back to back (token count grows with text length).
+
+### New in this PBI
+
+- **AC-06**: `FRAME["4.8"] == 5`, `FRAME["3.0"] == 8`, `FRAME["4.7"] ==
+  12` — the frozen golden values, all three, in one test (a regression
+  guard for the two unchanged ones and the corrected one together).
+- **AC-07**: `count_claude_total("", "4.8") == 6` (the raw empty-string
+  count for this family, unrelated to the corrected per-chunk `FRAME`
+  value — this is the number that did NOT change).
+- **AC-08**: for any non-empty text (pick something concrete, e.g. `"Hello,
+  this is a test sentence for tokenization."`), and for every family in
+  `FRAME` (loop over all three keys, not just `"4.8"`):
+  `count_claude_total(text, family) == count_claude(text, family) +
+  FRAME[family]` — the raw total is always exactly the net count plus the
+  per-chunk cost that was subtracted.
+- **AC-09**: `count_claude_total` raises an exception for an unknown
+  family (e.g. `"5.0"`), same validation contract as `count_claude`.
+- **AC-10**: `count_claude_total` is deterministic and grows with text
+  length, same pattern as AC-05 but for this function (`short_text` vs.
+  `short_text * 5`, same family, e.g. `"4.8"`).
+- **AC-11**: `count_openai` is unchanged by this PBI — for any non-empty
+  text and encoding (e.g. `"o200k_base"`), `count_openai(text, encoding) >
+  0`, and `count_openai("", encoding) == 0`.
+
+## Output format
+
+Return exactly one fenced Python code block, nothing else: no prose before
+or after it. The file must be self-contained pytest, using only inline
+strings (do not reference any external fixture file). Start with:
+
+```python
+from tokmd.tokenizers import FRAME, count_claude, count_claude_total, count_openai
+```
+
+Test function names must start with `test_` and should reference the AC id
+they check in a comment, e.g. `# AC-01a`.

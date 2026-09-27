@@ -43,7 +43,7 @@ related_documents:
 ## 1. Clasificación
 
 - **Título:** El texto de los encabezados (`# Título`) no se cuenta en ninguna fila, así que la suma de secciones subestima el archivo.
-- **Estado:** `confirmed`
+- **Estado:** `verified` (arreglado y confirmado por QA independiente el 2026-09-27)
 - **Tipo:** `product-defect`
 - **Severidad:** `2-high` — es el número que la herramienta existe para dar, y está bajo por un 8,5 % en el archivo real del owner.
 - **PBI relacionado:** `[[PBI-001-parser-de-secciones]]` (origen del defecto) · **bloquea** `[[PBI-009-defaults-del-cli-y-total]]`
@@ -199,6 +199,11 @@ descartar. No hace falta tocar el `if`.
 
 ## 7. Corrección
 
+> **Implementada el 2026-09-27, commit `421b8cb`.** Se aplicó la opción
+> recomendada abajo. Detalle completo del arreglo en el PBI-009 y su
+> dev-log.
+
+
 **Sin implementar.** Pendiente de que Fabián elija, porque las dos opciones dan
 números distintos y una cambia el contrato de `Section`:
 
@@ -233,9 +238,13 @@ adentro de la corrección de este bug, a criterio de quien lo tome.
 - **Registrado en Kiwi el 2026-09-27** (Bug `pk=9`), con los casos de regresión
   cargados como `PROPOSED` **antes** de arreglar nada, que es lo que manda el
   método.
-- **Pendiente:** que el test lo escriba TDD y no Desarrollo
-  (`[[ADR-006-separacion-tdd-desarrollo-qa-por-motor]]`), y que QA lo corra
-  independiente.
-- **Pendiente también:** linkear este Bug a la Test Execution con
-  `Bug.add_execution` cuando exista el Test Run. Hoy no existe porque el arreglo
-  no se hizo.
+- **Arreglado el 2026-09-27**, por Desarrollo (Claude), contra los tests que
+  escribió TDD (DeepSeek) sin ver `sections.py`
+  (`[[ADR-006-separacion-tdd-desarrollo-qa-por-motor]]`).
+- **QA independiente: `PASSED`.** Kimi K3/OpenCode, read-only, sobre el commit
+  `421b8cb`. Test Run **70**, casos `TOK-009-C08` (id 383) y `TOK-009-C09`
+  (id 384), Test Execution **266** y **267**, linkeadas a este Bug vía
+  `Bug.add_execution`. Log crudo: `docs/handoff/qa/fase-6-pbi009-kimi-k3.txt`.
+- **Estado del registro Bug:** sigue `abierto` en Kiwi — `Bug.update` no
+  existe en la API, así que el estado no se pudo pisar por script. El cierre
+  formal, si Fabián lo quiere, es manual en `/admin`.

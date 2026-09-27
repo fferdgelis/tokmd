@@ -1,13 +1,29 @@
-"""`tokmd FILE --platform <p>`: resolve the tokenizer, render the section tree.
+"""`tokmd FILE [--platform <p>]`: resolve the tokenizer, print the total.
 
 ADR-001: platforms map to a tokenizer + parameter without the user having to
 know which one. `--tokenizer` (an explicit "claude"/"openai" choice) always
 wins over whatever `--platform` would have picked — stated in PBI-004's risk
 section, so a caller who knows better than the platform mapping is never
 blocked by it, including on `antigravity` (not implemented as a platform,
-but still overridable). `--format`/`--depth`/`--sort` (PBI-005) are thin
-pass-throughs to `render.render`; this module's own job stops at resolving
-"which tokenizer" and building the `count_fn` closure it's called with.
+but still overridable).
+
+PBI-009: `--platform` now defaults to `"claude-code"` (tokmd exists for
+Claude Code users first). The default output is just the whole document's
+total — one line, no breakdown — computed with `count_claude_total`/
+`count_openai` directly on the raw source text, never by summing sections
+(ADR-007: summing undercounts by one `frame`). `--sections` restores the
+old section-by-section breakdown via `render.render`, root row and total
+included.
+
+BUG-011: `sys.stdout`/`sys.stderr` are reconfigured to UTF-8 unconditionally
+at import time — on Windows, a non-console stdout (a redirected file or
+pipe) otherwise opens in the platform's ANSI code page (`cp1252` on this
+project's machine) with `errors="strict"`, so any title with a character
+outside that code page (`→`, `«`, `»`, `—`, ...) crashes with
+`UnicodeEncodeError` before a single line is written. `reconfigure` is a
+no-op on platforms/streams that don't support it (falls back silently via
+the `hasattr` guard) and never touches file *reading*, which was already
+explicit UTF-8.
 
 `--verify` (PBI-008): cross-checks against Anthropic's real API instead of
 ctok's offline reconstruction. Only valid when the resolved tokenizer is
@@ -19,6 +35,8 @@ here. `get_client`/`measure_frame`/`count_verified` are imported by name
 """
 from __future__ import annotations
 
+import json
+import sys
 from functools import partial
 import importlib.metadata
 from pathlib import Path
@@ -27,8 +45,12 @@ import click
 
 from .render import render
 from .sections import parse_sections
-from .tokenizers import count_claude, count_openai
+from .tokenizers import FRAME, count_claude, count_claude_total, count_openai
 from .verify import MissingApiKeyError, count_verified, get_client, measure_frame
+
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8")
 
 PLATFORMS = ["claude-code", "codex", "opencode", "antigravity"]
 
@@ -85,7 +107,12 @@ def resolve_tokenizer(
 @click.command()
 @click.version_option(version=importlib.metadata.version("tokmd"), message="%(version)s")
 @click.argument("file", type=click.Path(exists=True, dir_okay=False, path_type=Path))
-@click.option("--platform", type=click.Choice(PLATFORMS), required=True)
+@click.option(
+    "--platform",
+    type=click.Choice(PLATFORMS),
+    default="claude-code",
+    help="Default: claude-code.",
+)
 @click.option("--model", default=None, help="Model name, required when --platform is opencode.")
 @click.option(
     "--tokenizer",
@@ -110,6 +137,13 @@ def resolve_tokenizer(
     help="Row order: original document order, or siblings by tokens descending.",
 )
 @click.option(
+    "--sections",
+    "sections",
+    is_flag=True,
+    default=False,
+    help="Print the section-by-section breakdown (with the total) instead of just the total.",
+)
+@click.option(
     "--verify",
     "verify",
     is_flag=True,
@@ -132,9 +166,12 @@ def main(
     fmt: str,
     depth: int | None,
     sort: str,
+    sections: bool,
     verify: bool,
 ) -> None:
     kind, param = resolve_tokenizer(platform, model, tokenizer, claude_family, encoding)
+    text = file.read_text(encoding="utf-8")
+
     if verify:
         if kind != "claude":
             raise click.UsageError("--verify only supports the Claude tokenizer, not OpenAI.")
@@ -143,7 +180,7 @@ def main(
         except MissingApiKeyError as exc:
             raise click.ClickException(str(exc)) from exc
         verify_model = model or DEFAULT_VERIFY_MODEL
-        frame = measure_frame(client, verify_model)
+        frame_value = measure_frame(client, verify_model)
         # BUG-001 (same root cause, second call site): the real API rejects
         # ANY whitespace-only text content block, not just measure_frame's
         # internal probe — a section whose own_text is blank lines (a
@@ -154,10 +191,37 @@ def main(
         # render.py's contract for the offline (ctok/tiktoken) paths, which
         # never had this problem.
         count_fn = lambda section_text: (  # noqa: E731
-            count_verified(client, section_text, verify_model, frame) if section_text.strip() else 0
+            count_verified(client, section_text, verify_model, frame_value) if section_text.strip() else 0
         )
+        # PBI-009/ADR-007: the document's real total is its own single,
+        # whole-text measurement — never derived by summing sections (that
+        # undercounts by one frame's worth) — same principle as the offline
+        # path below, just against the real API instead of ctok.
+        doc_total = count_verified(client, text, verify_model, frame_value) if text.strip() else 0
+    elif kind == "claude":
+        count_fn = partial(count_claude, family=param)
+        # AC-09: an empty file is 0 tokens — count_claude_total("", family)
+        # would return that family's raw empty-string cost instead (e.g. 6
+        # for "4.8"), which is the frame, not "how many tokens is this
+        # file", so it's special-cased rather than routed through it.
+        doc_total = count_claude_total(text, family=param) if text.strip() else 0
+        frame_value = FRAME[param]
     else:
-        count_fn = partial(count_claude, family=param) if kind == "claude" else partial(count_openai, encoding=param)
-    text = file.read_text(encoding="utf-8")
+        count_fn = partial(count_openai, encoding=param)
+        # OpenAI/tiktoken has no per-message frame to net out (tokenizers.py:
+        # "exact partition, additive across sections with zero drift"), so
+        # the whole-text count IS the sum of sections already — no separate
+        # "total" function needed, and no frame to report.
+        doc_total = count_openai(text, encoding=param)
+        frame_value = 0
+
     root = parse_sections(text)
-    click.echo(render(root, count_fn, fmt=fmt, depth=depth, sort=sort))
+    breakdown = render(root, count_fn, total=doc_total, frame=frame_value, fmt=fmt, depth=depth, sort=sort)
+
+    if sections:
+        click.echo(breakdown)
+        click.echo(doc_total)
+    elif fmt == "json":
+        click.echo(json.dumps({"total": doc_total}))
+    else:
+        click.echo(doc_total)

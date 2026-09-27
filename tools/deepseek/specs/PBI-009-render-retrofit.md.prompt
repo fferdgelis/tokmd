@@ -1,0 +1,280 @@
+You are writing an independent pytest test file for a Python module you have
+never seen the implementation of. Write tests strictly from the public
+contract and the acceptance criteria below. Do not guess internal helpers.
+
+**This replaces the entire test file for this module.** An earlier PBI
+(PBI-005) already tested an older version of `render`'s contract, using a
+single accumulated `tokens` number per row and a bare JSON array. That
+signature changed (described below, not backward compatible — the old
+calls would now raise a `TypeError` for a missing required argument).
+Every acceptance criterion below — the ones carried over from PBI-005,
+adapted to the new signature, and the new ones from PBI-009 — is current
+and must be covered by this one file. Do not omit any of them.
+
+## Public contract (this is all you get — no implementation source)
+
+```python
+from dataclasses import dataclass, field
+from typing import Callable
+
+@dataclass
+class Section:
+    title: str
+    level: int          # 0 for the document root and special rows; 1-6 for
+                         # a real Markdown heading (H1-H6).
+    own_text: str        # this section's own content, excluding children's
+    children: list["Section"] = field(default_factory=list)
+
+
+@dataclass
+class Row:
+    """One visible line, other than the root row: a section's title, its
+    nesting level, its OWN token count (its own_text alone), and its TOTAL
+    token count (own plus every descendant's, accumulated bottom-up)."""
+    title: str
+    level: int
+    own: int
+    total: int
+
+
+def render(
+    root: Section,
+    count_fn: Callable[[str], int],
+    total: int,
+    frame: int = 0,
+    fmt: str = "table",
+    depth: int | None = None,
+    sort: str = "document",
+) -> str:
+    """Render root's children as fmt, PLUS a root row for `root` itself.
+
+    count_fn(text) -> int counts one section's own text (its `own` value).
+    Every non-root row's `total` is the bottom-up accumulation: its own
+    `own` plus every descendant's `total` — a subtree-relative weight, not
+    guaranteed to be byte-exact against any external oracle for an
+    interior node.
+
+    `total` (the parameter, REQUIRED — no default): the caller supplies
+    the REAL, authoritative total for the whole document (e.g. from a raw,
+    un-subtracted count of the full source text) — the root row's `total`
+    field is set to exactly this value, NOT derived by summing children
+    (summing would reintroduce a small, fixed, subtractive error — this
+    parameter exists precisely so the root row is always exact regardless
+    of that error).
+
+    `frame` (optional, default `0`): the fixed per-chunk cost the caller's
+    `count_fn` subtracts once per section internally, used ONLY to compute
+    the boundary-drift figure below — `render` cannot infer it from
+    `count_fn`, which is an opaque callable.
+
+    fmt: "table" (default) — the root row and every section row, WITH
+    tree-drawing connectors (see below), followed by a blank line and a
+    `boundary drift: ±N` line (see the drift formula below).
+    "md" — an indented Markdown bullet list, root row first, each line
+    showing both numbers, e.g. `f"{'  ' * level}- {title}: own={own}
+    total={total}"` (root row: `"- {title}: own=0 total={total}"` — a
+    Section's own `own_text` is never set to real root content by this
+    parser, so the root's `own` is always `0`).
+    "csv" — header row `"level,title,own,total"`, then one data row for
+    the root (level 0) followed by one row per section, in the same order
+    "table"/"md" would visit them. No drift line in csv — it stays
+    strictly tabular.
+    "json" — a single JSON OBJECT (not a bare array, unlike this module's
+    previous version), parseable, shaped exactly:
+    `{"total": <int>, "drift": <int>, "rows": [{"title":.., "level":..,
+    "own":.., "total":..}, ...]}` — `rows` holds the non-root sections
+    only (root's total is already the top-level `"total"` key); `drift`
+    is computed with the same formula as the table/md footer line, below.
+
+    depth: if given, only rows with level <= depth are shown (root is
+    always shown regardless of `depth`) — their totals still include
+    everything below the cutoff (rollup, never lost). Applies to json's
+    `"rows"` and to csv's data rows too.
+    sort: "document" (default, original order) or "tokens" (siblings
+    reordered by their own accumulated `total`, descending — reorders
+    each parent's children among themselves, never flattens/reorders
+    across different parents).
+
+    Tree-drawing connectors (fmt="table" only — "md"/"csv"/"json" keep
+    their own conventions above, unchanged by this): a section that is the
+    LAST child among its siblings is prefixed with `"└─ "`; every other
+    child is prefixed with `"├─ "`. An ancestor chain contributes a
+    vertical bar `"│  "` for each ancestor that still has later siblings
+    of its own, or three spaces `"   "` for an ancestor that was the last
+    child at its level. The root row itself has no prefix.
+
+    Boundary drift (applies to "table" — a trailing line after a blank
+    line —, "md" — same trailing line convention — and "json" — as the
+    `"drift"` key; NOT "csv"):
+    `drift = total - sum(row.own for row in <every non-root row>) - frame`
+    (the caller passes `frame` explicitly, matching what `count_fn`
+    already subtracted once per section). When the total and the sections
+    agree exactly once `frame` is accounted for, `drift == 0`.
+    """
+```
+
+## Two test setups — use whichever each item calls for
+
+**Setup A — word counting, no fixed cost (for the acceptance criteria
+carried over from before, none of which touch `frame`/drift):**
+
+```python
+def make_word_tree():
+    return Section(
+        title="(document)",
+        level=0,
+        own_text="",
+        children=[
+            Section(title="Intro", level=1, own_text="intro text", children=[
+                Section(title="Background", level=2, own_text="background text", children=[]),
+            ]),
+            Section(title="Conclusion", level=1, own_text="conclusion text", children=[]),
+        ],
+    )
+
+def word_count(text: str) -> int:
+    return len(text.split())
+```
+
+With this tree and `word_count`: `"Background"` has 2 words (own, no
+children) → `own = 2`, `total = 2`. `"Intro"` has 2 own words + `Background`'s
+total of 2 → `own = 2`, `total = 4`. `"Conclusion"` has 2 own words, no
+children → `own = 2`, `total = 2`. Since `render` now requires an explicit
+`total` for the root, use `total=100` (an arbitrary, externally-supplied
+"real" whole-document number — it does not need to relate to the tree's
+own sum for these tests, none of which check drift).
+
+**Setup B — a fixed per-chunk cost, non-trivial, so drift is meaningful
+(for the new acceptance criteria that DO check `frame`/drift):**
+
+```python
+FRAME = 2
+
+def make_tree():
+    return Section(
+        title="(document)",
+        level=0,
+        own_text="",
+        children=[
+            Section(title="Intro", level=1, own_text="intro text", children=[
+                Section(title="Background", level=2, own_text="background text", children=[]),
+            ]),
+            Section(title="Conclusion", level=1, own_text="conclusion text", children=[]),
+        ],
+    )
+
+def count_fn(text: str) -> int:
+    return max(len(text.split()) - FRAME, 0)
+```
+
+With this tree and `count_fn`: every section's `own` is `max(2-2, 0) = 0`
+(all own_texts are 2 words), so `Intro.total = 0`, `Conclusion.total = 0`,
+sum of every non-root row's `own` = `0`. With `total=5, frame=FRAME (2)`:
+`drift = 5 - 0 - 2 = 3`. With `total=2, frame=2`: `drift = 2 - 0 - 2 = 0`.
+
+For a tree with an uneven parent/child weight (needed for two ACs below):
+
+```python
+def make_uneven_tree():
+    return Section(
+        title="(document)",
+        level=0,
+        own_text="",
+        children=[
+            Section(title="ShortParent", level=1, own_text="short", children=[
+                Section(
+                    title="LongChild",
+                    level=2,
+                    own_text="one two three four five six seven eight nine ten",
+                    children=[],
+                ),
+            ]),
+        ],
+    )
+```
+
+With `count_fn` (`FRAME=2`): `"ShortParent"`'s own text is 1 word →
+`own = max(1-2, 0) = 0`. `"LongChild"`'s own text is 10 words →
+`own = max(10-2, 0) = 8`, `total = 8`. So `ShortParent.total = 0 + 8 = 8`
+(`own=0`, `total=8` — two different numbers on the same row).
+
+## Test cases to write, one test (or more) per item
+
+### Carried over from the previous version of this module's tests (Setup A, `total=100`, no `frame` needed)
+
+- **AC-01**: `render(make_word_tree(), word_count, total=100, fmt="json")`
+  — `json.loads(...)` succeeds into a **dict** (not a list, that changed),
+  with `data["rows"]` containing an entry for `"Intro"` with
+  `"total": 4` and an entry for `"Background"` with `"total": 2` (each
+  row also has an `"own"` field — for `"Intro"`, `own == 2`).
+- **AC-02**: `render(make_word_tree(), word_count, total=100, fmt="table")`
+  (also check `fmt` truly defaults to `"table"` — a call with no `fmt`
+  produces identical output) — the line for `"Background"` (level 2) has
+  strictly more leading whitespace/indentation than the line for `"Intro"`
+  (level 1) — deeper nesting still visually indented further, tree
+  connectors aside.
+- **AC-03**: `render(make_word_tree(), word_count, total=100, depth=1)` —
+  the output does NOT contain `"Background"` anywhere (level 2, cut off),
+  but DOES contain `"Intro"` together with its accumulated total `"4"` —
+  hiding a child row never reduces the parent's shown total.
+- **AC-04**: `render(make_word_tree(), word_count, total=100,
+  sort="tokens")` — `"Intro"` (total 4) appears before `"Conclusion"`
+  (total 2). Then add a third top-level sibling `"Appendix"` (own_text
+  with 6 words, no children → total 6) to a modified tree, and assert the
+  order becomes `"Appendix"` (6), `"Intro"` (4), `"Conclusion"` (2) —
+  descending by accumulated total among top-level siblings only.
+
+### New in this PBI (Setup B, and the uneven tree)
+
+- **AC-05 / AC-12**: `render(make_tree(), count_fn, total=5, fmt="table")`
+  — output contains the root's title `"(document)"` and its total `"5"`
+  somewhere on that line, plus separate lines for `"Intro"`,
+  `"Background"`, `"Conclusion"`. Then, using `make_uneven_tree()`, assert
+  the `"ShortParent"` line shows both `"0"` and `"8"` (its `own` and its
+  `total`, two distinguishable numbers).
+- **AC-13**: `render(make_tree(), count_fn, total=5, fmt="table")` — the
+  root row's shown total is exactly `5` (the injected value), not `0`
+  (which is what summing this tree's children would give).
+- **AC-14**: `render(make_uneven_tree(), count_fn, total=5, fmt="table")`
+  — the `"ShortParent"` row shows `own=0` and `total=8` (own strictly less
+  than total).
+- **AC-15**: `render(make_tree(), count_fn, total=5, frame=FRAME,
+  fmt="table")` — a line containing `"boundary drift"` also contains `"3"`
+  (`5 - 0 - 2 = 3`). Repeat with `total=-3, frame=FRAME` and assert the
+  drift line shows `"-5"` (`-3 - 0 - 2 = -5`).
+- **AC-16**: `render(make_tree(), count_fn, total=2, frame=FRAME,
+  fmt="table")` — the drift line shows exactly `"0"` (`2 - 0 - 2 = 0`).
+- **AC-06**: `render(make_tree(), count_fn, total=5, frame=FRAME,
+  fmt="json")` — parses into a dict with `"total" == 5`, `"drift" == 3`,
+  and `"rows"` a list of `{"title", "level", "own", "total"}` entries for
+  `"Intro"`, `"Background"`, `"Conclusion"` (root NOT included in
+  `"rows"`).
+- **csv regression**: `render(make_tree(), count_fn, total=5, fmt="csv")`
+  — parses with `csv.reader`, header row exactly `["level", "title",
+  "own", "total"]`, first data row is the root (`level="0"`, `total`
+  column `"5"`), followed by one row per section; no line containing
+  `"drift"` anywhere.
+- **AC-20**: `render(make_tree(), count_fn, total=5, fmt="table")` —
+  output contains `"├─"`, `"└─"`, and `"│"` (tree connectors). Then assert
+  `render(make_tree(), count_fn, total=5, fmt="md")` and `fmt="csv"` do
+  **not** contain `"├─"` or `"└─"` — connectors are a `"table"`-only
+  presentation choice.
+
+## Output format
+
+Return exactly one fenced Python code block, nothing else: no prose before
+or after it. The file must be self-contained pytest — define
+`make_word_tree`, `word_count`, `FRAME`, `make_tree`, `count_fn`, and
+`make_uneven_tree` as helpers inside the file. Start with:
+
+```python
+import csv
+import io
+import json
+
+from tokmd.render import render
+from tokmd.sections import Section
+```
+
+Test function names must start with `test_` and should reference the AC id
+they check in a comment, e.g. `# AC-13`.

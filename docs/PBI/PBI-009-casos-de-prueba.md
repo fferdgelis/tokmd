@@ -41,6 +41,7 @@ related_documents:
 |---|---|---|---|
 | 2026-09-27 | 0.1.0 | Anthropic / claude-opus-5 / Claude Code / subscription | Creación, a pedido de Fabián: *«el bug 008 tiene que estar ASAP en kiwi y con el detalle de casos que se van a correr para el testeo del buen funcionamiento»*. Pendiente de cargar a Kiwi como PROPOSED. |
 | 2026-09-27 | 0.2.0 | Anthropic / claude-opus-5 / Claude Code / subscription | Se agregan **TOK-009-C14** (la suma de `Own` es exactamente el total, ya medido en 17 archivos) y **TOK-009-C15** (conectores de árbol, variante B aprobada por Fabián). Quince casos. El apartado que decía que la igualdad no se podía verificar quedó desmentido por medición. |
+| 2026-09-27 | 0.3.0 | Anthropic / claude-sonnet-5 / Claude Code / subscription | Se agregan **TOK-009-C16** y **TOK-009-C17**, regresión de `[[BUG-011-salida-unicodeencodeerror-cp1252-windows]]` (encontrado por la sesión TTOK-05, Fabián decidió sumarlo al alcance del PBI-009). Diecisiete casos. |
 
 ## Para qué sirve este documento
 
@@ -60,7 +61,7 @@ registrados como Bug `pk=9`, `pk=10` y `pk=11`.
 
 **Cobertura:** los criterios de aceptación de
 `[[PBI-009-defaults-del-cli-y-total]]` más la regresión de los tres bugs.
-**Quince casos.**
+**Diecisiete casos.**
 
 ## Los tres bugs que estos casos tienen que cazar
 
@@ -169,17 +170,30 @@ archivos, residuo 0 en todos, antes de escribir una línea de código.
 
 **C15** cubre la variante B de presentación, que Fabián aprobó el 27/09/2026.
 
+## Bloque F — regresión de BUG-011, sumado el 27/09/2026
+
+Bug de la sesión **TTOK-05**, en paralelo sobre este mismo worktree. Fabián
+decidió que entra en el alcance del PBI-009.
+
+| Caso | Título | Precondición | Pasos | Resultado esperado | Qué falla caza |
+|---|---|---|---|---|---|
+| **TOK-009-C16** | La salida no revienta por encoding en Windows | Fixture con un título `## Flecha → «comillas» — guion`; salida redirigida a archivo (no consola), sin `PYTHONUTF8` en el entorno | `tokmd <fixture> --sections > salida.txt` en cada `--format` | Código de salida 0, `salida.txt` completo, sin `UnicodeEncodeError` | Dejar `click.echo`/`sys.stdout` sin `reconfigure(encoding="utf-8")` al arrancar el CLI |
+| **TOK-009-C17** | El carácter no se reemplaza, se preserva | Mismo fixture que C16 | `tokmd <fixture> --sections > salida.txt` | `salida.txt` contiene `→ «comillas» —` **tal cual**, no `?` ni ningún carácter de repuesto | Usar `errors="replace"` en vez de UTF-8 real |
+
+Dieciséis casos ahora, no quince.
+
 ## Registro en Kiwi — hecho el 2026-09-27
 
 | Qué | Id |
 |---|---|
 | Producto | `tokmd`, id 6 |
 | Plan | **30** — «PBI-009 - Defaults del CLI y total» |
-| Casos | **376–379, 381–391**, los quince como `PROPOSED` (el 380 se dio de baja, ver abajo) |
+| Casos | **376–379, 381–393**, los diecisiete como `PROPOSED` (el 380 se dio de baja, ver abajo) |
 | Build | **33** — `d9c42ff` |
 | Bug BUG-008 | `pk=9`, `High`, abierto |
 | Bug BUG-009 | `pk=10`, `High`, abierto |
 | Bug BUG-010 | `pk=11`, `Medium`, abierto |
+| Bug BUG-011 | `pk=13`, `High`, abierto |
 
 Script: `tools/kiwi/cargar_pbi009_y_bugs.py`, idempotente — pero **no** por el
 texto completo del `summary` (ver la trampa 4 de abajo), sino por el prefijo fijo

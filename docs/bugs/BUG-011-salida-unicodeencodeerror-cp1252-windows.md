@@ -48,7 +48,10 @@ related_documents:
 - **Tipo:** `product-defect`
 - **Severidad:** `2-high` — el archivo real del owner lo dispara; y redirigir la salida (`> medicion.txt`, un pipe, un script, CI) es uso normal de una herramienta de línea de comandos.
 - **PBI relacionado:** `[[PBI-005-render-de-salida]]` (origen: `click.echo` sin codificación fijada). Propuesto para entrar en `[[PBI-009-defaults-del-cli-y-total]]`, que ya toca `cli.py` y `render.py` y sube a `2.0.0`; lo decide Fabián.
-- **Caso de Kiwi relacionado:** **pendiente de registrar**
+- **Registro en Kiwi:** **Bug `pk=13`**, severidad `High`, estado abierto, build
+  `d9c42ff` (registrado 2026-09-27 por TTOK-04, a partir del reporte de TTOK-05).
+- **Casos de Kiwi relacionados:** `TOK-009-C16` (id 392) y `TOK-009-C17` (id 393),
+  `PROPOSED`, en el plan **30** «PBI-009 - Defaults del CLI y total».
 - **Reportado por:** Desarrollo, sesión TTOK-05 (Claude Fable 5.1), reproducido tres veces
 - **Fecha de detección:** 2026-09-27
 
@@ -160,3 +163,9 @@ de 11.660 sin ningún error — está en
 
 - **Verificado por:** pendiente (QA)
 - **Evidencia:** pendiente
+- **Registrado en Kiwi el 2026-09-27** (Bug `pk=13`), con los casos de regresión
+  `TOK-009-C16` y `TOK-009-C17` cargados como `PROPOSED` **antes** de arreglar
+  nada.
+- **Pendiente:** que el test lo escriba TDD y no Desarrollo
+  (`[[ADR-006-separacion-tdd-desarrollo-qa-por-motor]]`), y linkear este Bug a la
+  Test Execution con `Bug.add_execution` cuando exista el Test Run.

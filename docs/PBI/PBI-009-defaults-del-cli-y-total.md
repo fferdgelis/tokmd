@@ -90,14 +90,19 @@ related_documents:
     (decidido por Fabián el 27/09).
   - El total se cuenta **de una sola pasada sobre el archivo completo**, no
     sumando filas (ver 4, «la decisión técnica»).
-  - **Los tres bugs de esta zona, juntos**, porque arreglar uno sin los otros
-    deja números que no cierran:
+  - **Los cuatro bugs de esta zona, juntos**, porque arreglar uno sin los otros
+    deja números que no cierran (BUG-011 es independiente en su causa, pero
+    toca los mismos archivos y la misma versión, así que entra con el resto por
+    decisión de Fabián):
     - `[[BUG-008-texto-de-los-encabezados-no-se-cuenta]]` — el título del
       encabezado pasa a contarse en su propia sección.
     - `[[BUG-009-adr-003-arbol-sin-own-ni-total]]` — `Own` **y** `Total` por
       fila, más la fila raíz con el total, como decidió ADR-003.
     - `[[BUG-010-boundary-drift-prometido-por-adr-002-no-existe]]` — la línea de
       deriva que ADR-002 promete.
+    - `[[BUG-011-salida-unicodeencodeerror-cp1252-windows]]` — la salida se fija
+      a UTF-8 sin depender de la consola, para que un título con `→`, `«`, `»`
+      o `—` no reviente al redirigir la salida en Windows.
   - `README.md` y `README.es.md` actualizados: el ejemplo de portada pasa a ser
     `tokmd CLAUDE.md`.
   - `CHANGELOG.md` con el cambio incompatible declarado.
@@ -192,6 +197,23 @@ related_documents:
 > 1,24 %, por la no-aditividad del tokenizador — ver sección 4). Hasta que Fabián
 > decida qué se hace con esa deriva, no hay contra qué comparar. AC-15 es la
 > versión verificable hoy.
+
+### Regresión de BUG-011 — la salida no revienta por encoding en Windows
+
+Bug encontrado por la sesión **TTOK-05** (Claude Fable 5.1), en paralelo sobre
+este mismo worktree, midiendo el `CLAUDE.md` global contra la API real. Fabián
+decidió que entra en este PBI, porque ya toca `cli.py`/`render.py` y sube a
+`2.0.0`. Ver `[[BUG-011-salida-unicodeencodeerror-cp1252-windows]]`.
+
+- [ ] **AC-18:** Dado un título de sección con un carácter fuera de cp1252
+      (`→`, `«`, `»`, `—`) y la salida estándar redirigida a un archivo o pipe
+      (no una consola interactiva), cuando se corre en Windows con cualquier
+      `--format` (`table`, `md`, `csv`, `json`), entonces el programa **no**
+      revienta con `UnicodeEncodeError` y produce la salida completa.
+- [ ] **AC-19:** Dado ese mismo caso, cuando se corre, entonces el carácter
+      aparece **tal cual** en la salida (UTF-8) — no se reemplaza por `?` ni por
+      ningún carácter de repuesto. Una herramienta de medición que mutila
+      silenciosamente el texto miente peor que si revienta.
 
 ## 4. Contrato técnico
 

@@ -132,6 +132,22 @@ CASOS = [
      "anidadas se dibujan con los conectores de arbol, no con espacios. Variante B, "
      "aprobada por Fabian el 2026-09-27.\n\n"
      "QUE FALLA CAZA: volver a la indentacion por espacios."),
+
+    # --- Bloque F: regresion de BUG-011 (encontrado por TTOK-05) ---
+    ("TOK-009-C16", "Edge case", "CLI",
+     "TOK-009-C16 - La salida no revienta por encoding en Windows",
+     "Dado un fixture con un titulo '## Flecha -> <<comillas>> - guion' (caracteres fuera de "
+     "cp1252) y la salida estandar redirigida a un archivo (no una consola), sin PYTHONUTF8 "
+     "en el entorno, cuando se corre tokmd --sections en Windows con cada --format (table, "
+     "md, csv, json), entonces el codigo de salida es 0 y el archivo de salida sale "
+     "completo, SIN UnicodeEncodeError. (AC-18, regresion de BUG-011)\n\n"
+     "QUE FALLA CAZA: no llamar sys.stdout.reconfigure(encoding='utf-8') al arrancar el CLI."),
+    ("TOK-009-C17", "Edge case", "CLI",
+     "TOK-009-C17 - El caracter no se reemplaza, se preserva",
+     "Dado el mismo fixture de TOK-009-C16, cuando se corre y se lee el archivo de salida, "
+     "entonces el caracter fuera de cp1252 aparece TAL CUAL (UTF-8), no reemplazado por '?' "
+     "ni por ningun caracter de repuesto. (AC-19, regresion de BUG-011)\n\n"
+     "QUE FALLA CAZA: usar errors='replace' en vez de UTF-8 real."),
 ]
 
 # (summary, severidad)
@@ -142,6 +158,9 @@ BUGS = [
      "tiene una sola columna y descarta la raiz", "High"),
     ("BUG-010: ADR-002 promete imprimir 'boundary drift: +-N' y ese codigo "
      "no existe", "Medium"),
+    ("BUG-011: tokmd revienta con UnicodeEncodeError en Windows cuando la "
+     "salida no es una consola y un titulo tiene caracteres fuera de cp1252",
+     "High"),
 ]
 
 

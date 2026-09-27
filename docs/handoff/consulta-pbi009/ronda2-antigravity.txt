@@ -1,0 +1,105 @@
+MOTOR: Antigravity (Google) via mcp__panel__ask_antigravity, effort=high
+COPIA LIMPIA: C:\IA\tmp-ronda2\antigravity (git archive HEAD de 808b009)
+MENSAJE: planteo v2 de Fabian, literal, sin prefijo
+FECHA: 2026-09-27
+
+---RESPUESTA---
+
+Fabián, tu planteo da justo en el centro del problema de adopción de la herramienta. Coincido plenamente con el diagnóstico: **`tokmd` nació para ser una herramienta ágil, local y sin fricción.** Si para acceder a la verificación online le exigimos al usuario montar esquemas criptográficos complejos (como DPAPI o 1Password) o pelear con la configuración de variables de entorno de su shell, la fricción destruye la adopción de esa ventaja.
+
+A continuación, presento el análisis detallado dividiendo la respuesta en: **la comunicación (sin amedrentar)**, **el mecanismo técnico de configuración (`tokmd --config`)**, **por qué un archivo de configuración supera a la variable del sistema**, y **la experiencia de usuario concreta**.
+
+---
+
+### 1. La comunicación: Explicar sin amedrentar (README y CLI)
+
+El mensaje tanto en la documentación (`README.md` / `README.es.md`) como en la ayuda del CLI debe transmitir honestidad y transparencia técnica:
+
+#### A. Es 100% Opcional
+* El núcleo de `tokmd` es y seguirá siendo **completamente offline, privado, gratuito e instantáneo**.
+* No se requiere cuenta en Anthropic, ni registrar tarjeta, ni configurar ninguna API Key para el uso normal de conteo, análisis por secciones y optimización de archivos `.md`.
+
+#### B. Ventajas reales de conectar con la API (`--verify`)
+1. **Referencia canónica oficial (*Ground Truth*):** Anthropic no publica una biblioteca local oficial de tokenización para Claude 3.x / 4.x. La librería `ctok` es una excelente reconstrucción comunitaria de BPE, pero el endpoint `POST /v1/messages/count_tokens` de Anthropic es el único árbitro oficial de cómo la plataforma factura y gestiona los límites de ventana de contexto.
+2. **Cero costo de inferencia:** El endpoint `count_tokens` es **gratuito** según la documentación oficial de Anthropic. No genera texto ni consume saldo de generación (aunque requiere una clave con facturación activa y está sujeto a límites de frecuencia o *rate limits*).
+3. **Deriva cero en documentos críticos:** Para archivos extensos de instrucciones de agentes (como `CLAUDE.md`), system prompts complejos o textos con caracteres Unicode y tablas densas, `--verify` brinda la cifra exacta del proveedor.
+
+#### C. ¿Qué pasa si NO se utiliza? (Sin dramatismos)
+* **No pasa absolutamente nada.** El motor offline (`ctok`) resuelve el 95% de las necesidades cotidianas. En texto habitual en español o inglés, las discrepancias típicas observadas rondan entre el **0.5% y el 1%**.
+* Para ordenar secciones, saber qué encabezado ocupa más o recortar un archivo sobredimensionado, el conteo offline sobra.
+* **Privacidad garantizada:** Sin `--verify`, ningún texto de tus archivos sale jamás de tu máquina. Con `--verify`, el contenido de las secciones se envía a la API de Anthropic para su medición. Esto debe explicarse con naturalidad: quien prioriza privacidad o velocidad trabaja offline; el "nerd purista" o auditor que busca la cifra exacta del proveedor recurre a `--verify`.
+* **Sin sobrepromesas:** Anthropic define su propio endpoint de conteo como una estimación para la solicitud. No hace falta prometer "certificación infalible", sino "la referencia directa del propio proveedor".
+
+---
+
+### 2. El mecanismo de persistencia: ¿Variable de estado del sistema o Archivo de configuración?
+
+En tu planteo sugerís que `tokmd --config` guarde la clave en una variable de estado del sistema según el SO (Windows, Linux, macOS). Si bien la intención de no exigir DPAPI es acertada, **persistir una variable de entorno del sistema desde una herramienta CLI presenta tres trampas severas de usabilidad**:
+
+| Sistema Operativo | Problema de persistir una variable de entorno |
+|---|---|
+| **Windows** | Si se escribe en el Registro de usuario (`HKCU\Environment` o vía `setx`), **la terminal que el usuario ya tiene abierta NO se entera**. Si corre `tokmd --config` e inmediatamente después `tokmd archivo.md --verify`, el comando fallará diciendo que falta la clave. El usuario se ve obligado a reiniciar la terminal o la sesión. |
+| **Linux** | No existe una API del sistema operativo para variables persistentes de usuario. Habría que inspeccionar y editar archivos de inicialización del shell (`~/.bashrc`, `~/.zshrc`, `~/.profile`, etc.). Esto es invasivo, frágil ante diferentes shells y sigue requiriendo ejecutar `source` o abrir otra terminal. |
+| **macOS** | Mismo problema que Linux. Modificar el entorno de sesión de forma global sin tocar archivos rc requiere configuraciones complejas que no sobreviven de forma limpia. |
+
+Además, tanto las variables en el Registro de Windows como las guardadas en `.bashrc` quedan almacenadas en texto plano, por lo que no aportan mayor seguridad.
+
+#### La solución estándar de la industria (Archivo de configuración local)
+Es el patrón consolidado que utilizan herramientas como `gh` (GitHub CLI), `aws`, `gcloud`, `npm` y `docker`: guardar un archivo liviano (`config.json`) en el directorio estándar del perfil de usuario, usando únicamente la biblioteca estándar de Python (`pathlib`, `json`, `os`, `stat`):
+
+* **Windows:** `%APPDATA%\tokmd\config.json` (protegido de forma nativa por las ACLs del perfil del usuario de Windows).
+* **Linux:** `$XDG_CONFIG_HOME/tokmd/config.json` (por defecto `~/.config/tokmd/config.json`) con permisos POSIX estrictos `0600` (`chmod 600`: solo lectura y escritura para el dueño).
+* **macOS:** `~/Library/Application Support/tokmd/config.json` (o `~/.config/tokmd/config.json`) con permisos `0600`.
+
+**Ventajas clave:**
+1. **Efecto instantáneo:** Funciona en el acto en la misma terminal abierta.
+2. **Cero dependencias binarias:** No requiere librerías nativas compiladas en C o Rust (`keyring`, `cryptography`), garantizando que funcione en WSL, entornos mínimos, contenedores y cualquier instalación estándar de Python.
+3. **Mismo comportamiento multiplataforma:** Una sola lógica limpia y testeable.
+
+---
+
+### 3. Cadena de resolución (Jerarquía de búsqueda)
+
+Para no romper los flujos avanzados ni los entornos de integración continua:
+
+1. **Variable de entorno en memoria (`ANTHROPIC_API_KEY`)**: Tiene máxima prioridad. Esto asegura que:
+   - Tu propio flujo actual (inyección desde 1Password / DPAPI a la sesión) siga funcionando sin cambios.
+   - Entornos de CI/CD y scripts automatizados puedan proveer la clave temporalmente sin persistir nada en disco.
+   *(Nota técnica: el nombre estándar del SDK de Anthropic es `ANTHROPIC_API_KEY`, conviene mantener ese identificador).*
+2. **Archivo de configuración del usuario (`config.json`)**: Si no hay variable en la sesión, `verify.py` recurre a la clave guardada mediante `tokmd --config`.
+3. **Mensaje pedagógico si no existe clave y se invoca `--verify`**:
+   En lugar de un error frío o un traceback técnico, mostrar una guía clara:
+   ```text
+   Aviso: La verificación contra la API oficial (--verify) requiere una clave de Anthropic.
+
+   Esta función es OPTATIVA:
+     1. Podés configurarla fácilmente ejecutando: tokmd --config
+     2. O definir la variable de entorno: ANTHROPIC_API_KEY
+
+   Para contar tokens normalmente sin clave y 100% offline, simplemente omití el flag --verify.
+   ```
+
+---
+
+### 4. Experiencia de Usuario (CLI UX) de `tokmd --config`
+
+Para que el mecanismo sea intuitivo y seguro:
+
+* **Invocación independiente:** Implementar `--config` en `src/tokmd/cli.py` como una opción *eager* (igual que `--version`), de modo que el usuario pueda ejecutar `tokmd --config` sin que el CLI exija pasar un archivo Markdown obligatorio (`FILE`).
+* **Entrada oculta:** La clave se solicita de manera interactiva con entrada oculta (`hide_input=True` / `getpass`). **Nunca debe aceptarse como argumento directo de línea de comandos** (`tokmd --config sk-ant-...`), evitando que quede registrada en el historial del shell (`~/.bash_history` o historial de PowerShell).
+* **Confirmación segura:** Al guardarse, se muestra la clave enmascarada (ej. `sk-ant-...a1b2`), nunca en texto claro.
+* **Operaciones auxiliares:**
+  - `tokmd --config`: Asistente para ingresar o sobreescribir la clave.
+  - `tokmd --config --show`: Muestra el estado actual (si está configurada, su origen: `variable de entorno` o `archivo local`, y la máscara).
+  - `tokmd --config --unset` (o `--clear`): Elimina la clave del archivo local.
+* **Manejo del extra de instalación:** Si el usuario instaló el paquete base sin el extra (`pip install tokmd`) y corre `--verify`, el sistema debe capturar el error de importación y mostrar limpiamente:
+  `"Para usar --verify, instalá la dependencia opcional: pip install tokmd[verify]"`, evitando exponer un `ModuleNotFoundError` crudo de Python.
+
+---
+
+### Resumen para decisión de PBI-009
+
+* **Filosofía y comunicación:** Se adopta plenamente tu enfoque. Modo offline como producto principal (rápido, privado, suficiente para el 95%); `--verify` como superpoder optativo para puristas, auditores y CI, con sus ventajas reales y sin dramatismos.
+* **Mecanismo:** Reemplazar la persistencia por "variable de estado del sistema" por un **archivo de configuración de usuario (`config.json` con permisos 0600 / ACLs)**, manteniendo `ANTHROPIC_API_KEY` en memoria con prioridad superior. Es inmediato, seguro al nivel de los estándares de CLI (`aws`, `gh`), y no sufre los problemas de sincronización de terminales.
+
+Quedo a la espera de tu confirmación o ajustes sobre este enfoque antes de avanzar a cualquier paso formal.

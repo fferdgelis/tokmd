@@ -1,0 +1,81 @@
+MOTOR: Codex (OpenAI) via mcp__panel__ask_codex_web, sandbox read-only
+COPIA LIMPIA: C:\IA\tmp-ronda2\codex (git archive HEAD de 808b009)
+MENSAJE: planteo v2 de Fabian, literal, sin prefijo
+FECHA: 2026-09-27
+sessionId: 01a0e1c5-9f14-7401-b65e-17353145287f
+web_search: 3 busquedas reales (docs oficiales de token counting de Anthropic)
+
+---RESPUESTA---
+
+Fabi, definiría **PBI-009: configuración sencilla de la verificación opcional con Anthropic**. Cambiaría dos puntos: dónde guardar la clave y qué precisión prometemos.
+
+1. **Explicación para el usuario**
+
+   > tokmd funciona sin conexión y sin cuenta de Anthropic. Podés contar tokens por sección y detectar qué partes de tu Markdown ocupan más.
+   >
+   > Opcionalmente, podés consultar el contador de Anthropic para el modelo elegido. Esto permite verificar tu estimación con el proveedor. Si no lo activás, conservás el análisis local, cuyo resultado puede diferir.
+   >
+   > La verificación online envía a Anthropic el contenido que se cuenta.
+
+   La ventaja real es contar con la referencia del proveedor para un modelo concreto. **No está demostrado que el resultado sea siempre "muy superior"** al contador local.
+
+2. **No prometer "lo que va a consumir exactamente"**
+
+   Anthropic describe el resultado como una estimación que puede diferir ligeramente del consumo real. Además, medir un archivo aislado no determina el consumo de toda una sesión de Claude Code.
+
+   El endpoint de conteo es **gratuito**, está disponible para los modelos activos y tiene límites de solicitudes. No aplica la lógica de caché. Verificado el **27/09/2026** en la documentación oficial:
+   https://platform.claude.com/docs/en/build-with-claude/token-counting
+
+3. **Un único comando de configuración**
+
+   Propuesta, todavía no implementada:
+
+   ```text
+   tokmd --config
+
+   Verificación con Anthropic: opcional.
+
+   1. Configurar o reemplazar clave
+   2. Consultar estado
+   3. Comprobar conexión
+   4. Eliminar clave guardada
+   5. Salir
+
+   Clave API de Anthropic: [entrada oculta]
+   ```
+
+   No exigiría archivo ni plataforma. La comprobación usaría texto fijo, sin documentos personales. "Clave guardada" y "conexión comprobada" serían estados distintos.
+
+4. **Guardar sin exigir conocimientos de seguridad**
+
+   Recomiendo el almacén de credenciales del sistema, mediante `keyring` (biblioteca para acceder a esos almacenes):
+
+   | Sistema | Almacenamiento |
+   |---|---|
+   | Windows | Windows Credential Locker |
+   | macOS | Keychain |
+   | Linux | Secret Service o KWallet disponible |
+
+   Son mecanismos documentados por keyring (https://keyring.readthedocs.io/en/stable/), pendientes de probar en nuestra distribución.
+
+   El usuario pega la clave; tokmd resuelve la protección. **No usaría una variable persistente ni un archivo de texto plano.** Si Linux no tiene un almacén disponible, ofrecería ingresar la clave para esa ejecución, sin guardarla.
+
+   Tu integración con 1Password y DPAPI seguiría siendo una alternativa de tu entorno, sin imponérsela a los demás. El nombre que reconoce hoy el código es `ANTHROPIC_API_KEY`.
+
+5. **Guardar no significa activar**
+
+   La conexión seguiría siendo explícita:
+
+   ```text
+   tokmd archivo.md --platform claude-code --verify
+   ```
+
+   Sin `--verify`, no habría consultas a Anthropic. Si falla, debe informar el problema sin presentar un conteo local como verificado. La distribución que ofrezca esta función debe incluir sus dependencias.
+
+6. **Una corrección necesaria antes de prometer precisión**
+
+   **VERIFICADO por lectura:** hoy verify.py (linea 51) resta el conteo de `"."` como supuesto marco, y render.py (linea 79) acumula resultados por sección. Eso no demuestra el conteo del archivo completo.
+
+   Exigiría medir también el documento íntegro, identificar el modelo y distinguir el resultado bruto de API de cualquier estimación ajustada. La comparación local/API y su diferencia permitirían mostrar la mejora real.
+
+**PARCIAL:** propuesta definida y contrastada; implementación y documento PBI-009 pendientes. No pude guardar el detalle porque este entorno es de solo lectura.

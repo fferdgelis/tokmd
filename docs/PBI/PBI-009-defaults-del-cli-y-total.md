@@ -441,18 +441,35 @@ volver a tocar las cuatro specs a la vez, porque se referencian entre sí):
   mano.** Los del `CLAUDE.md` global están en la sección «Datos dorados» del
   documento de casos, y valen sólo para ese archivo sin editar.
 
-### Handoff a Desarrollo
+### Handoff a Desarrollo — hecho el 2026-09-27
 
-- **Restricciones confirmadas:** sin dependencias nuevas. `--verify` tiene que
-  seguir funcionando igual. No romper `--platform codex` ni `opencode`
-  explícitos (AC-04).
-- **Preguntas abiertas:** las tres decisiones de la sección 4.
+- **Restricciones confirmadas:** sin dependencias nuevas. `--verify` sigue
+  funcionando igual (`test_cli_verify.py`/`test_cli_verify_gap01.py` en
+  verde, sin tocarlos). `--platform codex`/`opencode` explícitos no se
+  rompieron (AC-04, verificado).
+- **Las tres decisiones de la sección 4 ya estaban resueltas** al momento de
+  implementar (opción D del ADR-007, aceptada).
+- **Suite completa: 77 passed, 0 failed.** Verificado además a mano contra
+  `C:\Users\fferdgelis\.claude\CLAUDE.md`: total **17.381** (coincide con la
+  API real), `--sections` da `boundary drift: +0`, `--platform codex` da
+  **10.742** (coincide con `tiktoken o200k_base` directo).
+- **Dos fallos reales encontrados implementando, arreglados en `src/tokmd/`,
+  nunca en los tests:** el choque entre indentación por espacios (AC-02) y
+  conectores de árbol (AC-20) — resuelto con una capa de indentación real
+  además del conector; y `--sections` sin ninguna línea de dígito puro
+  (pedido por mi propia spec, AC-05) — resuelto imprimiendo el total desnudo
+  después del desglose. Detalle en el dev-log, tramo «Noveno tramo».
+- **Pendiente, no decidido por Desarrollo:** el bump de versión a `2.0.0` —
+  `test_version_flag_succeeds` sigue esperando `"1.0.0"` y sigue pasando
+  porque no se tocó `pyproject.toml`. Tocar ese test es una decisión de
+  release, no de contrato; queda para cuando Fabián confirme el corte.
 
 ### Handoff a QA
 
-- **Candidato identificable:** commit corto del snapshot, a definir.
+- **Candidato identificable:** pendiente de fijar el commit del snapshot.
 - **Canal de QA:** OpenCode + Kimi K3, read-only.
-- **Casos independientes:** uno por AC.
+- **Casos independientes:** los diecisiete de Kiwi (plan 30, ids 376–379 y
+  381–393), más los tres de `--verify` (PBI-008) que no se tocaron.
 - **Evidencia mínima:** log crudo de la ejecución más el resultado por caso en
   `tools/kiwi/resultados/`.
 

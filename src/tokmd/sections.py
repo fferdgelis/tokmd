@@ -5,6 +5,13 @@ front matter and any preamble text as their own top-level rows. Headings
 inside fenced code blocks are not treated as real headings — this comes for
 free from using a real CommonMark parser (markdown-it-py) instead of a
 naive line-by-line regex.
+
+PBI-009 (BUG-008): a heading's `own_text` includes the heading line itself
+(the `#...` line), not just the text below it — otherwise that text belongs
+to no section anywhere in the tree, and every token in it goes uncounted.
+`FRONT_MATTER_RE` also absorbs the blank line(s) immediately following the
+closing `---`, so a front-matter-only blank line doesn't become its own
+whitespace-only `(preamble)` node.
 """
 from __future__ import annotations
 
@@ -13,7 +20,7 @@ from dataclasses import dataclass, field
 
 from markdown_it import MarkdownIt
 
-FRONT_MATTER_RE = re.compile(r"\A---\r?\n(?:.*?\r?\n)?---[ \t]*\r?\n?", re.DOTALL)
+FRONT_MATTER_RE = re.compile(r"\A---\r?\n(?:.*?\r?\n)?---[ \t]*\r?\n(?:[ \t]*\r?\n)*", re.DOTALL)
 
 _PARSER = MarkdownIt("commonmark")
 
@@ -91,9 +98,12 @@ def parse_sections(text: str) -> Section:
     # left on the stack — this is what makes an out-of-order level skip
     # (## followed directly by ####) attach to the nearest real ancestor.
     stack: list[tuple[int, Section]] = [(0, root)]
-    for idx, (level, title, _heading_line, content_start) in enumerate(headings):
+    for idx, (level, title, heading_line, _content_start) in enumerate(headings):
+        # PBI-009 (BUG-008): own_text starts at the heading's OWN line, not
+        # the line after it, so the heading's text is counted in its own
+        # section instead of belonging to no section at all.
         end_line = headings[idx + 1][2] if idx + 1 < len(headings) else len(lines)
-        own_text = "".join(lines[content_start:end_line])
+        own_text = "".join(lines[heading_line:end_line])
         node = Section(title=title, level=level, own_text=own_text)
         while stack[-1][0] >= level:
             stack.pop()

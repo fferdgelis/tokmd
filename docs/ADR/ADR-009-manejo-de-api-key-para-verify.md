@@ -4,7 +4,7 @@ aliases:
   - "ADR-009 API key de verify"
 project: tokmd
 document_type: adr
-status: proposed
+status: accepted
 version: 0.1.0
 created: 2026-09-30
 updated: 2026-09-30
@@ -39,10 +39,12 @@ related_documents:
 | Fecha | Versión | Modificado por | Descripción |
 |---|---|---|---|
 | 2026-09-30 | 0.1.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | Borrador. Fabián probó `--verify` sin key en su máquina, propuso que el sistema pregunte si dar de alta la key o seguir en modo aproximado, y pidió explícitamente definir esto **como si tokmd lo instalara otra persona**, no él. |
+| 2026-09-30 | 0.2.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | Aceptado por Fabián: «Priorizá B, empezá el PBI». |
 
 ## Estado
 
-`proposed`. Pendiente de la decisión de Fabián Ferdgelis.
+`accepted`. **Aceptado por Fabián Ferdgelis el 2026-09-30**, opción B:
+prompt interactivo + `keyring`. Bloquea `[[PBI-011-api-key-interactiva-para-verify]]`.
 
 ## Contexto
 

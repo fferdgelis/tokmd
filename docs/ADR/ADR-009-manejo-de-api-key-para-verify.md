@@ -203,6 +203,48 @@ reglas fijas:
   `TDD: <agente> · Desarrollo: <agente> · QA: <agente>` declarado, como
   PBI-009 y PBI-010.
 
+## Enmienda 0.3.0 (30/09/2026) — nombre del flag, carpeta de config, banner, y Codex en esta versión
+
+**1. El flag se llama `--live`, no `--verify`.** Fabián señaló que «verify»
+connota validar una firma o certificado (`gpg --verify`), no «contrastar un
+conteo contra una API». `--live` contrasta con lo implícito (el default ya
+es una reconstrucción offline) y **no** se llama `--online` para no chocar
+con el futuro `--offline` de ADR-008 (bloquear descargas de tokenizador),
+que es un eje completamente distinto. Corte limpio, sin alias de
+compatibilidad para `--verify`: el paquete tiene días, no hay scripts de
+terceros que romper.
+
+**2. Cuarta capa de resolución: un archivo en la carpeta de config de
+tokmd, antes del prompt.** Fabián propuso guardar la key en
+`C:\ProgramData\tokmd\`; se ajusta a la carpeta **por usuario** que
+ADR-008 ya definió (`%APPDATA%\tokmd\` en Windows, `~/.config/tokmd/` en
+Linux/Mac) — `ProgramData` es un concepto sólo de Windows y el CI de tokmd
+corre en Ubuntu también. La key vive en un archivo dentro de esa misma
+carpeta (no un TOML, sólo el valor), al lado de `tokenizers.toml`. Orden
+de resolución final: **env var → `keyring` → archivo de la carpeta de
+config → prompt interactivo.** Ninguna capa reemplaza a otra.
+
+**3. 1Password, no en esta versión.** Requiere el CLI `op` como dependencia
+externa (misma categoría de problema que DPAPI: asume infraestructura que
+no todos tienen). Backend futuro si hay demanda; no bloquea esta versión,
+consistente con el propio pedido de Fabián de sacar primero lo simple.
+
+**4. Banner de bienvenida, sólo en el momento del prompt (y bajo demanda).**
+Con nombre, versión, fecha del último release, motores soportados y autor,
+con arte ASCII simple. **No se muestra en cada corrida** — rompería el
+contrato de que `stdout` es sólo el número (AC-09/AC-11 de PBI-010). Se
+muestra: (a) en el momento del prompt de key faltante, (b) con un flag
+nuevo `--about`.
+
+**5. Codex/OpenAI entra en esta primera versión, con aviso de costo no
+confirmado.** Fabián pidió que la primera versión cubra Codex además de
+Claude Code — `--live` en OpenAI usa `OPENAI_API_KEY` propia, por la misma
+cadena de resolución. A diferencia de Anthropic (`count_tokens` verificado
+gratis), `POST /v1/responses/input_tokens` de OpenAI **no tiene
+confirmación oficial de costo** (relevamiento `20260930-tokenizadores-offline-por-modelo.md`,
+sólo un foro lo dice gratis). El prompt para Codex lo dice así, en vez de
+prometer «gratis» sin haberlo verificado.
+
 ## Lo que este ADR NO decide
 
 - Nada de PBI-008/ADR-008 (registro multi-modelo): la resolución de key

@@ -4,10 +4,10 @@ aliases:
   - "tokmd PBI-006"
 project: tokmd
 document_type: pbi
-status: proposed
-version: 0.1.0
+status: closed
+version: 0.3.0
 created: 2026-09-24
-updated: 2026-09-24
+updated: 2026-09-30
 language: es
 owners:
   - project-founder
@@ -18,8 +18,8 @@ llm_model: "claude-fable-5-1"
 llm_harness: "Claude Code Desktop"
 llm_channel: "subscription"
 reasoning_mode: "no expuesto"
-last_modified_by: "Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription"
-modified_by: "Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription"
+last_modified_by: "Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription"
+modified_by: "Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription"
 reviewed_by: "pending"
 review_status: "pending"
 tags:
@@ -37,6 +37,7 @@ related_documents:
 |---|---|---|---|
 | 2026-09-24 | 0.1.0 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | Creación. |
 | 2026-09-25 | 0.2.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | verify.py con TDD real y mutante AC-04 ejecutado. Cableado de CLI/render explícitamente recortado, no hecho. |
+| 2026-09-30 | 0.3.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | Aceptación formal del owner. El cableado de `--verify` en `cli.py` que este PBI había recortado ya está hecho y documentado en el README (verificado: `cli.py` tiene el flag `--verify` y usa `verify.py`). |
 
 ## 1. Valor y contexto
 
@@ -120,7 +121,7 @@ CLI/render (ver nota de alcance arriba). QA de Kiwi pendiente.
   dentro de un snapshot sin `.git`) — corregido y re-corrido, no era un
   defecto del código. Registrado formalmente el 2026-09-26:
   [[BUG-002-qa-pbi006-failed-falso-git-status-en-snapshot]].
-- **Aceptación del owner:** `pending`.
+- **Aceptación del owner:** `approved` — Fabián Ferdgelis, 2026-09-30.
 - **PBI o Bug siguiente:** PBI-007.
 - **Post-cierre (2026-09-25, durante PBI-008):** [[BUG-001-espacio-en-blanco-rechazado-por-count-tokens]] —
   `measure_frame` usaba `" "` como contenido mínimo, y la API real de

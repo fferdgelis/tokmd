@@ -4,10 +4,10 @@ aliases:
   - "tokmd PBI-007"
 project: tokmd
 document_type: pbi
-status: ready
-version: 0.3.0
+status: closed
+version: 0.4.0
 created: 2026-09-24
-updated: 2026-09-25
+updated: 2026-09-30
 language: es
 owners:
   - project-founder
@@ -18,8 +18,8 @@ llm_model: "claude-opus-5"
 llm_harness: "Claude Code"
 llm_channel: "subscription"
 reasoning_mode: "no expuesto"
-last_modified_by: "Anthropic / claude-opus-5 / Claude Code / subscription"
-modified_by: "Anthropic / claude-opus-5 / Claude Code / subscription"
+last_modified_by: "Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription"
+modified_by: "Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription"
 reviewed_by: "opencode-kimi-k3"
 review_status: "passed"
 tags:
@@ -38,6 +38,7 @@ related_documents:
 | 2026-09-24 | 0.1.0 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | Creación. |
 | 2026-09-25 | 0.2.0 | Google / antigravity / gemini-3.8-flash | Workflows CI y publish, READMEs, CHANGELOG, flag --version con test y cobertura 100%. |
 | 2026-09-25 | 0.3.0 | Anthropic / claude-opus-5 / Claude Code / subscription | Cierre de QA independiente: Kiwi Test Run 67, 4/4 PASSED (Kimi K3 sobre snapshot de `d90fb73`). Corregida la evidencia mínima del handoff a QA, que apuntaba a un archivo inexistente. |
+| 2026-09-30 | 0.4.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | Aceptación formal del owner. El pipeline sigue en producción: confirmado el tag `v2.0.0` publicado en PyPI el 27/09 vía el mismo workflow de Trusted Publishing que este PBI entregó. |
 
 ## 1. Valor y contexto
 
@@ -118,7 +119,7 @@ related_documents:
   - AC-04 no se dio por bueno leyendo el README: QA re-corrió el comando del
     ejemplo contra `docs/ADR/ADR-004-empaquetado-y-publicacion.md` y comparó la
     salida real contra el bloque publicado. Diff vacío.
-- **Aceptación del owner:** `pending`.
+- **Aceptación del owner:** `approved` — Fabián Ferdgelis, 2026-09-30.
 - **Tag `v1.0.0` y publicación en PyPI:** al cierre de este PBI, deliberadamente
   NO hechos (publicar es irreversible). Se hicieron después, a pedido explícito
   de Fabián — ver `docs/dev-log/2026-09-25.md`.

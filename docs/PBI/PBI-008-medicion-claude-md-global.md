@@ -4,10 +4,10 @@ aliases:
   - "tokmd PBI-008"
 project: tokmd
 document_type: pbi
-status: done
-version: 0.2.0
+status: closed
+version: 0.3.0
 created: 2026-09-24
-updated: 2026-09-25
+updated: 2026-09-30
 language: es
 owners:
   - project-founder
@@ -18,8 +18,8 @@ llm_model: "claude-sonnet-5"
 llm_harness: "Claude Code"
 llm_channel: "subscription"
 reasoning_mode: "no expuesto"
-last_modified_by: "Anthropic / claude-sonnet-5 / Claude Code / subscription"
-modified_by: "Anthropic / claude-sonnet-5 / Claude Code / subscription"
+last_modified_by: "Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription"
+modified_by: "Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription"
 reviewed_by: "opencode-kimi-k3"
 review_status: "passed"
 tags:
@@ -37,6 +37,7 @@ related_documents:
 |---|---|---|---|
 | 2026-09-24 | 0.1.0 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | Creación. |
 | 2026-09-25 | 0.2.0 | Anthropic / claude-sonnet-5 / Claude Code / subscription | Cierre: `--verify` cableado en `cli.py` (no existía, ver sección 4), BUG-001 encontrado y corregido en el camino, medición real corrida y `MEDICION-CLAUDE-MD-GLOBAL.md` actualizado a v0.2.0. |
+| 2026-09-30 | 0.3.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | Aceptación formal del owner. **Aviso sobre el número que dejó este PBI:** el `MEDICION-CLAUDE-MD-GLOBAL.md` de `framework-multi-ai` quedó en 15.877, subestimado por `[[BUG-008-texto-de-los-encabezados-no-se-cuenta]]` (no existía todavía el 25/09). El número correcto es **17.381**, medido de nuevo el 27/09 contra `count_tokens` real y contra `tokmd 2.0.0`; ver `docs/investigation/20260927-count-tokens-api-vs-tokmd-ctok-ttok.md` de este repo. Ese archivo en `framework-multi-ai` no se actualizó desde acá — es de otro proyecto. |
 
 ## 1. Valor y contexto
 
@@ -118,7 +119,7 @@ related_documents:
   v0.2.0 (commiteada y pusheada el 2026-09-26, `codex/dpapi-central-v2`
   commit `5a3d94e`). Los números en sí (15877 tokens de Claude) no cambian
   con el redo: la implementación no se tocó, sólo la procedencia del test.
-- **Aceptación del owner:** `pending`.
+- **Aceptación del owner:** `approved` — Fabián Ferdgelis, 2026-09-30.
 - **PBI o Bug siguiente:** ninguno formal; PBI-008 sigue como el último de la
   lista original. [[BUG-001-espacio-en-blanco-rechazado-por-count-tokens]] es
   el único hallazgo abierto que quedó de este cierre, y ya está corregido —

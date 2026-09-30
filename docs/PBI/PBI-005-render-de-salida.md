@@ -4,10 +4,10 @@ aliases:
   - "tokmd PBI-005"
 project: tokmd
 document_type: pbi
-status: proposed
-version: 0.1.0
+status: closed
+version: 0.3.0
 created: 2026-09-24
-updated: 2026-09-24
+updated: 2026-09-30
 language: es
 owners:
   - project-founder
@@ -18,8 +18,8 @@ llm_model: "claude-fable-5-1"
 llm_harness: "Claude Code Desktop"
 llm_channel: "subscription"
 reasoning_mode: "no expuesto"
-last_modified_by: "Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription"
-modified_by: "Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription"
+last_modified_by: "Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription"
+modified_by: "Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription"
 reviewed_by: "pending"
 review_status: "pending"
 tags:
@@ -37,6 +37,7 @@ related_documents:
 |---|---|---|---|
 | 2026-09-24 | 0.1.0 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | Creación. |
 | 2026-09-25 | 0.2.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | Desarrollo y TDD cerrados, cableado en cli.py. |
+| 2026-09-30 | 0.3.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | Aceptación formal del owner. El render de este PBI fue reescrito en PBI-009 (BUG-009: se le agregaron `own`/`total` por fila, fila raíz y `boundary drift`) — esa evolución está aceptada por separado en `[[PBI-009-defaults-del-cli-y-total]]`. |
 
 ## 1. Valor y contexto
 
@@ -103,5 +104,5 @@ QA de Kiwi pendiente.
 - **Resultado de QA independiente:** `PASSED` (4/4). Kimi K3/OpenCode, snapshot
   commit `e80afc1`, Kiwi Test Run [65]. Evidencia cruda en
   `docs/handoff/qa/fase-3-pbi005-kimi-k3.txt`.
-- **Aceptación del owner:** `pending`.
+- **Aceptación del owner:** `approved` — Fabián Ferdgelis, 2026-09-30.
 - **PBI o Bug siguiente:** PBI-006.

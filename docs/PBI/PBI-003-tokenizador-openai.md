@@ -4,10 +4,10 @@ aliases:
   - "tokmd PBI-003"
 project: tokmd
 document_type: pbi
-status: proposed
-version: 0.1.0
+status: closed
+version: 0.3.0
 created: 2026-09-24
-updated: 2026-09-24
+updated: 2026-09-30
 language: es
 owners:
   - project-founder
@@ -18,8 +18,8 @@ llm_model: "claude-fable-5-1"
 llm_harness: "Claude Code Desktop"
 llm_channel: "subscription"
 reasoning_mode: "no expuesto"
-last_modified_by: "Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription"
-modified_by: "Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription"
+last_modified_by: "Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription"
+modified_by: "Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription"
 reviewed_by: "pending"
 review_status: "pending"
 tags:
@@ -38,6 +38,7 @@ related_documents:
 |---|---|---|---|
 | 2026-09-24 | 0.1.0 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | Creación. |
 | 2026-09-25 | 0.2.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | Desarrollo y TDD cerrados. Hallazgo: la hipótesis de aditividad exacta era falsa (deriva de borde por fusión de BPE, medida y documentada); AC-02 corregido con confirmación de Fabián. |
+| 2026-09-30 | 0.3.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | Aceptación formal del owner. El código sigue en producción sin cambios. |
 
 ## 1. Valor y contexto
 
@@ -113,7 +114,7 @@ PBI-001/002).
   commit `185b269`, Kiwi Test Run [63]. Evidencia cruda en
   `docs/handoff/qa/fase-2-pbi003-kimi-k3.txt`. Caso `TOK-003-C02` corregido en
   Kiwi antes de correr QA (tenía la redacción vieja "sin deriva").
-- **Aceptación del owner:** `pending`.
+- **Aceptación del owner:** `approved` — Fabián Ferdgelis, 2026-09-30.
 - **Bug de datos, encontrado durante la carga de casos de PBI-006 (registrado
   formalmente el 2026-09-26):** [[BUG-006-cargar-casos-duplicado-por-edicion-directa]] —
   la corrección de `TOK-003-C02` de arriba, hecha directo en Kiwi, generó un

@@ -4,22 +4,22 @@ aliases:
   - "tokmd PBI-001"
 project: tokmd
 document_type: pbi
-status: proposed
-version: 0.2.0
+status: closed
+version: 0.3.0
 created: 2026-09-24
-updated: 2026-09-25
+updated: 2026-09-30
 language: es
 owners:
   - project-founder
 author_human: "none"
 created_by: "llm"
 llm_provider: "Anthropic"
-llm_model: "claude-fable-5-1"
+llm_model: "claude-sonnet-5"
 llm_harness: "Claude Code Desktop"
 llm_channel: "subscription"
 reasoning_mode: "no expuesto"
-last_modified_by: "Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription"
-modified_by: "Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription"
+last_modified_by: "Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription"
+modified_by: "Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription"
 reviewed_by: "pending"
 review_status: "pending"
 tags:
@@ -38,6 +38,7 @@ related_documents:
 |---|---|---|---|
 | 2026-09-24 | 0.1.0 | Anthropic / claude-fable-5-1 / Claude Code Desktop / subscription | Creación. |
 | 2026-09-25 | 0.2.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | Cerrado: código+tests (ADR-006)+gate Sonar+QA en Kiwi, los cinco casos PASSED. |
+| 2026-09-30 | 0.3.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | Aceptación formal del owner (estaba `pending` desde el cierre técnico del 25/09). El código sigue en producción sin cambios desde entonces. |
 
 ## 1. Valor y contexto
 
@@ -103,7 +104,7 @@ related_documents:
 
 - **Artefactos y enlaces:** `src/tokmd/sections.py`, `tests/test_sections.py` (autoría DeepSeek, ADR-006), Test Run Kiwi id=61, gate Sonar OK (`C:\IA\Data\sonarqube\reports\tokmd\20260925-024139\`), respuesta cruda de QA en `docs/handoff/qa/fase-1-kimi-k3.txt`.
 - **Resultado de QA independiente:** `accepted` — 5/5 casos PASSED (Kimi K3/OpenCode, read-only sobre snapshot del commit `6be061d`, 25/09/2026).
-- **Aceptación del owner:** `pending`.
+- **Aceptación del owner:** `approved` — Fabián Ferdgelis, 2026-09-30.
 - **Bugs de instrumento encontrados durante el retrofit de TDD/Sonar, sin
   registro formal hasta el 2026-09-26:** [[BUG-003-deepseek-thinking-trunca-respuesta-tdd]],
   [[BUG-004-get-codefrommarkdown-corta-primer-fence]],

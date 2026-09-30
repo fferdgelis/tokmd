@@ -1,0 +1,36 @@
+# Texto de control para tokenizadores (PBI-010, AC-14)
+
+Este archivo **no se modifica**: es el texto contra el que se miden los motores
+nuevos. Tiene castellano con acentos y «comillas latinas», un guion largo —así—,
+un bloque de código, una tabla, una URL y un emoji. Cambiarlo invalida todos los
+datos dorados de `docs/PBI/PBI-010-casos-de-prueba.md`.
+
+## Prosa
+
+La medición del 27 de septiembre de 2026 dio 17.381 tokens para el archivo
+`CLAUDE.md` global con el tokenizador de Sonnet 5, y 13.076 con el de Sonnet 4.6.
+¿Por qué la diferencia? Porque cada familia corta el texto a su manera: «niño»,
+«año» y «señal» no pesan lo mismo en todas.
+
+## Código
+
+```python
+def count(text: str, family: str = "4.8") -> int:
+    """Cuenta tokens; devuelve un entero, nunca None."""
+    if not text.strip():
+        raise ValueError("texto vacío")
+    return len(text.split())  # placeholder
+```
+
+## Tabla
+
+| Modelo | Motor | Exacto |
+|---|---|---|
+| claude-sonnet-5 | ctok | sí |
+| gpt-5 | tiktoken | sí (texto plano) |
+| gemini-3-flash | sentencepiece | no, aproximado |
+
+## Varios
+
+URL: https://github.com/fferdgelis/tokmd — emoji: 🚀 — números: 1.234,56 y 2026-09-30.
+Fin del texto de control.

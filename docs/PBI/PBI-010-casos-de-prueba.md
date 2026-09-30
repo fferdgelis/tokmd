@@ -56,16 +56,36 @@ PBI-001/005 y dejó pasar tres bugs (ver PBI-009).
 | `CLAUDE.md` global, `claude-code` (Sonnet 5 / Opus 5 / 4.8) | **17.381** | API `count_tokens`, 27/09/2026; igual en tokmd 2.0.0 |
 | `CLAUDE.md` global, `codex` (o200k_base) | **10.742** | tiktoken, 27/09/2026; igual en tokmd 2.0.0 |
 | `CLAUDE.md` global, `claude-sonnet-4-6` (familia 3.0) | **13.076** | API `count_tokens`, 27/09/2026 (Sonnet 4.6 y Haiku 4.5) |
-| Texto de control de 2 KB, `deepseek-v4-pro` | **por medir en AC-14** | autoconsistencia con `tokenizers` |
-| Texto de control, `glm-5.3` | **por medir en AC-14** | ídem |
-| Texto de control, `qwen3.5` | **por medir en AC-14** | ídem |
-| Texto de control, `nemotron-3-super` | **por medir en AC-14** | ídem |
-| Texto de control, `gemini-3-flash` (spiece gemma3) | **por medir en AC-14** | autoconsistencia con `sentencepiece` |
-| sha256 de cada `tokenizer.json` / `.spiece.model` | **por registrar en AC-14** | `hf_hub_download` / descarga directa |
+| Texto de control (`control_2kb.md.fixture`, 1.189 chars, sha256 `6cbac76c2fdb7e7f…`), `deepseek-v4-pro` | **395** | spike AC-14, 30/09/2026, `tokenizers` 0.23 |
+| ídem, `deepseek-v4-flash` | **395** (mismo `tokenizer.json` que Pro, sha256 idéntico) | ídem |
+| ídem, `glm-5.3` | **386** | ídem |
+| ídem, `qwen3.5` | **411** | ídem |
+| ídem, `nemotron-3-super` | **399** | ídem |
+| ídem, `mistral-large-3` | **399** sin tokens especiales; 400 con (`add_special_tokens=True` agrega BOS) | ídem — **el motor `hf` cuenta siempre con `add_special_tokens=False`**; es el único de los seis donde importa |
+| ídem, `gemini-3-flash` (spiece gemma3) | **411** | spike AC-14, `sentencepiece` 0.2 |
 
-El texto de control es `tests/fixtures/control_2kb.md`: castellano con
-acentos y «comillas», un bloque de código Python, una tabla Markdown, un
-emoji y una URL. Se escribe una vez y no se vuelve a tocar.
+sha256 de los archivos de tokenizador (para el campo `sha256` opcional del
+registro y para detectar cambios silenciosos en Hugging Face):
+
+| Archivo | Tamaño | sha256 |
+|---|---|---|
+| `deepseek-ai/DeepSeek-V4-Pro` y `-Flash` · `tokenizer.json` | 6.367.146 | `8f9f37ca37fdc4f5fd36d5cf4d3b0e8392edb4e894fd10cc0d70b4957c8633cf` |
+| `zai-org/GLM-5.3` · `tokenizer.json` | 20.217.442 | `19e773648cb4e65de8660ea6365e10acca112d42a854923df93db4a6f333a82d` |
+| `Qwen/Qwen3.5-9B` · `tokenizer.json` | 12.807.982 | `5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42` |
+| `nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-FP8` · `tokenizer.json` | 17.077.484 | `623c34567aebb18582765289fbe23d901c62704d6518d71866e0e58db892b5b7` |
+| `mistralai/Mistral-Large-3-675B-Instruct-2512-NVFP4` · `tokenizer.json` | 17.078.110 | `577575622324b2e099e2648be26bdeb5e5815ffe66d7004e9e3ddbf421db6bf1` |
+| gemma3 `gemma3_cleaned_262144_v2.spiece.model` (commit `014acb7…` de `google/gemma_pytorch`) | 4.689.074 | `1299c11d7cf632ef3b4e11937501358ada021bbdf7c47638d13c0ee982f2e79c` |
+
+**Resultado del spike: 7 de 7 cargan** con `Tokenizer.from_file` /
+`SentencePieceProcessor`, sin `transformers` ni torch. Salida cruda del
+script en el dev-log del 30/09. Descarga total: ~78 MB (GLM es el más
+pesado, 20 MB); una vez por máquina, en el caché de `huggingface_hub`.
+
+El texto de control es `tests/fixtures/control_2kb.md.fixture` (extensión
+`.fixture` como los demás fixtures del repo, para que el hook de gobernanza
+Markdown no le exija front matter): castellano con acentos y «comillas», un
+bloque de código Python, una tabla Markdown, un emoji y una URL. Se escribe
+una vez y no se vuelve a tocar.
 
 ## Casos
 
@@ -86,7 +106,7 @@ emoji y una URL. Se escribe una vez y no se vuelve a tocar.
 | **TOK-010-C13** | Extra no instalado, mensaje útil | Entorno sin `tokenizers` (parchear `importlib` o `sys.modules["tokenizers"] = None`) | `tokmd control_2kb.md --model deepseek-v4-pro` | Exit ≠ 0; mensaje contiene `pip install "tokmd[hf]"`; **y** `tokmd control_2kb.md` (Claude) sigue funcionando en el mismo entorno | `import tokenizers` a nivel de módulo que rompe todo el CLI |
 | **TOK-010-C14** | La salida dice qué contó | cualquier archivo | `--format json` con `claude-code`, con una entrada `hf` y con `gemini-3-flash` | JSON con `model`, `engine`, `approx`, `content_only`: `(false,false)`, `(false,true)`, `(true,true)` respectivamente; en `table` una cabecera con lo mismo | Número sin etiqueta |
 | **TOK-010-C15** | Familia 3.0 contra la API | `CLAUDE.md` global | `tokmd CLAUDE.md --model claude-sonnet-4-6` | **13076** | `frame` de 3.0 medido con `token_count("")` en vez de por diferencia (ADR-007) |
-| **TOK-010-C16** | Los cuatro `tokenizer.json` reales cargan (spike AC-14) | red disponible **una vez**; fuera de la suite de pytest | Script `tools/spike/pbi010_hf_load.py`: baja los cuatro `tokenizer.json` + el `.spiece.model`, cuenta `control_2kb.md`, imprime conteo y sha256 | Los cinco cargan; los conteos y hashes quedan copiados en la tabla de datos dorados de este documento | Un `tokenizer.json` que la librería `tokenizers` no lee (formato viejo, `tekken.json`, etc.) |
+| **TOK-010-C16** | Los `tokenizer.json` reales cargan (spike AC-14) | red disponible **una vez**; fuera de la suite de pytest | Script `tools/spike/pbi010_hf_load.py`: baja los `tokenizer.json` + el `.spiece.model`, cuenta `control_2kb.md.fixture`, imprime conteo y sha256 | Los cinco cargan; los conteos y hashes quedan copiados en la tabla de datos dorados de este documento | Un `tokenizer.json` que la librería `tokenizers` no lee (formato viejo, `tekken.json`, etc.) |
 
 ## Registro en Kiwi
 

@@ -209,16 +209,21 @@ related_documents:
 
 ### Spike previo (bloquea el resto)
 
-- [ ] **AC-14 (spike, primero):** Dado el `tokenizer.json` real de
-      `deepseek-ai/DeepSeek-V4-Pro`, `zai-org/GLM-5.3`, `Qwen/Qwen3.5-9B` y
-      `nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-FP8` bajados una vez con
-      `hf_hub_download`, cuando se cuenta con `Tokenizer.from_file` un
-      texto de control (castellano con acentos, un bloque de código, un
-      emoji, 2 KB), entonces carga sin error en los cuatro y el conteo queda
-      registrado como **dato dorado** en `docs/PBI/PBI-010-casos-de-prueba.md`
-      (con sha256 de cada `tokenizer.json`). Si alguno no carga, se saca
-      del registro empaquetado y se anota por qué. Este AC es el que
-      convierte «no verificado» en verificado.
+- [x] **AC-14 (spike, primero) — HECHO el 30/09/2026:** Dado el
+      `tokenizer.json` real de DeepSeek V4 Pro/Flash, GLM-5.3, Qwen3.5,
+      Nemotron 3 Super y Mistral Large 3, más el `.spiece.model` de gemma3,
+      bajados una vez con `hf_hub_download` / URL directa, cuando se cuenta
+      `tests/fixtures/control_2kb.md.fixture` con `Tokenizer.from_file` /
+      `SentencePieceProcessor`, entonces **cargan los 7 de 7** sin
+      `transformers` ni torch, y los conteos y sha256 quedaron como datos
+      dorados en `[[PBI-010-casos-de-prueba]]`. Hallazgos que cambian el
+      contrato: (1) DeepSeek Pro y Flash comparten el mismo `tokenizer.json`
+      (sha256 idéntico) — una entrada puede ser alias de la otra; (2)
+      Mistral agrega un BOS con `add_special_tokens=True` (399 → 400): **el
+      motor `hf` cuenta siempre con `add_special_tokens=False`**, y AC-07
+      compara contra eso; (3) el `tokenizer.json` de GLM pesa 20 MB, no
+      «6–17»: el aviso de descarga de AC-09 tiene que incluir el tamaño.
+      Script: `tools/spike/pbi010_hf_load.py`.
 
 ## 4. Contrato técnico
 

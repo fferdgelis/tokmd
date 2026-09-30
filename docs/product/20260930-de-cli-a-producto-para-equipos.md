@@ -78,6 +78,17 @@ Tres cosas para que valga más que una tabla:
 3. **Salida `--format json`** del escaneo, porque es lo que consume cualquier
    cosa que se construya después (la idea 2 incluida).
 
+4. **Salida `--html informe.html`** (agregado el 30/09 tras el escenario de
+   Fabián: Diego copia todos los proyectos a su disco y corre
+   `tokmd -r C:\Projects`). Con decenas de proyectos la tabla ASCII no
+   alcanza; un HTML **estático** —tabla ordenable y filtrable, sin
+   servidor— se abre con doble clic y se manda por mail o WhatsApp. Cubre
+   el 100 % de lo que una pantalla FastAPI daría en ese escenario, sin
+   puerto, sin proceso corriendo, sin dependencia pesada. FastAPI queda
+   para la opción C, donde sí hay algo que un archivo no puede hacer
+   (historia, agregación, alertas). Primer usuario real de este PBI:
+   Diego, sobre `C:\Projects`.
+
 **FastAPI o línea de comando para esto:** línea de comando, sin discusión.
 El desarrollador de la idea 1 vive en la terminal; una pantalla web para
 ver cuánto pesa un archivo es peor experiencia que `tokmd .`, y además hay

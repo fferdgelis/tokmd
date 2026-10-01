@@ -223,6 +223,18 @@ herramienta en algo que miente con más modelos:
   borrar `registry.py` y los dos motores nuevos. Nada de datos de usuario
   se pierde (el archivo TOML del usuario queda inerte).
 
+## Enmienda (30/09/2026) — de un TOML único a una carpeta `engines/`
+
+Antes de aceptarse, este ADR cambia de forma por decisión de Fabián
+(`docs/decisions/20260930-configuracion-de-motores-y-api-keys.md`): en vez
+de un `tokenizers.toml` con todas las entradas, una carpeta `engines/` con
+**un archivo por motor** y un README (modelo Nagios), en las carpetas por
+sistema operativo de ese documento. PBI-011 crea la carpeta y los dos
+primeros archivos (`claude-code.toml`, `codex.toml`) para guardar la key;
+PBI-010 los extiende para que también definan cómo se cuenta y suma los
+motores de Hugging Face y Gemini. Las seis reglas de la decisión propuesta
+de este ADR siguen igual.
+
 ## Lo que este ADR NO decide
 
 - Qué modelos van en el registro **empaquetado** más allá de los del

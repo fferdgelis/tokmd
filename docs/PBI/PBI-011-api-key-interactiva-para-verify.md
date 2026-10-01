@@ -1,11 +1,11 @@
 ---
-title: "PBI-011 — --live pregunta por la API key en modo interactivo (Claude y Codex), banner de bienvenida, y tabla de --sections legible"
+title: "PBI-011 — --live (Claude y Codex) con key guardada en engines/, pregunta interactiva, banner, y tabla de --sections legible"
 aliases:
-  - "PBI-011 API key interactiva y legibilidad"
+  - "PBI-011 live, engines y legibilidad"
 project: tokmd
 document_type: pbi
-status: proposed
-version: 0.2.0
+status: ready
+version: 0.3.0
 created: 2026-09-30
 updated: 2026-09-30
 language: es
@@ -14,12 +14,12 @@ owners:
 author_human: "none"
 created_by: "llm"
 llm_provider: "Anthropic"
-llm_model: "claude-sonnet-5"
+llm_model: "claude-opus-5-5"
 llm_harness: "Claude Code Desktop"
 llm_channel: "subscription"
 reasoning_mode: "no expuesto"
-last_modified_by: "Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription"
-modified_by: "Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription"
+last_modified_by: "Anthropic / claude-opus-5-5 / Claude Code Desktop / subscription"
+modified_by: "Anthropic / claude-opus-5-5 / Claude Code Desktop / subscription"
 reviewed_by: "pending"
 review_status: "pending"
 source_of_truth: true
@@ -30,260 +30,203 @@ related_documents:
   - "[[ADR-009-manejo-de-api-key-para-verify]]"
   - "[[ADR-008-registro-de-tokenizadores-por-configuracion]]"
   - "[[ADR-006-separacion-tdd-desarrollo-qa-por-motor]]"
+  - "[[20260930-configuracion-de-motores-y-api-keys]]"
   - "[[20260930-lectura-del-arbol-de-secciones]]"
-  - "[[PBI-006-verificacion-contra-api]]"
   - "[[PBI-011-casos-de-prueba]]"
 ---
 
-# PBI-011 — `--live` interactivo (Claude y Codex), banner, y tabla de `--sections` legible
+# PBI-011 — `--live` (Claude y Codex), key en `engines/`, pregunta, banner y tabla legible
 
 ## Historial de modificaciones
 
 | Fecha | Versión | Modificado por | Descripción |
 |---|---|---|---|
-| 2026-09-30 | 0.1.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | Creación, a pedido de Fabián («Priorizá B, empezá el PBI»), tras aceptar ADR-009. |
-| 2026-09-30 | 0.2.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | Fabián confirmó el rename `--verify` → `--live` y pidió arrancar con la opción A de legibilidad. Además amplió el alcance: carpeta de config por usuario (no `ProgramData`, ver ADR-009 enmienda 0.3.0), banner de bienvenida sólo en el prompt/`--about`, y Codex/OpenAI en esta misma versión con aviso de costo no confirmado. Título y alcance actualizados. |
+| 2026-09-30 | 0.1.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | Creación tras aceptar ADR-009. |
+| 2026-09-30 | 0.2.0 | Anthropic / claude-sonnet-5 / Claude Code Desktop / subscription | `--verify`→`--live`, banner, Codex, legibilidad (opción A). |
+| 2026-09-30 | 0.3.0 | Anthropic / claude-opus-5-5 / Claude Code Desktop / subscription | Aplicada la decisión `20260930-configuracion-de-motores-y-api-keys` (aceptada por Fabián): sin `keyring`; key en texto plano dentro de `engines/<motor>.toml` con permisos; 1Password por `op://`; carpetas por sistema operativo con capa de usuario y de sistema; pregunta de 3 opciones (guardar / offline / no volver a preguntar). Contrato público fijado para TDD. Pasa a `ready`. |
 
 ## Roles (ROL-02)
 
-`TDD: DeepSeek (deepseek-v4-pro) · Desarrollo: Claude Sonnet 5 (Claude Code) · QA: Kimi K3 (OpenCode + OpenRouter, read-only)` — mismo reparto que PBI-009/010, según ADR-006.
+`TDD: DeepSeek (deepseek-v4-pro) · Desarrollo: Claude (Claude Code) · QA: Kimi K3 (OpenCode + OpenRouter, read-only)` — ADR-006.
 
 ## 1. Valor y contexto
 
-- **Problema.** Tres cosas separadas que Fabián encontró probando tokmd
-  como lo probaría cualquier persona nueva: (1) `--verify` (ahora `--live`)
-  corta en seco si falta la key, sin ofrecer nada; (2) la tabla de
-  `--sections` es ilegible con archivos grandes en una consola angosta
-  (títulos que envuelven, árbol que se rompe); (3) la primera experiencia
-  de uso no orienta — no hay ningún lugar donde se vea qué es tokmd, qué
-  versión, qué motores soporta.
-- **Stakeholder:** Fabián Ferdgelis, owner del proyecto.
-- **Resultado esperado.** `--live` pregunta en vez de cortar (Claude y
-  Codex), guarda la key donde el usuario elija, y la tabla de `--sections`
-  se lee sin romperse en cualquier ancho de terminal.
-- **Prioridad:** la más alta abierta, por pedido explícito.
-- **Hipótesis.** La fricción de hoy —no la falta de interés— es lo que
-  hace que nadie use el modo de verificación real. Bajarla sube el uso.
-
-### Historias de usuario
-
-> Como **desarrollador que instala tokmd por primera vez**, quiero **que
-> `tokmd archivo.md --live` me pregunte por mi key si no la tiene, en vez
-> de sólo decirme que falta**, para **poder probar la verificación real
-> sin ir a buscar documentación de variables de entorno**.
-
-> Como **ese mismo desarrollador, la segunda vez**, quiero **que si guardé
-> mi key no me la vuelva a pedir**, para **no repetir el trámite**.
-
-> Como **quien corre tokmd en CI**, quiero **que si no hay key nunca quede
-> colgado esperando un input que no va a llegar**, para **que el pipeline
-> falle rápido y claro, como hoy**.
-
-> Como **alguien que mira `tokmd archivo.md --sections` sobre un archivo
-> grande**, quiero **que cada fila entre en una sola línea sin romperse**,
-> para **poder leer el árbol de verdad**.
+- **Problema.** Fabián probó tokmd como un usuario nuevo: `--verify` corta
+  en seco sin key, la tabla de `--sections` es ilegible en una consola
+  angosta, y nada orienta sobre qué es la herramienta.
+- **Stakeholder:** Fabián Ferdgelis.
+- **Resultado esperado.** `--live` (Claude y Codex) pregunta en vez de
+  cortar, guarda la key en un archivo de motor que un sysadmin entiende y
+  edita, nunca cuelga un CI, y `--sections` se lee en cualquier ancho.
+- **Prioridad:** la más alta abierta (pedido explícito, antes que PBI-010).
 
 ## 2. Corte de entrega
 
-- **Incluye:**
-  - Rename `--verify` → `--live` en todo el código, tests y README (sin
-    alias de compatibilidad).
-  - `src/tokmd/keystore.py` (nuevo): `resolve_api_key(provider: str) ->
-    str | None` con la cadena **env var → `keyring` → archivo de la
-    carpeta de config → `None`**; `save_api_key(provider, key)`,
-    `forget_api_key(provider)`. `provider` es `"anthropic"` u `"openai"`.
-  - Carpeta de config de tokmd, **por usuario**, ya prevista en ADR-008:
-    `%APPDATA%\tokmd\` (Windows) / `~/.config/tokmd/` (Linux/Mac),
-    override por `TOKMD_CONFIG_DIR`. El archivo de key vive ahí
-    (`anthropic.key`, `openai.key` — sólo el valor, sin TOML).
-  - `verify.py` (se puede renombrar a `live.py` o mantener el nombre de
-    archivo — decisión menor de Desarrollo, no cambia el contrato):
-    `get_client()` usa `keystore.resolve_api_key("anthropic")`.
-  - **Módulo Codex/OpenAI nuevo** (`src/tokmd/live_openai.py` o similar):
-    mismo patrón que `verify.py` pero contra `POST
-    /v1/responses/input_tokens`; usa `OPENAI_API_KEY` vía
-    `keystore.resolve_api_key("openai")`.
-  - `cli.py`: prompt de 4 opciones (ADR-009) cuando `--live` se pide sin
-    key **y** `sys.stdin.isatty()`; el texto dice «gratis» para Anthropic
-    y «costo no confirmado por OpenAI» para Codex; opción 1 sólo en
-    memoria, 2 guarda con `keystore.save_api_key`, 3 cae a offline con
-    aviso, 4 cancela. Fuera de TTY, error inmediato como hoy.
-  - Flags nuevos: `--forget-key` (borra la key del proveedor resuelto por
-    la plataforma activa), `--about` (muestra el banner y sale con 0, sin
-    tocar ningún archivo).
-  - **Banner** (`src/tokmd/banner.py`, nuevo): texto fijo con nombre,
-    versión (de `importlib.metadata`), fecha del último release (constante
-    a actualizar por release, o derivada de `importlib.metadata` si hay un
-    campo disponible — decisión de Desarrollo), cantidad de motores
-    soportados (constante), autor. Se invoca **sólo** desde el prompt de
-    key faltante y desde `--about`; nunca en una corrida normal.
-  - **Legibilidad de `--sections`** (opción A de
-    `[[20260930-lectura-del-arbol-de-secciones]]`): cada fila truncada al
-    ancho real de la terminal (`shutil.get_terminal_size()`, con fallback
-    fijo si no hay terminal — p.ej. al redirigir a archivo) con `…` al
-    final, nunca envuelve; los conectores del árbol nunca quedan en una
-    línea separada del texto.
-  - Extras en `pyproject.toml`: `verify` pasa a incluir `keyring>=25`
-    además de `anthropic>=0.40`; nombre del extra se mantiene (menos
-    rotura) aunque ahora cubra también Codex — evaluar en Desarrollo si
-    conviene renombrarlo a `live` (`pip install tokmd[live]`) y dejar
-    `verify` como alias del extra por compatibilidad de instalación (esto
-    sí es gratis mantenerlo, a diferencia del flag del CLI).
-  - README (EN/ES) y `CHANGELOG.md` con todo lo anterior.
-- **No incluye:**
-  - Nada de ADR-008 más allá de reusar su carpeta de config (el registro
-    multi-modelo en sí es PBI-010, sin tocar acá).
-  - Backend de 1Password (ADR-009, enmienda: no en esta versión).
-  - El treemap/`--html` (`[[20260930-lectura-del-arbol-de-secciones]]`,
-    opción B): PBI propio, después de este.
-  - `--live` para Gemini/Kimi/otros: sigue fuera de alcance (ADR-009).
-- **Dependencias:** ADR-009 aceptado, con su enmienda 0.3.0 (✅). `keyring`
-  disponible para Desarrollo/QA.
-- **Riesgos:**
-  - Confundir la resolución de key entre proveedores (usar la de
-    Anthropic para Codex o viceversa). Mitigación: `provider` explícito en
-    toda la API de `keystore.py`, nunca un booleano genérico.
-  - El banner filtrándose a una corrida normal por un bug de invocación.
-    Mitigación: AC-12 lo prueba explícitamente.
-  - Prometer «gratis» para OpenAI sin haberlo verificado. Mitigación: el
-    texto lo dice tal cual está (no confirmado), AC-13 lo fija como
-    contrato de texto, no sólo de comportamiento.
-  - Tests que tocan `keyring` real o archivos reales de la carpeta de
-    config de quien corre la suite. **No negociable:** todo mockeado.
+- **Incluye:** todo lo de la sección 4 (contrato público), README EN/ES,
+  `CHANGELOG.md` `[2.1.0]`.
+- **No incluye:** `keyring` ni cifrado propio; que los archivos de motor
+  definan cómo se cuenta (eso es PBI-010 — acá sólo guardan `live`,
+  `api_key` y `ask_for_key`); `--live` para Gemini/Kimi/DeepSeek; treemap
+  `--html`.
+- **Riesgos:** ver ADR-009 enmienda 0.4.0. El nuevo: la llamada real de
+  Codex necesita una `OPENAI_API_KEY` que **hoy no está en la bóveda**
+  (`multi-modelos-ai` tiene anthropic, deepseek, nvidia y openrouter). La
+  verificación real de AC-20 la hace Fabián con su key.
 
 ## 3. Criterios de aceptación
 
-### `--live`: rename y resolución de key (Claude)
+### Carpetas y archivos de motor
 
-- [ ] **AC-01:** Dado `tokmd --help`, cuando se revisa, entonces existe
-      `--live` y **no** existe `--verify` ni `--api-key`.
-- [ ] **AC-02:** Dado `--live` sin key en ninguna capa y `stdin` TTY
-      simulado, cuando se corre, entonces aparece el prompt con las 4
-      opciones, precedido del banner.
-- [ ] **AC-03:** Opción 1 → key en memoria, `keyring.set_password` y el
-      archivo de config **no** se tocan.
-- [ ] **AC-04:** Opción 2 → se llama `keyring.set_password`; una segunda
-      corrida sin env var **no** pregunta.
-- [ ] **AC-05:** Opción 3 → sigue en offline (`ctok`), aviso de que no se
-      verificó, exit 0.
-- [ ] **AC-06:** Opción 4 → exit ≠ 0, no imprime número.
-- [ ] **AC-07 (protege CI):** `stdin` no-TTY (subprocess real con
-      `stdin=DEVNULL`) y sin key → error inmediato, mismo mensaje de hoy,
-      **sin prompt, sin colgarse**.
-- [ ] **AC-08:** Prioridad de resolución: env var > `keyring` > archivo
-      de la carpeta de config > `None`. Verificable con las cuatro
-      combinaciones presentes a la vez, sólo gana la de mayor prioridad.
-- [ ] **AC-09:** Si el archivo de la carpeta de config tiene la key (sin
-      env var ni `keyring`), `--live` la usa sin preguntar nada.
-- [ ] **AC-10:** `--forget-key` borra de `keyring` **y** del archivo de
-      config; exit 0 siempre (exista o no algo que borrar).
-- [ ] **AC-11 (sin regresión):** `ANTHROPIC_API_KEY` seteada, sobre el
-      `CLAUDE.md` global del snapshot del 27/09 → **17.381**, igual que
-      PBI-009. Suite completa de 2.1.0 en verde.
+- [ ] **AC-01:** `user_config_dir()` devuelve `TOKMD_CONFIG_DIR` si está
+      definida; si no, `%APPDATA%\tokmd` en Windows,
+      `~/Library/Application Support/tokmd` en macOS, y
+      `$XDG_CONFIG_HOME/tokmd` (o `~/.config/tokmd`) en Linux.
+- [ ] **AC-02:** `system_config_dir()` devuelve `TOKMD_SYSTEM_CONFIG_DIR`
+      si está definida; si no, `%ProgramData%\tokmd`,
+      `/Library/Application Support/tokmd` o `/etc/tokmd`.
+- [ ] **AC-03:** `tokmd --init` copia `engines/claude-code.toml`,
+      `engines/codex.toml` y `engines/README.md` a la carpeta de usuario,
+      **sin pisar** archivos existentes, imprime la ruta y sale con 0, sin
+      pedir `FILE`.
+- [ ] **AC-04:** `load_engine(nombre)` combina sistema y usuario: el valor
+      del usuario gana clave por clave; sin archivos, devuelve los valores
+      por defecto empaquetados.
+- [ ] **AC-05:** `save_engine_value(nombre, clave, valor)` escribe en el
+      archivo del usuario (crea carpetas si faltan) y conserva las demás
+      claves; en Linux/macOS el archivo queda con permisos `0600`.
+
+### Resolución de la key
+
+- [ ] **AC-06:** Orden: variable de entorno (`ANTHROPIC_API_KEY` para
+      `claude-code`, `OPENAI_API_KEY` para `codex`) → `api_key` del archivo
+      del usuario → del sistema → `None`. Una `api_key` vacía cuenta como
+      ausente.
+- [ ] **AC-07:** Si el valor empieza con `op://`, se resuelve ejecutando
+      `op read <valor>` y se usa su salida sin espacios finales; si `op` no
+      está instalado o falla, error claro (`OpReferenceError`), sin
+      traceback en el CLI.
+- [ ] **AC-08:** La key de Anthropic nunca se usa para Codex ni al revés.
+
+### `--live` y la pregunta
+
+- [ ] **AC-09:** `--live` existe; `--verify` y `--api-key` no existen.
+- [ ] **AC-10:** Con key disponible, `--live` cuenta contra la API del
+      motor resuelto (Anthropic para `claude-code`, OpenAI para `codex`) y
+      **stdout es sólo el número**, sin banner.
+- [ ] **AC-11:** Sin key, con `ask_for_key = true` y terminal interactiva:
+      se muestra el banner y la pregunta **por stderr** con exactamente
+      tres opciones: `[1]` ingresar y guardar, `[2]` seguir offline,
+      `[3]` no volver a preguntar.
+- [ ] **AC-12:** Opción 1: pide la key sin mostrarla, la guarda con
+      `save_engine_value(..., "api_key", key)` y cuenta en modo live.
+- [ ] **AC-13:** Opción 2: cuenta offline, aviso por stderr, exit 0, no
+      guarda nada.
+- [ ] **AC-14:** Opción 3: guarda `ask_for_key = false`, cuenta offline,
+      exit 0; la corrida siguiente **no** pregunta: aviso de una línea por
+      stderr y offline.
+- [ ] **AC-15 (protege CI):** Sin key y sin terminal interactiva (stdin
+      no es TTY): **nunca** pregunta ni cuelga; error con el nombre de la
+      variable de entorno, exit ≠ 0. Probado con `subprocess` real y
+      `stdin=DEVNULL`.
+- [ ] **AC-16:** El texto de la pregunta dice que el conteo de Anthropic
+      es gratis; el de Codex dice que **el costo no está confirmado por
+      OpenAI**.
+- [ ] **AC-17:** `tokmd --forget-key` vacía `api_key` y vuelve
+      `ask_for_key = true` en los archivos de motor del usuario; exit 0
+      aunque no exista ninguno; no pide `FILE`.
 
 ### Banner
 
-- [ ] **AC-12:** Una corrida normal sin `--about` y con key ya resuelta
-      (por cualquier capa) **no** imprime el banner en ningún flujo —
-      `stdout` es sólo el número.
-- [ ] **AC-13:** `tokmd --about` imprime el banner (nombre, versión, fecha
-      de release, cantidad de motores, autor) y sale con 0 sin leer ningún
-      archivo `FILE`.
+- [ ] **AC-18:** `tokmd --about` imprime el banner (nombre, versión,
+      fecha de último release, modelos soportados, autor, email) y sale con
+      0 sin pedir `FILE`. Una corrida sin `--about` y sin pregunta **nunca**
+      muestra el banner.
 
-### Codex/OpenAI
+### Sin regresión y llamada real
 
-- [ ] **AC-14:** Dado `--platform codex --live` sin `OPENAI_API_KEY` en
-      ninguna capa y TTY, cuando se corre, entonces el prompt dice
-      explícitamente que el costo de este endpoint **no está confirmado
-      por OpenAI** (texto exacto, no aproximado) — a diferencia del de
-      Anthropic, que dice que es gratis.
-- [ ] **AC-15:** Las mismas 4 opciones y la misma cadena de resolución
-      (env → keyring → archivo → prompt) aplican a Codex, con
-      `provider="openai"`, sin mezclarse con la key de Anthropic.
+- [ ] **AC-19:** Con `ANTHROPIC_API_KEY` real, `tokmd CLAUDE.md --live`
+      sobre el `CLAUDE.md` global del 27/09 da **17.381**. Suite anterior en
+      verde (retrofit de los tests de `--verify` a `--live`).
+- [ ] **AC-20:** Con una `OPENAI_API_KEY` real, `tokmd f.md --platform
+      codex --live` devuelve un número > 0 y queda registrado si la llamada
+      se cobró (saldo antes/después). Lo corre Fabián.
 
 ### Legibilidad de `--sections`
 
-- [ ] **AC-16:** Dado un título más largo que el ancho de la terminal
-      (`shutil.get_terminal_size()` mockeado a un valor chico, p. ej. 60
-      columnas), cuando se corre `--sections`, entonces esa fila se trunca
-      con `…` y ocupa **una sola línea** — no envuelve.
-- [ ] **AC-17:** Dado que la salida **no** es una terminal (redirigida a
-      archivo), cuando se corre `--sections`, entonces no trunca (usa el
-      ancho completo o un fallback razonable — decisión de Desarrollo,
-      documentada) para que el archivo resultante sea útil sin depender
-      del ancho de quien lo generó.
+- [ ] **AC-21:** `render(..., width=N)` en formato `table`: ninguna línea
+      supera `N` caracteres; las truncadas terminan en `…`; los conectores
+      del árbol quedan en la misma línea que su texto. `width=None`: sin
+      truncar.
+- [ ] **AC-22:** El CLI pasa el ancho de la terminal sólo si stdout es una
+      terminal; redirigido a archivo, no trunca.
 
-## 4. Contrato técnico
+## 4. Contrato público (lo que ve TDD)
 
-- **Workspace:** `C:\IA\Projects\Claude-Tokenizer`.
-- **Módulo/archivo principal:** `src/tokmd/keystore.py` (nuevo),
-  `src/tokmd/banner.py` (nuevo), `src/tokmd/verify.py` (o `live.py`),
-  módulo nuevo para Codex/OpenAI, `src/tokmd/cli.py`, `src/tokmd/render.py`
-  (truncado de filas).
-- **Herramientas disponibles:** `keyring>=25` (nuevo), `click`, `shutil`
-  (stdlib, para el ancho de terminal).
-- **Versión de tests y configuración:** `pytest`; cero contacto con
-  `keyring` real, con la red, o con la carpeta de config real de quien
-  corre la suite (usar `tmp_path`/`monkeypatch` de `TOKMD_CONFIG_DIR`).
-- **Métricas:** AC-11 (17.381) es el dato dorado de no regresión.
-- **ADR requerido:** `[[ADR-009-manejo-de-api-key-para-verify]]` —
-  `accepted` con enmienda 0.3.0.
+**`tokmd.config`**
+- `user_config_dir() -> Path`, `system_config_dir() -> Path` (AC-01/02).
+- `ENGINE_ENV_VARS = {"claude-code": "ANTHROPIC_API_KEY", "codex": "OPENAI_API_KEY"}`.
+- `load_engine(name: str) -> dict` (AC-04): claves `engine`, `live`,
+  `api_key` (str, `""` por defecto), `ask_for_key` (bool, `True` por
+  defecto), más las que cada plantilla traiga.
+- `save_engine_value(name: str, key: str, value) -> Path` (AC-05).
+- `resolve_api_key(name: str) -> str | None` (AC-06/07).
+- `forget_api_keys() -> None` (AC-17).
+- `init_config() -> Path` (AC-03), devuelve la carpeta de usuario.
+- `class OpReferenceError(Exception)`.
+- `op read` se invoca con `subprocess.run(["op", "read", ref], ...)`
+  (los tests lo reemplazan con `monkeypatch` sobre `tokmd.config.subprocess.run`).
+
+**`tokmd.banner`**
+- `banner_text() -> str`: contiene `tokmd`, la versión instalada, la fecha
+  de último release, `Modelos soportados`, `Fabián Ferdgelis` y
+  `fferdgelis@gmail.com`.
+
+**`tokmd.render.render(...)`** gana `width: int | None = None` (AC-21).
+
+**CLI (`tokmd.cli.main`)**
+- Flags nuevos: `--live`, `--about`, `--forget-key`, `--init`. Se va
+  `--verify`.
+- Motor de la corrida: tokenizador `claude` → `claude-code`; `openai` →
+  `codex`.
+- Funciones que los tests pueden reemplazar con `monkeypatch` en
+  `tokmd.cli`: `get_client` (Anthropic, ahora recibe la key:
+  `get_client(api_key)`), `measure_frame`, `count_verified`,
+  `get_openai_client(api_key)`, `count_openai_live(client, text, model)`,
+  `resolve_api_key`, `stdin_is_interactive()` (envuelve
+  `sys.stdin.isatty()` para que el test la controle).
+- Las pruebas usan `TOKMD_CONFIG_DIR` y `TOKMD_SYSTEM_CONFIG_DIR` apuntando
+  a `tmp_path`: **ningún test toca la carpeta real de quien corre la
+  suite, ni la red, ni `op` real.**
 
 ## 5. Handoffs
 
 ### Definition of Ready
 
-- [ ] Valor, alcance y fuera de alcance claros.
-- [ ] Criterios observables y testeables.
-- [x] ADR enlazado y `accepted`.
-- [ ] Casos de Kiwi cargados como PROPOSED
-      (`[[PBI-011-casos-de-prueba]]`).
+- [x] Valor, alcance y fuera de alcance claros.
+- [x] Criterios observables y testeables (contrato público en la sección 4).
+- [x] ADR-009 `accepted` con enmienda 0.4.0; decisión de configuración
+      `accepted`.
+- [ ] Casos de Kiwi cargados como PROPOSED.
 
-**Estado:** `not ready` — falta la confirmación final de Fabián sobre este
-corte ampliado (0.2.0) antes de que TDD escriba los tests; el corte 0.1.0
-ya tenía su OK pero cambió sustancialmente.
+**Estado:** `ready` para TDD. La carga en Kiwi se hace en paralelo.
 
 ### Handoff a TDD (DeepSeek)
 
-- **AC a convertir en pruebas:** AC-01 a AC-17, en
-  `tests/test_keystore.py`, `tests/test_banner.py`,
-  `tests/test_cli_live.py` (reemplaza `test_cli_verify.py`/
-  `test_cli_verify_gap01.py`), `tests/test_render.py` (ampliado con
-  AC-16/17).
-- **Fixtures y contratos:** `keyring` falso en memoria con modo
-  `NoKeyringError`; `TOKMD_CONFIG_DIR` apuntado a `tmp_path` en cada test;
-  `monkeypatch` de `sys.stdin.isatty` y de `shutil.get_terminal_size`;
-  para AC-07 real, `subprocess.run(..., stdin=subprocess.DEVNULL)`.
-- **Rojo real:** cada test falla contra el código de hoy (sin
-  `keystore.py`, sin `--live`, sin banner, sin truncado) antes de
-  entregar.
+Specs en `tools/deepseek/specs/PBI-011-*.md.prompt`: `config`, `cli-live`
+(incluye el retrofit de `test_cli_verify*.py`), `banner`, `render-width`.
+Rojo real contra el código de hoy antes de pasar a Desarrollo.
 
-### Handoff a Desarrollo (Claude Sonnet 5)
+### Handoff a Desarrollo
 
-- **Restricciones confirmadas:** las 5 reglas de la enmienda 0.3.0 de
-  ADR-009. No modificar tests para que pasen; defecto en un test →
-  reportar a TDD con evidencia (ROL-05).
-- **Preguntas abiertas (decisión menor de Desarrollo, documentar en
-  dev-log):** nombre exacto del archivo de `verify.py`
-  (mantener o pasar a `live.py`); si el extra de `pyproject.toml` se
-  renombra a `live` con `verify` como alias.
+No modificar tests; defecto en un test → a TDD con evidencia (ROL-05).
+Decisiones menores en el dev-log.
 
 ### Handoff a QA (Kimi K3)
 
-- **Candidato identificable:** commit corto del snapshot.
-- **Canal de QA:** OpenCode + OpenRouter + Kimi K3, read-only.
-- **Casos independientes:** `TOK-011-C01` a `C17` de
-  `[[PBI-011-casos-de-prueba]]`.
-- **Evidencia mínima:** log crudo + resultado por caso en
-  `tools/kiwi/resultados/`. Para AC-11, QA corre `--live` a mano con su
-  propia `ANTHROPIC_API_KEY` sobre la copia del `CLAUDE.md` global del
-  snapshot, como en PBI-009.
+Casos `TOK-011-C01` a `C22`, read-only, sobre snapshot. AC-19 con key
+real; AC-20 lo corre Fabián.
 
 ## 6. Cierre
 
-- **Artefactos y enlaces:** pendiente.
 - **Resultado de QA independiente:** `pending`.
 - **Aceptación del owner:** `pending`.
-- **PBI o Bug siguiente:** treemap/`--html`
-  (`[[20260930-lectura-del-arbol-de-secciones]]`, opción B); escaneo
-  recursivo (`-r`).

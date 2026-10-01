@@ -4,8 +4,8 @@ aliases:
   - "Ronda de diseño motores y keys 20260930"
 project: tokmd
 document_type: decision-record
-status: proposed
-version: 0.1.0
+status: accepted
+version: 0.2.0
 created: 2026-09-30
 updated: 2026-09-30
 language: es
@@ -39,6 +39,7 @@ related_documents:
 | Fecha | Versión | Modificado por | Descripción |
 |---|---|---|---|
 | 2026-09-30 | 0.1.0 | Anthropic / claude-opus-5-5 / Claude Code Desktop / subscription | Respuesta a la ronda «hable ahora o calle para siempre» de Fabián sobre PBI-011 v0.2.0. Cambia ADR-008 (un TOML → carpeta con un archivo por motor) y ADR-009 (keyring fuera de v1, texto plano con permisos, 1Password por referencia). Tres preguntas abiertas al final. |
+| 2026-09-30 | 0.2.0 | Anthropic / claude-opus-5-5 / Claude Code Desktop / subscription | Fabián respondió las tres: sí, sí, `engines/`. Aceptado. |
 
 ## 1. Dónde vive la configuración, por sistema operativo
 
@@ -139,7 +140,16 @@ terminal).
 
 Entra en v1. Se prueba contra la API real y se deja escrito si cobra o no.
 
-## 6. Preguntas abiertas para Fabián
+## 6. Respuestas de Fabián (30/09/2026) — decisión cerrada
+
+1. Opción 3 = **«No volver a preguntar»**: sí.
+2. 1Password **por referencia `op://`**: sí.
+3. Carpeta **`engines/`**. Regla general: toda carpeta del software que
+   desarrollemos va en inglés.
+
+Con esto el documento pasa a `accepted` y se aplica a PBI-011 v0.3.0.
+
+## 7. Preguntas que estaban abiertas
 
 1. **Opciones 2 y 3 hacen lo mismo** como están descritas: las dos
    terminan con el software andando en offline. Propuesta: que la 3 sea

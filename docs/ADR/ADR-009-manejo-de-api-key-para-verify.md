@@ -245,6 +245,23 @@ confirmación oficial de costo** (relevamiento `20260930-tokenizadores-offline-p
 sólo un foro lo dice gratis). El prompt para Codex lo dice así, en vez de
 prometer «gratis» sin haberlo verificado.
 
+## Enmienda 0.4.0 (30/09/2026) — keyring sale de v1
+
+Reemplaza los puntos 2 y 3 de la enmienda 0.3.0. Detalle y motivos en
+`docs/decisions/20260930-configuracion-de-motores-y-api-keys.md`
+(`accepted`):
+
+- `keyring` **sale de v1**. La key va en texto plano dentro del archivo de
+  su motor (`engines/claude-code.toml`, `engines/codex.toml`), con permisos
+  `0600` en Linux/macOS; en Windows, `%APPDATA%` ya es del usuario.
+- 1Password entra **por referencia**: `api_key = "op://bóveda/ítem/campo"`
+  se resuelve con `op read`.
+- Carpetas por sistema operativo, con capa de usuario y capa de sistema
+  (`%ProgramData%\tokmd\`, `/etc/tokmd/`, `/Library/Application Support/tokmd/`).
+- Orden de resolución v1: env var → motor del usuario → motor del sistema →
+  pregunta interactiva (sólo en terminal).
+- Pregunta de tres opciones: guardar, seguir offline, no volver a preguntar.
+
 ## Lo que este ADR NO decide
 
 - Nada de PBI-008/ADR-008 (registro multi-modelo): la resolución de key
